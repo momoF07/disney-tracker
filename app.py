@@ -72,7 +72,7 @@ if not df.empty:
 
     # --- LOGIQUE DES RACCOURCIS ---
     st.write("---")
-    sc = st.text_input("Raccourci : `*DLP`, `*FANTASY`, `*101`, `*102`...", placeholder="Tape ici...")
+    sc = st.text_input("Raccourci : `*DLP`, `*FANTASY`, `*CAMPUS`, `*DAW`...", placeholder="Tape ici...")
     
     current_selection = st.query_params.get_all("fav")
 
