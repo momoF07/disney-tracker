@@ -3,129 +3,76 @@ import pandas as pd
 from supabase import create_client
 from datetime import datetime
 import pytz
-import altair as alt
+import requests
+import time
 
-# Config de la page
-st.set_page_config(page_title="Disney Live Tracker", page_icon="🎢", layout="wide")
-
-# Connexion Supabase
+# Config
+st.set_page_config(page_title="Disney Live Control", page_icon="🎢")
 supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 
-# --- GESTION DU TEMPS ---
-paris_tz = pytz.timezone('Europe/Paris')
-maintenant = datetime.now(paris_tz)
-aujourd_hui = maintenant.strftime("%Y-%m-%d")
-
-st.title("🎢 Suivi en Direct - Disneyland Paris")
-st.markdown("""
-    <style>
-    /* Bloque toute interaction tactile ou clic sur les graphiques */
-    .vega-embed {
-        pointer-events: none !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-st.caption(f"Données du jour : {maintenant.strftime('%d/%m/%Y')}")
-
-# --- 1. RÉCUPÉRATION DES DONNÉES DU JOUR UNIQUEMENT ---
-try:
-    response = supabase.table("disney_logs") \
-        .select("*") \
-        .gte("created_at", f"{aujourd_hui}T00:00:00") \
-        .order("created_at", desc=True) \
-        .execute()
+# --- FONCTION POUR LANCER LE ROBOT GITHUB ---
+def trigger_github_action():
+    # Remplace par ton pseudo et le nom de ton dépôt
+    REPO = "momoF07/disney-tracker" 
+    WORKFLOW_ID = "check.yml" # Le nom de ton fichier yaml
+    TOKEN = st.secrets["GITHUB_TOKEN"]
     
-    df = pd.DataFrame(response.data)
-except Exception as e:
-    st.error(f"Erreur de connexion : {e}")
-    df = pd.DataFrame()
+    url = f"https://api.github.com/repos/{REPO}/actions/workflows/{WORKFLOW_ID}/dispatches"
+    headers = {
+        "Authorization": f"Bearer {TOKEN}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    data = {"ref": "main"}
+    
+    res = requests.post(url, headers=headers, json=data)
+    return res.status_code
+
+# --- INTERFACE ---
+st.title("🎢 État des Attractions")
+
+# Bouton Actualiser + Force Check
+if st.button('🔄 Actualiser & Forcer un Relevé'):
+    with st.spinner("Demande envoyée au robot GitHub..."):
+        status = trigger_github_action()
+        if status == 204:
+            st.toast("🚀 Robot lancé ! Attente des données...", icon="✅")
+            time.sleep(10) # On attend 10s que le robot finisse son travail
+            st.rerun()
+        else:
+            st.error(f"Erreur lors du lancement du robot (Code {status})")
+
+# --- RÉCUPÉRATION DES DONNÉES ---
+paris_tz = pytz.timezone('Europe/Paris')
+aujourd_hui = datetime.now(paris_tz).strftime("%Y-%m-%d")
+
+response = supabase.table("disney_logs").select("*").gte("created_at", f"{aujourd_hui}T00:00:00").order("created_at", desc=True).execute()
+df = pd.DataFrame(response.data)
 
 if not df.empty:
-    # Conversion du temps et tri
     df['created_at'] = pd.to_datetime(df['created_at']).dt.tz_convert('Europe/Paris')
+    st.info(f"🕒 Dernier relevé : **{df['created_at'].max().strftime('%H:%M:%S')}**")
     
-    # --- AFFICHAGE DE LA DERNIÈRE MAJ ---
-    derniere_maj = df['created_at'].max().strftime("%H:%M:%S")
-    st.info(f"🕒 Dernière actualisation du robot : **{derniere_maj}**")
+    MON_CHOIX = ["Big Thunder Mountain", "Phantom Manor"]
     
-    # --- LISTE DES ATTRACTIONS ---
-    liste_attractions = sorted(df['ride_name'].unique())
-    
-    for ride in liste_attractions:
-        ride_df = df[df['ride_name'] == ride].sort_values('created_at')
-        
+    for ride in MON_CHOIX:
+        ride_df = df[df['ride_name'] == ride]
         if not ride_df.empty:
-            st.header(f"📍 {ride}")
+            last = ride_df.iloc[0] # La plus récente
             
-            # État actuel
-            last_row = ride_df.iloc[-1]
-            statut = "🟢 OUVERT" if last_row['is_open'] else "🔴 FERMÉ / EN PANNE"
+            st.subheader(f"📍 {ride}")
+            c1, c2 = st.columns(2)
             
-            # Metrics
-            c1, c2, c3 = st.columns(3)
-            c1.metric("Statut", statut)
-            c2.metric("Attente", f"{last_row['wait_time']} min")
+            etat = "🟢 OUVERT" if last['is_open'] else "🔴 FERMÉ / PANNE"
+            c1.metric("Statut", etat)
+            c2.metric("Attente", f"{last['wait_time']} min")
             
-            # Calcul des pannes (changement True -> False)
-            ride_df['switched_off'] = (ride_df['is_open'] == False) & (ride_df['is_open'].shift(1) == True)
-            nb_pannes = ride_df['switched_off'].sum()
-            c3.metric("Pannes (Aujourd'hui)", nb_pannes)
-
-            # --- GRAPHIQUE TOTALEMENT FIGÉ ---
-            if not ride_df.empty:
-                st.subheader("📈 Évolution de l'attente")
-                
-                chart_data = ride_df.copy()
-                chart_data['created_at'] = chart_data['created_at'].dt.round('5min')
-                
-                # Création du graphique
-                chart = alt.Chart(chart_data).mark_area(
-                    line={'color':'#29b5e8'},
-                    color=alt.Gradient(
-                        gradient='linear',
-                        stops=[alt.GradientStop(color='#29b5e8', offset=0),
-                               alt.GradientStop(color='rgba(41, 181, 232, 0.1)', offset=1)],
-                        x1=1, x2=1, y1=1, y2=0
-                    )
-                ).encode(
-                    x=alt.X(
-                        'created_at:T', 
-                        title=None, 
-                        axis=alt.Axis(
-                            grid=False, 
-                            labels=True,
-                            format='%H:%M',         # Format 24h (ex: 14:10)
-                            tickCount={'interval': 'minute', 'step': 10} # <--- PALIER 10 MIN
-                        )
-                    ),
-                    y=alt.Y(
-                        'wait_time:Q', 
-                        title="Min", 
-                        axis=alt.Axis(
-                            grid=True, 
-                            tickMinStep=5           # <--- PALIER 5 MIN (5, 10, 15...)
-                        )
-                    )
-                ).properties(
-                    height=250
-                ).configure_selection(
-                    # On désactive explicitement les sélections
-                ).interactive(False)
+            # Calcul pannes rapides
+            ride_sorted = ride_df.sort_values('created_at')
+            ride_sorted['switched_off'] = (ride_sorted['is_open'] == False) & (ride_sorted['is_open'].shift(1) == True)
+            nb_pannes = ride_sorted['switched_off'].sum()
             
-                # Affichage
-                st.altair_chart(chart, use_container_width=True)
-            
-            # --- DÉTAIL DES PANNES ---
             if nb_pannes > 0:
-                with st.expander("🔎 Historique des coupures"):
-                    pannes_detectees = ride_df[ride_df['switched_off'] == True]
-                    for _, p in pannes_detectees.iterrows():
-                        st.warning(f"⚠️ Panne détectée vers {p['created_at'].strftime('%H:%M')}")
-        
-        st.divider()
+                st.warning(f"⚠️ {nb_pannes} interruption(s) détectée(s) aujourd'hui.")
+            st.divider()
 else:
-    st.warning("⚠️ Aucune donnée pour aujourd'hui. Lancez le 'Disney Check' sur GitHub pour démarrer le suivi !")
-
-# --- BOUTON DE RAFRAÎCHISSEMENT MANUEL ---
-if st.button('🔄 Actualiser la page'):
-    st.rerun()
+    st.warning("Aucune donnée. Cliquez sur le bouton pour lancer le premier relevé.")
