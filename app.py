@@ -36,7 +36,7 @@ maintenant = datetime.now(paris_tz)
 if st.button('🔄 Actualiser & Forcer un Relevé'):
     with st.spinner("Signal envoyé au robot..."):
         if trigger_github_action() == 204:
-            st.toast("🚀 Robot lancé !"); time.sleep(40); st.rerun()
+            st.toast("🚀 Robot lancé !"); time.sleep(45); st.rerun()
 
 # --- RÉCUPÉRATION DES DONNÉES (24h) ---
 try:
