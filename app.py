@@ -17,6 +17,15 @@ maintenant = datetime.now(paris_tz)
 aujourd_hui = maintenant.strftime("%Y-%m-%d")
 
 st.title("🎢 Suivi en Direct - Disneyland Paris")
+st.markdown("""
+    <style>
+    /* Bloque les événements tactiles sur les graphiques Altair */
+    .element-container iframe, .vega-embed {
+        pointer-events: none !important;
+        user-select: none !important;
+    }
+    </style>
+    """, unsafe_allow_all_updates=True, unsafe_allow_html=True)
 st.caption(f"Données du jour : {maintenant.strftime('%d/%m/%Y')}")
 
 # --- 1. RÉCUPÉRATION DES DONNÉES DU JOUR UNIQUEMENT ---
@@ -63,16 +72,15 @@ if not df.empty:
             nb_pannes = ride_df['switched_off'].sum()
             c3.metric("Pannes (Aujourd'hui)", nb_pannes)
 
-            # --- GRAPHIQUE D'ÉVOLUTION STATIQUE ---
-            st.subheader("📈 Évolution de l'attente")
-            
+            # --- GRAPHIQUE TOTALEMENT FIGÉ ---
             if not ride_df.empty:
-                # 1. Préparation des données (arrondi à 5min)
+                st.subheader("📈 Évolution de l'attente")
+                
                 chart_data = ride_df.copy()
                 chart_data['created_at'] = chart_data['created_at'].dt.round('5min')
                 
-                # 2. Création du graphique Altair SANS interaction
-                chart = alt.Chart(chart_data).mark_area(
+                # Création du graphique
+                base = alt.Chart(chart_data).mark_area(
                     line={'color':'#29b5e8'},
                     color=alt.Gradient(
                         gradient='linear',
@@ -81,16 +89,15 @@ if not df.empty:
                         x1=1, x2=1, y1=1, y2=0
                     )
                 ).encode(
-                    x=alt.X('created_at:T', title=None, axis=alt.Axis(grid=False)),
-                    y=alt.Y('wait_time:Q', title="Minutes", axis=alt.Axis(grid=True)),
-                    tooltip=[] # On vide les tooltips pour qu'il ne se passe rien au survol
+                    x=alt.X('created_at:T', title=None, axis=alt.Axis(grid=False, labels=True)),
+                    y=alt.Y('wait_time:Q', title="Min", axis=alt.Axis(grid=True)),
+                    tooltip=None # Supprime la bulle d'info au toucher
                 ).properties(
                     height=250
-                ).configure_view(
-                    strokeWidth=0 # Enlève la bordure
-                ).interactive(False) # <--- LA LIGNE MAGIQUE : Désactive tout mouvement
+                )
             
-                st.altair_chart(chart, use_container_width=True)
+                # On affiche le graphique en désactivant TOUTES les options de menu et d'interaction
+                st.altair_chart(base, use_container_width=True, theme=None)
             
             # --- DÉTAIL DES PANNES ---
             if nb_pannes > 0:
