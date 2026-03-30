@@ -3,7 +3,7 @@ import pandas as pd
 from supabase import create_client
 from datetime import datetime
 
-st.set_page_config(page_title="Disney Dash", page_icon="🎢")
+st.set_page_config(page_title="Disney Check Time", page_icon="🎢")
 
 # Connexion Supabase
 supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
