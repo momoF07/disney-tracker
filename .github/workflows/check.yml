@@ -1,14 +1,28 @@
 name: Disney Check
+
 on:
   schedule:
-    - cron: '*/10 08-23 * * *' # Tourne toutes les 10min de 7h à 22h
+    - cron: '*/10 07-22 * * *'  # Tourne toutes les 10 min de 7h à 22h
+  workflow_dispatch:            # <--- PERMET LE LANCEMENT MANUEL (IMPORTANT)
+
 jobs:
-  run:
+  run-robot:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - run: pip install requests supabase
-      - run: python worker.py
+      - name: 📥 Récupérer le code
+        uses: actions/checkout@v3
+
+      - name: 🐍 Installer Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: 📦 Installer les bibliothèques
+        run: |
+          pip install requests supabase
+
+      - name: 🚀 Lancer le script de surveillance
+        run: python worker.py
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
