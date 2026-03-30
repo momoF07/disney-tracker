@@ -6,16 +6,29 @@ import pytz
 import requests
 import time
 
-# Config
-st.set_page_config(page_title="Disney Live Control", page_icon="🎢")
+# --- CONFIGURATION DE LA PAGE ---
+st.set_page_config(page_title="Disney Live Control", page_icon="🎢", layout="centered")
+
+# --- CONNEXION SUPABASE ---
 supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 
-# --- FONCTION POUR LANCER LE ROBOT GITHUB ---
+# --- CONFIGURATION DES FAVORIS ---
+# Modifie cette liste pour afficher les attractions que tu veux voir
+MES_FAVORIS = [
+    "Big Thunder Mountain",
+    "Phantom Manor",
+    "Spider-Man W.E.B. Adventure",
+    "Star Wars Hyperspace Mountain",
+    "Avengers Assemble: Flight Force",
+    "Ratatouille: L'Aventure Totalement Toquée de Rémy"
+]
+
+# --- FONCTION POUR DÉCLENCHER LE ROBOT GITHUB ---
 def trigger_github_action():
-    # Remplace par ton pseudo et le nom de ton dépôt
+    # Remplace bien par ton pseudo et nom de dépôt GitHub
     REPO = "momoF07/disney-tracker" 
-    WORKFLOW_ID = "check.yml" # Le nom de ton fichier yaml
-    TOKEN = st.secrets["GITHUB_TOKEN"]
+    WORKFLOW_ID = "check.yml"
+    TOKEN = st.secrets["GITHUB_TOKEN"] # Assure-toi d'avoir mis le ghp_... dans les secrets Streamlit
     
     url = f"https://api.github.com/repos/{REPO}/actions/workflows/{WORKFLOW_ID}/dispatches"
     headers = {
@@ -24,55 +37,94 @@ def trigger_github_action():
     }
     data = {"ref": "main"}
     
-    res = requests.post(url, headers=headers, json=data)
-    return res.status_code
+    try:
+        res = requests.post(url, headers=headers, json=data)
+        return res.status_code
+    except:
+        return 500
 
-# --- INTERFACE ---
+# --- INTERFACE UTILISATEUR ---
 st.title("🎢 État des Attractions")
 
-# Bouton Actualiser + Force Check
+# Bouton de mise à jour forcée
 if st.button('🔄 Actualiser & Forcer un Relevé'):
-    with st.spinner("Demande envoyée au robot GitHub..."):
+    with st.spinner("Signal envoyé au robot GitHub..."):
         status = trigger_github_action()
         if status == 204:
-            st.toast("🚀 Robot lancé ! Attente des données..., le site s'actualisera dès les données reçues", icon="✅")
-            time.sleep(40) # On attend 40s que le robot finisse son travail
+            st.toast("🚀 Robot lancé ! Mise à jour dans 10s...", icon="✅")
+            time.sleep(10) # Laisse le temps au worker.py de finir
             st.rerun()
         else:
-            st.error(f"Erreur lors du lancement du robot (Code {status})")
+            st.error(f"Erreur GitHub (Code {status}). Vérifie ton GITHUB_TOKEN dans les secrets.")
 
-# --- RÉCUPÉRATION DES DONNÉES ---
+# --- RÉCUPÉRATION DES DONNÉES DU JOUR ---
 paris_tz = pytz.timezone('Europe/Paris')
-aujourd_hui = datetime.now(paris_tz).strftime("%Y-%m-%d")
+maintenant = datetime.now(paris_tz)
+aujourd_hui = maintenant.strftime("%Y-%m-%d")
 
-response = supabase.table("disney_logs").select("*").gte("created_at", f"{aujourd_hui}T00:00:00").order("created_at", desc=True).execute()
-df = pd.DataFrame(response.data)
+try:
+    # On récupère toutes les données de la journée
+    response = supabase.table("disney_logs") \
+        .select("*") \
+        .gte("created_at", f"{aujourd_hui}T00:00:00") \
+        .order("created_at", desc=True) \
+        .execute()
+    
+    df = pd.DataFrame(response.data)
+except Exception as e:
+    st.error("Impossible de joindre la base de données.")
+    df = pd.DataFrame()
 
+# --- AFFICHAGE ---
 if not df.empty:
     df['created_at'] = pd.to_datetime(df['created_at']).dt.tz_convert('Europe/Paris')
-    st.info(f"🕒 Dernier relevé : **{df['created_at'].max().strftime('%H:%M:%S')}**")
     
-    MON_CHOIX = ["Big Thunder Mountain", "Phantom Manor"]
+    # Heure du dernier relevé enregistré
+    derniere_maj = df['created_at'].max().strftime("%H:%M:%S")
+    st.info(f"🕒 Dernier relevé : **{derniere_maj}**")
     
-    for ride in MON_CHOIX:
+    st.divider()
+
+    # Boucle sur tes favoris uniquement
+    for ride in MES_FAVORIS:
         ride_df = df[df['ride_name'] == ride]
+        
         if not ride_df.empty:
-            last = ride_df.iloc[0] # La plus récente
+            # On prend la ligne la plus récente (grâce au order desc=True)
+            last = ride_df.iloc[0]
             
             st.subheader(f"📍 {ride}")
+            
             c1, c2 = st.columns(2)
             
-            etat = "🟢 OUVERT" if last['is_open'] else "🔴 FERMÉ / PANNE"
-            c1.metric("Statut", etat)
+            # Affichage Statut
+            if last['is_open']:
+                c1.success("🟢 OUVERT")
+            else:
+                c1.error("🔴 FERMÉ / PANNE")
+                
+            # Affichage Attente
             c2.metric("Attente", f"{last['wait_time']} min")
             
-            # Calcul pannes rapides
+            # Calcul des pannes sur la journée
+            # On trie par ordre chronologique pour détecter les changements
             ride_sorted = ride_df.sort_values('created_at')
             ride_sorted['switched_off'] = (ride_sorted['is_open'] == False) & (ride_sorted['is_open'].shift(1) == True)
             nb_pannes = ride_sorted['switched_off'].sum()
             
             if nb_pannes > 0:
                 st.warning(f"⚠️ {nb_pannes} interruption(s) détectée(s) aujourd'hui.")
+            
             st.divider()
 else:
-    st.warning("Aucune donnée. Cliquez sur le bouton pour lancer le premier relevé.")
+    st.warning("📭 Aucune donnée pour aujourd'hui. Cliquez sur le bouton pour lancer le premier relevé.")
+
+# --- CSS POUR MOBILE ---
+st.markdown("""
+    <style>
+    /* Optimise l'affichage des metrics sur mobile */
+    [data-testid="stMetricValue"] {
+        font-size: 1.8rem;
+    }
+    </style>
+    """, unsafe_allow_html=True)
