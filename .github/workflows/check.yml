@@ -1,0 +1,14 @@
+name: Disney Check
+on:
+  schedule:
+    - cron: '*/10 08-23 * * *' # Tourne toutes les 10min de 7h à 22h
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: pip install requests supabase
+      - run: python worker.py
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
