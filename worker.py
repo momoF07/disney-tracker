@@ -13,10 +13,6 @@ PARKS = ["dae968d5-630d-4719-8b06-3d107e944401", "ca888437-ebb4-4d50-aed2-d227f7
 TARGETS = [
     "Big Thunder Mountain", 
     "Phantom Manor", 
-    "Spider-Man W.E.B. Adventure",
-    "Star Wars Hyperspace Mountain",
-    "Ratatouille: L'Aventure Totalement Toquée de Rémy",
-    "Avengers Assemble: Flight Force"
 ]
 
 for p_id in PARKS:
