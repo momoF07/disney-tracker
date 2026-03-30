@@ -30,7 +30,7 @@ def trigger_github_action():
     except: return 500
 
 # --- INTERFACE UTILISATEUR ---
-st.title("🏰 My Disney Dashboard")
+st.title("🏰 Suivi Disney")
 
 # Heure locale
 paris_tz = pytz.timezone('Europe/Paris')
@@ -38,7 +38,7 @@ maintenant = datetime.now(paris_tz)
 aujourd_hui = maintenant.strftime("%Y-%m-%d")
 
 # Bouton de mise à jour forcée
-if st.button('🔄 Actualiser & Forcer un Relevé'):
+if st.button('🔄 Actualiser manuellement'):
     with st.spinner("Signal envoyé au robot... Patientez 40s."):
         status = trigger_github_action()
         if status == 204:
