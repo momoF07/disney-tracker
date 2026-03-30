@@ -72,7 +72,7 @@ if not df.empty:
     )
     st.query_params["fav"] = selected_options
 
-    st.caption(f"⏱️ Refresh auto : 60s | 🕒 Dernière donnée : {derniere_maj}")
+    st.caption(f"🕒 Donnée : {derniere_maj} | Auto-refresh : 60s")
     st.divider()
 
     if not selected_options:
@@ -96,26 +96,13 @@ if not df.empty:
                     c1.error("🔴 FERMÉ / PANNE")
                     c2.metric("Attente", "- - -")
                 
-                if not is_open:
-                    ride_chrono = ride_df.sort_values('created_at')
-                    last_open = ride_chrono[ride_chrono['is_open'] == True].last_valid_index()
-                    if last_open is not None:
-                        try:
-                            start_panne = ride_chrono.loc[last_open + 1:].iloc[0]['created_at']
-                            diff = maintenant - start_panne
-                            h, r = divmod(diff.total_seconds(), 3600)
-                            m, _ = divmod(r, 60)
-                            txt = f"{int(m)}min" if h == 0 else f"{int(h)}h{int(m)}min"
-                            st.warning(f"⚠️ En panne depuis {txt} (à {start_panne.strftime('%H:%M')})")
-                        except: pass
-
-                # --- GRAPHIQUE EN DÉGRADÉ 100% IMMOBILE ---
+                # --- GRAPHIQUE IMMOBILE ---
                 if len(ride_df) > 1:
                     four_hours_ago = maintenant - timedelta(hours=4)
                     chart_data = ride_df[ride_df['created_at'] >= four_hours_ago].copy()
                     chart_data['wait_time'] = chart_data['wait_time'].fillna(0)
 
-                    # Configuration du dégradé (On garde ton réglage vertical)
+                    # Dégradé vertical fixe
                     gradient = alt.Gradient(
                         gradient='linear',
                         stops=[
@@ -129,7 +116,7 @@ if not df.empty:
                         x1=0, x2=0, y1=1, y2=0 
                     )
 
-                    # Le graphique sans tooltip (pour éviter toute réaction au survol)
+                    # Graphique SANS tooltips
                     base = alt.Chart(chart_data).encode(
                         x=alt.X('created_at:T', title=None, axis=alt.Axis(format="%H:%M", grid=False)),
                         y=alt.Y('wait_time:Q', title=None, scale=alt.Scale(domain=[0, 80], clamp=True), axis=alt.Axis(grid=True))
@@ -139,33 +126,30 @@ if not df.empty:
                         color=gradient,
                         line={'color': '#1f77b4', 'strokeWidth': 2},
                         opacity=0.9,
-                        interpolate='monotone',
-                        tooltip=False # <-- DÉSACTIVE LES BULLES D'INFOS
+                        interpolate='monotone'
                     )
 
-                    # Configuration finale pour bloquer toute interaction
+                    # On configure l'immobilité ici
                     final_chart = area.properties(
                         height=200
                     ).configure_view(
                         strokeWidth=0
-                    ).configure_selection(
-                        # Désactive les sélections de données
-                        toggle=False
-                    ).interactive(False) # <-- BLOQUE LE ZOOM / PAN
+                    ).interactive(False) # Bloque zoom/pan
 
-                    # On affiche sans le menu de téléchargement "..." de Streamlit
+                    # Affichage sans le menu Altair et sans thème Streamlit
                     st.altair_chart(final_chart, use_container_width=True, theme=None)
 
                 st.divider()
 else:
-    st.warning("📭 Aucune donnée disponible aujourd'hui.")
+    st.warning("📭 Aucune donnée disponible.")
 
-# CSS Final
+# CSS pour le bouton et cacher les options du graphique
 st.markdown("""
     <style>
     [data-testid='stMetricValue'] { font-size: 1.8rem; } 
     .stButton button { width: 100%; border-radius: 10px; }
-    /* Cache le menu '...' en haut à droite des graphiques Altair */
-    details { display: none; }
+    /* Cache les menus du graphique */
+    details { display: none !important; }
+    summary { display: none !important; }
     </style>
     """, unsafe_allow_html=True)
