@@ -1,13 +1,12 @@
 import streamlit as st
 import pandas as pd
 from supabase import create_client
-from datetime import datetime, timedelta
+from datetime import datetime
 import pytz
 import requests
 import time
 from streamlit_autorefresh import st_autorefresh 
 from emojis import get_emoji 
-import altair as alt
 
 # --- CONFIGURATION DE LA PAGE ---
 st.set_page_config(page_title="Disney Live Dashboard", page_icon="🏰", layout="centered")
@@ -45,14 +44,9 @@ if st.button('🔄 Forcer un relevé maintenant'):
             time.sleep(40) 
             st.rerun()
 
-# Récupération des données (24h pour avoir du recul sur le graphique)
+# Récupération des données Disney
 try:
-    hier = maintenant - timedelta(hours=24)
-    response = supabase.table("disney_logs") \
-        .select("*") \
-        .gte("created_at", hier.isoformat()) \
-        .order("created_at", desc=True) \
-        .execute()
+    response = supabase.table("disney_logs").select("*").gte("created_at", f"{aujourd_hui}T00:00:00").order("created_at", desc=True).execute()
     df = pd.DataFrame(response.data)
 except:
     df = pd.DataFrame()
@@ -62,32 +56,29 @@ if not df.empty:
     derniere_maj = df['created_at'].max().strftime("%H:%M:%S")
     
     toutes_attractions = sorted(df['ride_name'].unique())
-    
-    # Favoris (Persistance via URL)
     params = st.query_params.get_all("fav")
+    
     selected_options = st.multiselect(
-        "Sélectionne tes favoris :",
+        "Mes attractions suivies :",
         options=toutes_attractions,
         default=params,
-        format_func=lambda x: f"{get_emoji(x)} {x}",
-        key="favoris"
+        format_func=lambda x: f"{get_emoji(x)} {x}"
     )
     st.query_params["fav"] = selected_options
 
-    st.caption(f"⏱️ Refresh auto : 60s | 🕒 Dernière donnée : {derniere_maj}")
+    st.caption(f"🕒 Donnée : {derniere_maj} | Prochaine vérification auto dans 1 min")
     st.divider()
 
     if not selected_options:
-        st.info("👆 Sélectionne tes attractions pour les suivre.")
+        st.info("Sélectionne des attractions pour les afficher ici.")
     else:
         for ride in selected_options:
             ride_df = df[df['ride_name'] == ride].sort_values('created_at', ascending=False)
             if not ride_df.empty:
                 last = ride_df.iloc[0]
-                
                 st.subheader(f"{get_emoji(ride)} {ride}")
-                
                 c1, c2 = st.columns(2)
+                
                 wait = last['wait_time']
                 is_open = last['is_open']
                 
@@ -98,28 +89,19 @@ if not df.empty:
                     c1.error("🔴 FERMÉ / PANNE")
                     c2.metric("Attente", "- - -")
                 
-                # Gestion des pannes
                 if not is_open:
                     ride_chrono = ride_df.sort_values('created_at')
                     last_open = ride_chrono[ride_chrono['is_open'] == True].last_valid_index()
                     if last_open is not None:
-                        try:
-                            start_panne = ride_chrono.loc[last_open + 1:].iloc[0]['created_at']
-                            diff = maintenant - start_panne
-                            h, r = divmod(diff.total_seconds(), 3600)
-                            m, _ = divmod(r, 60)
-                            txt = f"{int(m)}min" if h == 0 else f"{int(h)}h{int(m)}min"
-                            st.warning(f"⚠️ En panne depuis {txt} (à {start_panne.strftime('%H:%M')})")
-                        except: pass
-
+                        start_panne = ride_chrono.loc[last_open + 1:].iloc[0]['created_at']
+                        diff = maintenant - start_panne
+                        h, r = divmod(diff.total_seconds(), 3600)
+                        m, _ = divmod(r, 60)
+                        txt = f"{int(m)}min" if h == 0 else f"{int(h)}h{int(m)}min"
+                        st.warning(f"⚠️ En panne depuis {txt} (à {start_panne.strftime('%H:%M')})")
                 st.divider()
 else:
-    st.warning("📭 Aucune donnée disponible aujourd'hui.")
+    st.warning("📭 Aucune donnée disponible.")
 
-# CSS Final
-st.markdown("""
-    <style>
-    [data-testid='stMetricValue'] { font-size: 1.8rem; } 
-    .stButton button { width: 100%; border-radius: 10px; }
-    </style>
-    """, unsafe_allow_html=True)
+# CSS
+st.markdown("<style>[data-testid='stMetricValue'] { font-size: 1.8rem; } .stButton button { width: 100%; }</style>", unsafe_allow_html=True)
