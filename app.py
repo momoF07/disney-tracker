@@ -45,7 +45,7 @@ if st.button('🔄 Forcer un relevé maintenant'):
             time.sleep(40) 
             st.rerun()
 
-# Récupération des données (24h pour avoir du recul sur le graphique)
+# Récupération des données (24h pour le recul du graphique)
 try:
     hier = maintenant - timedelta(hours=24)
     response = supabase.table("disney_logs") \
@@ -62,9 +62,8 @@ if not df.empty:
     derniere_maj = df['created_at'].max().strftime("%H:%M:%S")
     
     toutes_attractions = sorted(df['ride_name'].unique())
-    
-    # Favoris (Persistance via URL)
     params = st.query_params.get_all("fav")
+    
     selected_options = st.multiselect(
         "Sélectionne tes favoris :",
         options=toutes_attractions,
@@ -112,25 +111,27 @@ if not df.empty:
                             st.warning(f"⚠️ En panne depuis {txt} (à {start_panne.strftime('%H:%M')})")
                         except: pass
 
-                # --- GRAPHIQUE EN DÉGRADÉ VERTICAL FIXE ---
+                # --- GRAPHIQUE EN DÉGRADÉ ABSOLU (FIXÉ) ---
                 if len(ride_df) > 1:
                     four_hours_ago = maintenant - timedelta(hours=4)
                     chart_data = ride_df[ride_df['created_at'] >= four_hours_ago].copy()
                     chart_data['wait_time'] = chart_data['wait_time'].fillna(0)
 
-                    # Le dégradé est lié aux coordonnées Y de 0 à 80
-                    # x1=0, x2=0, y1=1, y2=0 force l'orientation verticale absolue
+                    # On définit la hauteur fixe pour verrouiller les couleurs
+                    CHART_HEIGHT = 200 
+
+                    # Configuration du dégradé ABSOLU (Verrouillé sur la grille)
                     gradient = alt.Gradient(
                         gradient='linear',
                         stops=[
-                            alt.GradientStop(color='green', offset=0),       # 0 min
-                            alt.GradientStop(color='green', offset=25/80),   # 25 min -> VERT
-                            alt.GradientStop(color='orange', offset=35/80),  # 35 min -> ORANGE
-                            alt.GradientStop(color='orange', offset=55/80),  # 55 min -> ORANGE
-                            alt.GradientStop(color='red', offset=65/80),     # 65 min -> ROUGE
-                            alt.GradientStop(color='red', offset=1)          # 80 min -> ROUGE
+                            alt.GradientStop(color='green', offset=1),          # Bas (0 min)
+                            alt.GradientStop(color='green', offset=1 - (25/80)), # 25 min -> VERT
+                            alt.GradientStop(color='orange', offset=1 - (35/80)),# 35 min -> ORANGE
+                            alt.GradientStop(color='orange', offset=1 - (55/80)),# 55 min -> ORANGE
+                            alt.GradientStop(color='red', offset=1 - (65/80)),   # 65 min -> ROUGE
+                            alt.GradientStop(color='red', offset=0)             # Haut (80 min) -> ROUGE
                         ],
-                        x1=0, x2=0, y1=1, y2=0 
+                        x1=0, x2=0, y1=CHART_HEIGHT, y2=0 # Force le mapping vertical fixe
                     )
 
                     base = alt.Chart(chart_data).encode(
@@ -143,19 +144,18 @@ if not df.empty:
                         color=gradient,
                         line={'color': '#1f77b4', 'strokeWidth': 2},
                         opacity=0.9,
-                        interpolate='monotone'
+                        interpolate='monotone' # Courbe lisse
                     )
 
-                    final_chart = area.properties(height=200).configure_view(strokeWidth=0).interactive(False)
+                    final_chart = area.properties(height=CHART_HEIGHT).configure_view(strokeWidth=0).interactive(False)
 
-                    # theme=None est crucial pour garder nos couleurs et éviter le gris Streamlit
+                    # theme=None pour garder le contrôle total des couleurs
                     st.altair_chart(final_chart, use_container_width=True, theme=None)
 
                 st.divider()
 else:
-    st.warning("📭 Aucune donnée disponible aujourd'hui.")
+    st.warning("📭 Aucune donnée disponible.")
 
-# CSS Final
 st.markdown("""
     <style>
     [data-testid='stMetricValue'] { font-size: 1.8rem; } 
