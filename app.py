@@ -14,8 +14,8 @@ st.set_page_config(page_title="Disney Live Control", page_icon="🏰", layout="c
 # --- CONNEXION SUPABASE ---
 supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 
-# --- ACTUALISATION AUTOMATIQUE (Toutes les 30 secondes) ---
-st_autorefresh(interval=30000, key="datarefresh")
+# --- ACTUALISATION AUTOMATIQUE (Toutes les minutes) ---
+st_autorefresh(interval=60000, key="datarefresh")
 
 # --- FONCTION POUR DÉCLENCHER LE ROBOT GITHUB ---
 def trigger_github_action():
