@@ -45,14 +45,10 @@ if st.button('🔄 Forcer un relevé maintenant'):
             time.sleep(40) 
             st.rerun()
 
-# Récupération des données (24h de recul)
+# Récupération des données
 try:
     hier = maintenant - timedelta(hours=24)
-    response = supabase.table("disney_logs") \
-        .select("*") \
-        .gte("created_at", hier.isoformat()) \
-        .order("created_at", desc=True) \
-        .execute()
+    response = supabase.table("disney_logs").select("*").gte("created_at", hier.isoformat()).order("created_at", desc=True).execute()
     df = pd.DataFrame(response.data)
 except:
     df = pd.DataFrame()
@@ -63,108 +59,55 @@ if not df.empty:
     
     toutes_attractions = sorted(df['ride_name'].unique())
     params = st.query_params.get_all("fav")
-    
-    selected_options = st.multiselect(
-        "Sélectionne tes favoris :",
-        options=toutes_attractions,
-        default=params,
-        format_func=lambda x: f"{get_emoji(x)} {x}",
-        key="favoris"
-    )
+    selected_options = st.multiselect("Favoris :", options=toutes_attractions, default=params, format_func=lambda x: f"{get_emoji(x)} {x}")
     st.query_params["fav"] = selected_options
 
-    st.caption(f"⏱️ Refresh auto : 60s | 🕒 Dernière donnée : {derniere_maj}")
+    st.caption(f"🕒 Dernière donnée : {derniere_maj}")
     st.divider()
 
-    if not selected_options:
-        st.info("👆 Sélectionne tes attractions pour les suivre.")
-    else:
+    if selected_options:
         for ride in selected_options:
             ride_df = df[df['ride_name'] == ride].sort_values('created_at', ascending=False)
             if not ride_df.empty:
                 last = ride_df.iloc[0]
-                
                 st.subheader(f"{get_emoji(ride)} {ride}")
                 
                 c1, c2 = st.columns(2)
                 wait = last['wait_time']
-                is_open = last['is_open']
-                
-                if is_open:
+                if last['is_open']:
                     c1.success("🟢 OUVERT")
                     c2.metric("Attente", f"{int(wait)} min")
                 else:
-                    c1.error("🔴 FERMÉ / PANNE")
+                    c1.error("🔴 FERMÉ")
                     c2.metric("Attente", "- - -")
-                
-                # Gestion des pannes
-                if not is_open:
-                    ride_chrono = ride_df.sort_values('created_at')
-                    last_open = ride_chrono[ride_chrono['is_open'] == True].last_valid_index()
-                    if last_open is not None:
-                        try:
-                            start_panne = ride_chrono.loc[last_open + 1:].iloc[0]['created_at']
-                            diff = maintenant - start_panne
-                            h, r = divmod(diff.total_seconds(), 3600)
-                            m, _ = divmod(r, 60)
-                            txt = f"{int(m)}min" if h == 0 else f"{int(h)}h{int(m)}min"
-                            st.warning(f"⚠️ En panne depuis {txt} (à {start_panne.strftime('%H:%M')})")
-                        except: pass
 
-                # --- GRAPHIQUE ARC-EN-CIEL FIXE ---
+                # --- LE GRAPHIQUE CORRIGÉ ---
                 if len(ride_df) > 1:
                     four_hours_ago = maintenant - timedelta(hours=4)
                     chart_data = ride_df[ride_df['created_at'] >= four_hours_ago].copy()
-                    chart_data['wait_time'] = chart_data['wait_time'].fillna(0)
-
-                    # Hauteur fixe pour le mapping du dégradé
-                    CHART_HEIGHT = 200
-
-                    # Dégradé lié à la hauteur du graphique (y1=200, y2=0)
-                    gradient_strict = alt.Gradient(
+                    
+                    # DÉGRADÉ : On définit les paliers exacts
+                    # 25/80 = 0.31 | 55/80 = 0.68 | 60/80 = 0.75
+                    gradient = alt.Gradient(
                         gradient='linear',
                         stops=[
-                            alt.GradientStop(color='green', offset=1),           # 0 min
-                            alt.GradientStop(color='green', offset=1-(25/80)),   # 25 min
-                            alt.GradientStop(color='orange', offset=1-(35/80)),  # 35 min
-                            alt.GradientStop(color='orange', offset=1-(55/80)),  # 55 min
-                            alt.GradientStop(color='red', offset=1-(60/80)),     # 60 min
-                            alt.GradientStop(color='red', offset=0)              # 80 min
+                            alt.GradientStop(color='#26a641', offset=0),    # Vert à 0 min
+                            alt.GradientStop(color='#26a641', offset=0.31), # Vert jusqu'à 25 min
+                            alt.GradientStop(color='#ff9f1c', offset=0.35), # Orange dès 28 min
+                            alt.GradientStop(color='#ff9f1c', offset=0.68), # Orange jusqu'à 55 min
+                            alt.GradientStop(color='#ff4b2b', offset=0.75), # Rouge dès 60 min
+                            alt.GradientStop(color='#ff4b2b', offset=1.0)   # Rouge à 80 min
                         ],
-                        x1=0, x2=0, y1=CHART_HEIGHT, y2=0 
+                        x1=1, x2=1, y1=0, y2=1 # Inversion pour que 0 soit en bas
                     )
 
                     base = alt.Chart(chart_data).encode(
                         x=alt.X('created_at:T', title=None, axis=alt.Axis(format="%H:%M", grid=False)),
-                        y=alt.Y('wait_time:Q', title=None, scale=alt.Scale(domain=[0, 80], clamp=True), axis=alt.Axis(grid=True)),
-                        tooltip=[alt.Tooltip('created_at:T', format="%H:%M"), alt.Tooltip('wait_time:Q', title="Attente")]
+                        y=alt.Y('wait_time:Q', title=None, scale=alt.Scale(domain=[0, 80]), axis=alt.Axis(grid=True))
                     )
 
-                    area = base.mark_area(
-                        color=gradient_strict,
-                        opacity=0.9,
-                        interpolate='monotone'
-                    )
+                    area = base.mark_area(color=gradient, opacity=0.8, interpolate='monotone')
+                    line = base.mark_line(color='#1f77b4', strokeWidth=2)
 
-                    line = base.mark_line(color='#1f77b4', strokeWidth=2, interpolate='monotone')
-
-                    # Seuils visuels gris pour vérifier le dégradé
-                    threshold_data = pd.DataFrame([{'w': 25}, {'w': 55}, {'w': 60}])
-                    rules = alt.Chart(threshold_data).mark_rule(
-                        strokeDash=[4,4], color='gray', opacity=0.2
-                    ).encode(y='w:Q')
-
-                    final_chart = (area + line + rules).properties(height=CHART_HEIGHT).configure_view(strokeWidth=0).interactive(False)
-
-                    st.altair_chart(final_chart, use_container_width=True, theme=None)
-
+                    st.altair_chart((area + line).properties(height=200).interactive(False), use_container_width=True, theme=None)
                 st.divider()
-else:
-    st.warning("📭 Aucune donnée disponible.")
-
-st.markdown("""
-    <style>
-    [data-testid='stMetricValue'] { font-size: 1.8rem; } 
-    .stButton button { width: 100%; border-radius: 10px; }
-    </style>
-    """, unsafe_allow_html=True)
