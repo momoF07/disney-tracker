@@ -111,47 +111,6 @@ if not df.empty:
                             txt = f"{int(m)}min" if h == 0 else f"{int(h)}h{int(m)}min"
                             st.warning(f"⚠️ En panne depuis {txt} (à {start_panne.strftime('%H:%M')})")
                         except: pass
-
-                # --- GRAPHIQUE EN DÉGRADÉ VERTICAL FIXE ---
-                if len(ride_df) > 1:
-                    four_hours_ago = maintenant - timedelta(hours=4)
-                    chart_data = ride_df[ride_df['created_at'] >= four_hours_ago].copy()
-                    chart_data['wait_time'] = chart_data['wait_time'].fillna(0)
-
-                    # Le dégradé est lié aux coordonnées Y de 0 à 80
-                    # x1=0, x2=0, y1=1, y2=0 force l'orientation verticale absolue
-                    gradient = alt.Gradient(
-                        gradient='linear',
-                        stops=[
-                            alt.GradientStop(color='green', offset=0),       # 0 min
-                            alt.GradientStop(color='green', offset=25/80),   # 25 min -> VERT
-                            alt.GradientStop(color='orange', offset=35/80),  # 35 min -> ORANGE
-                            alt.GradientStop(color='orange', offset=55/80),  # 55 min -> ORANGE
-                            alt.GradientStop(color='red', offset=65/80),     # 65 min -> ROUGE
-                            alt.GradientStop(color='red', offset=1)          # 80 min -> ROUGE
-                        ],
-                        x1=0, x2=0, y1=1, y2=0 
-                    )
-
-                    base = alt.Chart(chart_data).encode(
-                        x=alt.X('created_at:T', title=None, axis=alt.Axis(format="%H:%M", grid=False)),
-                        y=alt.Y('wait_time:Q', title=None, scale=alt.Scale(domain=[0, 80], clamp=True), axis=alt.Axis(grid=True)),
-                        tooltip=[alt.Tooltip('created_at:T', format="%H:%M"), alt.Tooltip('wait_time:Q', title="Attente")]
-                    )
-
-                    area = base.mark_area(
-                        color=gradient,
-                        line={'color': '#1f77b4', 'strokeWidth': 2},
-                        opacity=0.9,
-                        interpolate='monotone'
-                    )
-
-                    final_chart = area.properties(height=200).configure_view(strokeWidth=0).interactive(False)
-
-                    # theme=None est crucial pour garder nos couleurs et éviter le gris Streamlit
-                    st.altair_chart(final_chart, use_container_width=True, theme=None)
-
-                st.divider()
 else:
     st.warning("📭 Aucune donnée disponible aujourd'hui.")
 
