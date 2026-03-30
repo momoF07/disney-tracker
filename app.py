@@ -51,8 +51,8 @@ if st.button('🔄 Actualiser & Forcer un Relevé'):
     with st.spinner("Signal envoyé au robot GitHub..."):
         status = trigger_github_action()
         if status == 204:
-            st.toast("🚀 Robot lancé ! Mise à jour dans 10s...", icon="✅")
-            time.sleep(45) # Laisse le temps au worker.py de finir
+            st.toast("🚀 Robot lancé ! Mise à jour dans 30s...", icon="✅")
+            time.sleep(30) # Laisse le temps au worker.py de finir
             st.rerun()
         else:
             st.error(f"Erreur GitHub (Code {status}). Vérifie ton GITHUB_TOKEN dans les secrets.")
