@@ -63,19 +63,10 @@ if not df.empty:
             c3.metric("Pannes (Aujourd'hui)", nb_pannes)
 
             # --- GRAPHIQUE D'ÉVOLUTION FIXE ---
-            st.subheader("📈 Évolution de l'attente (5 min)")
-
-            if not ride_df.empty:
-                # 1. On prépare les données : on arrondit l'heure à la 5min la plus proche
-                chart_data = ride_df.copy()
-                chart_data['created_at'] = chart_data['created_at'].dt.round('5min')
-                
-                # 2. On crée un index propre pour le graphique
-                chart_plot = chart_data.set_index('created_at')['wait_time']
-                
-                # 3. Affichage du graphique simple (non-interactif par défaut sur mobile)
-                # Pour bloquer le mouvement, on s'assure que l'index est chronologique
-                st.line_chart(chart_plot, use_container_width=True)
+            st.subheader("📈 Évolution de l'attente")
+            # On prépare les données pour le graphique
+            chart_data = ride_df.set_index('created_at')[['wait_time']]
+            st.area_chart(chart_data, color="#29b5e8")
             
             # --- DÉTAIL DES PANNES ---
             if nb_pannes > 0:
