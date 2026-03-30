@@ -19,13 +19,12 @@ aujourd_hui = maintenant.strftime("%Y-%m-%d")
 st.title("🎢 Suivi en Direct - Disneyland Paris")
 st.markdown("""
     <style>
-    /* Bloque les événements tactiles sur les graphiques Altair */
-    .element-container iframe, .vega-embed {
+    /* Bloque toute interaction tactile ou clic sur les graphiques */
+    .vega-embed {
         pointer-events: none !important;
-        user-select: none !important;
     }
     </style>
-    """, unsafe_allow_all_updates=True, unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 st.caption(f"Données du jour : {maintenant.strftime('%d/%m/%Y')}")
 
 # --- 1. RÉCUPÉRATION DES DONNÉES DU JOUR UNIQUEMENT ---
