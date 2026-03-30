@@ -1,4 +1,6 @@
-requests
-supabase
 streamlit
 pandas
+supabase
+requests
+pytz
+streamlit-autorefresh
