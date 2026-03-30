@@ -6,7 +6,7 @@ import pytz
 import requests
 import time
 from streamlit_autorefresh import st_autorefresh 
-from emojis import get_emoji 
+from emojis import get_emoji, get_rides_by_zone
 
 # --- CONFIGURATION DE LA PAGE ---
 st.set_page_config(page_title="Disney Live Control", page_icon="🏰", layout="centered")
@@ -14,10 +14,10 @@ st.set_page_config(page_title="Disney Live Control", page_icon="🏰", layout="c
 # --- CONNEXION SUPABASE ---
 supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 
-# --- ACTUALISATION AUTOMATIQUE (30 secondes) ---
-st_autorefresh(interval=30000, key="datarefresh")
+# --- ACTUALISATION AUTOMATIQUE (60 secondes) ---
+st_autorefresh(interval=60000, key="datarefresh")
 
-# --- FONCTION POUR GITHUB ---
+# --- FONCTION POUR GITHUB ACTION ---
 def trigger_github_action():
     REPO = "momoF07/disney-tracker" 
     WORKFLOW_ID = "check.yml"
@@ -34,7 +34,6 @@ st.title("🏰 My Disney Dashboard")
 
 paris_tz = pytz.timezone('Europe/Paris')
 maintenant = datetime.now(paris_tz)
-aujourd_hui = maintenant.strftime("%Y-%m-%d")
 
 if st.button('🔄 Actualiser & Forcer un Relevé'):
     with st.spinner("Signal envoyé au robot..."):
@@ -60,53 +59,55 @@ if not df.empty:
     df['created_at'] = pd.to_datetime(df['created_at']).dt.tz_convert('Europe/Paris')
     derniere_maj = df['created_at'].max().strftime("%H:%M:%S")
 
-    # --- CALCUL DE TOUTES LES PANNES ---
+    # --- CALCUL GLOBAL DES PANNES ---
     all_pannes = []
-    for ride_name in df['ride_name'].unique():
+    toutes_attractions = sorted(df['ride_name'].unique())
+    
+    for ride_name in toutes_attractions:
         ride_data = df[df['ride_name'] == ride_name].sort_values('created_at')
         en_panne, debut_panne = False, None
         for i, row in ride_data.iterrows():
             if not row['is_open'] and not en_panne:
                 en_panne, debut_panne = True, row['created_at']
             elif row['is_open'] and en_panne:
+                fin_p = row['created_at']
                 all_pannes.append({
-                    "ride": ride_name, "debut": debut_panne, "fin": row['created_at'],
-                    "duree": int((row['created_at'] - debut_panne).total_seconds() / 60),
+                    "ride": ride_name, "debut": debut_panne, "fin": fin_p,
+                    "duree": int((fin_p - debut_panne).total_seconds() / 60),
                     "statut": "TERMINEE"
                 })
                 en_panne = False
         if en_panne:
             all_pannes.append({"ride": ride_name, "debut": debut_panne, "fin": None, "statut": "EN_COURS"})
 
-    # --- LOGIQUE DES RACCOURCIS MAGIQUES ---
-    toutes_attractions = sorted(df['ride_name'].unique())
+    # --- LOGIQUE DES RACCOURCIS ---
+    sc = st.text_input("Raccourcis : `*DLP`, `*DAW`, `*ALL` (Entrée pour valider)", placeholder="Tapez un raccourci...")
     
-    # On initialise la liste des favoris actuels
-    current_favs = st.query_params.get_all("fav")
+    current_selection = st.query_params.get_all("fav")
 
-    # Champ de saisie pour les raccourcis
-    shortcut = st.text_input("Raccourcis : `*DLP`, `*DAW` ou `*ALL` (Entrée pour valider)", placeholder="Tapez un raccourci ici...")
-    
-    if shortcut == "*DLP":
-        current_favs = [r for r in toutes_attractions if "(Disneyland Park)" in r]
-    elif shortcut == "*DAW" or shortcut == "*WDS":
-        current_favs = [r for r in toutes_attractions if "(Walt Disney Studios Park)" in r]
-    elif shortcut == "*ALL":
-        current_favs = toutes_attractions
+    if sc == "*DLP":
+        current_selection = get_rides_by_zone("DLP", toutes_attractions)
+    elif sc == "*DAW":
+        current_selection = get_rides_by_zone("DAW", toutes_attractions)
+    elif sc == "*ALL":
+        current_selection = toutes_attractions
 
-    # --- SECTION : FAVORIS ---
+    # --- MULTISELECT ---
     selected_options = st.multiselect(
-        "Favoris :", 
+        "Sélectionner des attractions :", 
         options=toutes_attractions, 
-        default=current_favs, 
+        default=current_selection, 
         format_func=lambda x: f"{get_emoji(x)} {x}"
     )
     st.query_params["fav"] = selected_options
     
-    st.caption(f"🕒 Donnée : {derniere_maj} | Auto-refresh : 30s")
+    st.caption(f"🕒 Data : {derniere_maj} | Refresh : 60s")
     st.divider()
 
-    if selected_options:
+    # --- AFFICHAGE ---
+    if not selected_options:
+        st.info("👆 Choisis des attractions ou utilise un raccourci (*DLP, *DAW).")
+    else:
         for ride in selected_options:
             ride_df = df[df['ride_name'] == ride].sort_values('created_at', ascending=False)
             if not ride_df.empty:
@@ -121,25 +122,31 @@ if not df.empty:
                     c1.error("🔴 FERMÉ / PANNE")
                     c2.metric("Attente", "- - -")
 
-                # Bloc alerte jaune
+                # RECHERCHE ET AFFICHAGE DES PANNES
                 ride_pannes = [p for p in all_pannes if p['ride'] == ride]
+                
+                # Bloc d'alerte jaune si panne en cours
                 panne_actuelle = next((p for p in ride_pannes if p['statut'] == "EN_COURS"), None)
                 if panne_actuelle:
                     min_encours = int((maintenant - panne_actuelle['debut']).total_seconds() / 60)
                     st.warning(f"⚠️ En panne depuis {min_encours} min (à {panne_actuelle['debut'].strftime('%H:%M')})")
 
-                # Historique local
+                # HISTORIQUE
                 if ride_pannes:
-                    with st.expander("📜 Historique des pannes"):
+                    with st.expander("📜 Historique des pannes du jour"):
                         for p in reversed(ride_pannes):
                             if p['statut'] == "TERMINEE":
                                 st.write(f"• Panne de {p['debut'].strftime('%H:%M')} à {p['fin'].strftime('%H:%M')} ({p['duree']} min)")
                             else:
                                 diff_encours = int((maintenant - p['debut']).total_seconds() / 60)
                                 st.write(f"• ⚠️ **En cours** : depuis {p['debut'].strftime('%H:%M')} ({diff_encours} min)")
+                else:
+                    # MODIFICATION ICI : Message si aucune panne
+                    st.success("✅ Pas de panne détectée pour le moment")
+                
                 st.divider()
 
-    # --- FLUX DES PANNES (EN BAS) ---
+    # --- FLUX GLOBAL (Bas de page) ---
     st.subheader("🚨 Flux des dernières pannes du parc")
     flux_pannes = sorted(all_pannes, key=lambda x: x['debut'], reverse=True)[:5]
     if flux_pannes:
@@ -154,4 +161,10 @@ if not df.empty:
 else:
     st.warning("📭 Aucune donnée disponible.")
 
-st.markdown("<style>[data-testid='stMetricValue'] { font-size: 1.8rem; } .stButton button { width: 100%; border-radius: 10px; }</style>", unsafe_allow_html=True)
+# --- STYLE CSS ---
+st.markdown("""
+    <style>
+    [data-testid='stMetricValue'] { font-size: 1.8rem; } 
+    .stButton button { width: 100%; border-radius: 10px; }
+    </style>
+    """, unsafe_allow_html=True)
