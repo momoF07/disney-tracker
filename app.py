@@ -88,9 +88,24 @@ if not df.empty:
                         x1=1, x2=1, y1=1, y2=0
                     )
                 ).encode(
-                    x=alt.X('created_at:T', title=None, axis=alt.Axis(grid=False, labels=True)),
-                    y=alt.Y('wait_time:Q', title="Min", axis=alt.Axis(grid=True))
-                    # Suppression du paramètre tooltip ici pour éviter l'erreur
+                    x=alt.X(
+                        'created_at:T', 
+                        title=None, 
+                        axis=alt.Axis(
+                            grid=False, 
+                            labels=True,
+                            format='%H:%M',         # Format 24h (ex: 14:10)
+                            tickCount={'interval': 'minute', 'step': 10} # <--- PALIER 10 MIN
+                        )
+                    ),
+                    y=alt.Y(
+                        'wait_time:Q', 
+                        title="Min", 
+                        axis=alt.Axis(
+                            grid=True, 
+                            tickMinStep=5           # <--- PALIER 5 MIN (5, 10, 15...)
+                        )
+                    )
                 ).properties(
                     height=250
                 ).configure_selection(
