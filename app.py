@@ -14,7 +14,7 @@ supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 
 # --- CONFIGURATION DES FILTRES ---
 # Modifie ici : ["*"], ["*DLP"], ["*DAW"] ou ["Nom 1", "Nom 2"]
-MES_FAVORIS = ["*"] 
+MES_FAVORIS = ["*DAW"] 
 
 # --- FONCTION POUR DÉCLENCHER LE ROBOT GITHUB ---
 def trigger_github_action():
