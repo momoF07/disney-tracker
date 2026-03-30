@@ -17,7 +17,7 @@ supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 # --- ACTUALISATION AUTOMATIQUE ---
 st_autorefresh(interval=30000, key="datarefresh")
 
-# --- FONCTION POUR DÉCLENCHER LE ROBOT GITHUB ---
+# --- FONCTION POUR GITHUB ---
 def trigger_github_action():
     REPO = "momoF07/disney-tracker" 
     WORKFLOW_ID = "check.yml"
@@ -44,7 +44,7 @@ if st.button('🔄 Actualiser & Forcer un Relevé'):
             time.sleep(40) 
             st.rerun()
 
-# --- RÉCUPÉRATION DES DONNÉES (On prend 24h pour l'historique) ---
+# --- RÉCUPÉRATION DES DONNÉES (24h) ---
 try:
     hier = maintenant - timedelta(hours=24)
     response = supabase.table("disney_logs") \
@@ -60,7 +60,7 @@ if not df.empty:
     df['created_at'] = pd.to_datetime(df['created_at']).dt.tz_convert('Europe/Paris')
     derniere_maj = df['created_at'].max().strftime("%H:%M:%S")
 
-    # --- SECTION : DERNIÈRES PANNES DU PARC ---
+    # --- FLUX GLOBAL DES PANNES ---
     st.subheader("🚨 Flux des dernières pannes")
     
     all_pannes = []
@@ -75,55 +75,36 @@ if not df.empty:
                 debut_panne = row['created_at']
             elif row['is_open'] and en_panne:
                 fin_panne = row['created_at']
-                duree = int((fin_panne - debut_panne).total_seconds() / 60)
                 all_pannes.append({
-                    "ride": ride_name,
-                    "debut": debut_panne,
-                    "fin": fin_panne,
-                    "duree": duree,
+                    "ride": ride_name, "debut": debut_panne, "fin": fin_panne,
+                    "duree": int((fin_panne - debut_panne).total_seconds() / 60),
                     "statut": "TERMINEE"
                 })
                 en_panne = False
         
         if en_panne:
-            all_pannes.append({
-                "ride": ride_name,
-                "debut": debut_panne,
-                "fin": None,
-                "statut": "EN_COURS"
-            })
+            all_pannes.append({"ride": ride_name, "debut": debut_panne, "fin": None, "statut": "EN_COURS"})
 
-    # Affichage des 5 événements les plus récents dans le parc
-    if all_pannes:
-        # Tri par début de panne décroissant
-        all_pannes = sorted(all_pannes, key=lambda x: x['debut'], reverse=True)[:5]
-        for p in all_pannes:
-            emoji = get_emoji(p['ride'])
-            if p['statut'] == "EN_COURS":
-                st.error(f"🔴 **{p['ride']}** est tombé en panne à {p['debut'].strftime('%H:%M')}")
-            else:
-                st.info(f"✅ **{p['ride']}** a rouvert à {p['fin'].strftime('%H:%M')} (Panne de {p['duree']} min)")
-    else:
-        st.write("✅ Aucune panne enregistrée récemment.")
+    # Affichage rapide du flux (5 derniers événements)
+    flux_pannes = sorted(all_pannes, key=lambda x: x['debut'], reverse=True)[:5]
+    for p in flux_pannes:
+        if p['statut'] == "EN_COURS":
+            st.error(f"🔴 **{p['ride']}** est tombé en panne à {p['debut'].strftime('%H:%M')}")
+        else:
+            st.info(f"✅ **{p['ride']}** a rouvert à {p['fin'].strftime('%H:%M')} ({p['duree']} min)")
     
     st.divider()
 
-    # --- SECTION : FAVORIS ---
+    # --- FAVORIS ---
     toutes_attractions = sorted(df['ride_name'].unique())
-    params = st.query_params.get_all("fav")
-    selected_options = st.multiselect(
-        "Suivre mes favoris :",
-        options=toutes_attractions,
-        default=params,
-        format_func=lambda x: f"{get_emoji(x)} {x}"
-    )
+    selected_options = st.multiselect("Favoris :", options=toutes_attractions, default=st.query_params.get_all("fav"), format_func=lambda x: f"{get_emoji(x)} {x}")
     st.query_params["fav"] = selected_options
 
     if selected_options:
         for ride in selected_options:
-            ride_df = df[df['ride_name'] == ride].sort_values('created_at')
+            ride_df = df[df['ride_name'] == ride].sort_values('created_at', ascending=False)
             if not ride_df.empty:
-                last = ride_df.iloc[-1]
+                last = ride_df.iloc[0]
                 st.subheader(f"{get_emoji(ride)} {ride}")
                 
                 c1, c2 = st.columns(2)
@@ -134,15 +115,25 @@ if not df.empty:
                     c1.error("🔴 FERMÉ / PANNE")
                     c2.metric("Attente", "- - -")
 
-                # Journal local pour l'attraction
+                # RECHERCHE DES PANNES POUR CETTE ATTRACTION
                 ride_pannes = [p for p in all_pannes if p['ride'] == ride]
+                
+                # 1. BLOC JAUNE (Si en panne actuellement)
+                panne_actuelle = next((p for p in ride_pannes if p['statut'] == "EN_COURS"), None)
+                if panne_actuelle:
+                    diff = maintenant - panne_actuelle['debut']
+                    min_encours = int(diff.total_seconds() / 60)
+                    st.warning(f"⚠️ En panne depuis {min_encours} min (à {panne_actuelle['debut'].strftime('%H:%M')})")
+
+                # 2. HISTORIQUE (Expander)
                 if ride_pannes:
                     with st.expander("📜 Historique des pannes"):
-                        for p in ride_pannes:
+                        for p in reversed(ride_pannes):
                             if p['statut'] == "TERMINEE":
                                 st.write(f"• Panne de {p['debut'].strftime('%H:%M')} à {p['fin'].strftime('%H:%M')} ({p['duree']} min)")
                             else:
-                                st.write(f"• ⚠️ En panne depuis {p['debut'].strftime('%H:%M')}")
+                                diff_encours = int((maintenant - p['debut']).total_seconds() / 60)
+                                st.write(f"• ⚠️ **En cours** : depuis {p['debut'].strftime('%H:%M')} (soit {diff_encours} min)")
                 st.divider()
 else:
     st.warning("📭 Aucune donnée disponible.")
