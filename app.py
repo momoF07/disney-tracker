@@ -60,32 +60,47 @@ if not df.empty:
     df['created_at'] = pd.to_datetime(df['created_at']).dt.tz_convert('Europe/Paris')
     derniere_maj = df['created_at'].max().strftime("%H:%M:%S")
 
-    # --- CALCUL DE TOUTES LES PANNES (Logique partagée) ---
+    # --- CALCUL DE TOUTES LES PANNES ---
     all_pannes = []
     for ride_name in df['ride_name'].unique():
         ride_data = df[df['ride_name'] == ride_name].sort_values('created_at')
-        en_panne = False
-        debut_panne = None
-        
+        en_panne, debut_panne = False, None
         for i, row in ride_data.iterrows():
             if not row['is_open'] and not en_panne:
-                en_panne = True
-                debut_panne = row['created_at']
+                en_panne, debut_panne = True, row['created_at']
             elif row['is_open'] and en_panne:
-                fin_panne = row['created_at']
                 all_pannes.append({
-                    "ride": ride_name, "debut": debut_panne, "fin": fin_panne,
-                    "duree": int((fin_panne - debut_panne).total_seconds() / 60),
+                    "ride": ride_name, "debut": debut_panne, "fin": row['created_at'],
+                    "duree": int((row['created_at'] - debut_panne).total_seconds() / 60),
                     "statut": "TERMINEE"
                 })
                 en_panne = False
-        
         if en_panne:
             all_pannes.append({"ride": ride_name, "debut": debut_panne, "fin": None, "statut": "EN_COURS"})
 
-    # --- SECTION : FAVORIS ---
+    # --- LOGIQUE DES RACCOURCIS MAGIQUES ---
     toutes_attractions = sorted(df['ride_name'].unique())
-    selected_options = st.multiselect("Favoris :", options=toutes_attractions, default=st.query_params.get_all("fav"), format_func=lambda x: f"{get_emoji(x)} {x}")
+    
+    # On initialise la liste des favoris actuels
+    current_favs = st.query_params.get_all("fav")
+
+    # Champ de saisie pour les raccourcis
+    shortcut = st.text_input("Raccourcis : `*DLP`, `*DAW` ou `*ALL` (Entrée pour valider)", placeholder="Tapez un raccourci ici...")
+    
+    if shortcut == "*DLP":
+        current_favs = [r for r in toutes_attractions if "(Disneyland Park)" in r]
+    elif shortcut == "*DAW" or shortcut == "*WDS":
+        current_favs = [r for r in toutes_attractions if "(Walt Disney Studios Park)" in r]
+    elif shortcut == "*ALL":
+        current_favs = toutes_attractions
+
+    # --- SECTION : FAVORIS ---
+    selected_options = st.multiselect(
+        "Favoris :", 
+        options=toutes_attractions, 
+        default=current_favs, 
+        format_func=lambda x: f"{get_emoji(x)} {x}"
+    )
     st.query_params["fav"] = selected_options
     
     st.caption(f"🕒 Donnée : {derniere_maj} | Auto-refresh : 30s")
@@ -106,17 +121,14 @@ if not df.empty:
                     c1.error("🔴 FERMÉ / PANNE")
                     c2.metric("Attente", "- - -")
 
-                # RECHERCHE DES PANNES POUR CETTE ATTRACTION
+                # Bloc alerte jaune
                 ride_pannes = [p for p in all_pannes if p['ride'] == ride]
-                
-                # 1. BLOC JAUNE ALERTE (Si en panne actuellement)
                 panne_actuelle = next((p for p in ride_pannes if p['statut'] == "EN_COURS"), None)
                 if panne_actuelle:
-                    diff = maintenant - panne_actuelle['debut']
-                    min_encours = int(diff.total_seconds() / 60)
+                    min_encours = int((maintenant - panne_actuelle['debut']).total_seconds() / 60)
                     st.warning(f"⚠️ En panne depuis {min_encours} min (à {panne_actuelle['debut'].strftime('%H:%M')})")
 
-                # 2. HISTORIQUE LOCAL (Expander)
+                # Historique local
                 if ride_pannes:
                     with st.expander("📜 Historique des pannes"):
                         for p in reversed(ride_pannes):
@@ -124,13 +136,11 @@ if not df.empty:
                                 st.write(f"• Panne de {p['debut'].strftime('%H:%M')} à {p['fin'].strftime('%H:%M')} ({p['duree']} min)")
                             else:
                                 diff_encours = int((maintenant - p['debut']).total_seconds() / 60)
-                                st.write(f"• ⚠️ **En cours** : depuis {p['debut'].strftime('%H:%M')} (soit {diff_encours} min)")
+                                st.write(f"• ⚠️ **En cours** : depuis {p['debut'].strftime('%H:%M')} ({diff_encours} min)")
                 st.divider()
 
-    # --- SECTION : FLUX GLOBAL DES PANNES (DÉPLACÉ EN BAS) ---
+    # --- FLUX DES PANNES (EN BAS) ---
     st.subheader("🚨 Flux des dernières pannes du parc")
-    
-    # Affichage rapide du flux (5 derniers événements)
     flux_pannes = sorted(all_pannes, key=lambda x: x['debut'], reverse=True)[:5]
     if flux_pannes:
         for p in flux_pannes:
@@ -144,9 +154,4 @@ if not df.empty:
 else:
     st.warning("📭 Aucune donnée disponible.")
 
-st.markdown("""
-    <style>
-    [data-testid='stMetricValue'] { font-size: 1.8rem; } 
-    .stButton button { width: 100%; border-radius: 10px; }
-    </style>
-    """, unsafe_allow_html=True)
+st.markdown("<style>[data-testid='stMetricValue'] { font-size: 1.8rem; } .stButton button { width: 100%; border-radius: 10px; }</style>", unsafe_allow_html=True)
