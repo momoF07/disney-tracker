@@ -1,20 +1,21 @@
 import streamlit as st
 import pandas as pd
 from supabase import create_client
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 import requests
 import time
 from streamlit_autorefresh import st_autorefresh 
 from emojis import get_emoji 
+import altair as alt # <-- Nouvel import indispensable
 
 # --- CONFIGURATION DE LA PAGE ---
-st.set_page_config(page_title="Disney Live Control", page_icon="🏰", layout="centered")
+st.set_page_config(page_title="Disney Live Dashboard", page_icon="🏰", layout="centered")
 
 # --- CONNEXION SUPABASE ---
 supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 
-# --- ACTUALISATION AUTOMATIQUE (Toutes les minutes) ---
+# --- ACTUALISATION AUTOMATIQUE (60 secondes) ---
 st_autorefresh(interval=60000, key="datarefresh")
 
 # --- FONCTION POUR DÉCLENCHER LE ROBOT GITHUB ---
@@ -29,61 +30,56 @@ def trigger_github_action():
         return res.status_code
     except: return 500
 
-# --- INTERFACE UTILISATEUR ---
-st.title("🏰 Suivi Disney")
+# --- INTERFACE ---
+st.title("🏰 My Disney Dashboard")
 
-# Heure locale
 paris_tz = pytz.timezone('Europe/Paris')
 maintenant = datetime.now(paris_tz)
 aujourd_hui = maintenant.strftime("%Y-%m-%d")
 
-# Bouton de mise à jour forcée
-if st.button('🔄 Actualiser manuellement'):
-    with st.spinner("Signal envoyé au robot... Patientez 40s."):
+if st.button('🔄 Forcer un relevé maintenant'):
+    with st.spinner("Le robot analyse les parcs..."):
         status = trigger_github_action()
         if status == 204:
-            st.toast("🚀 Robot lancé ! Analyse en cours...", icon="✅")
+            st.toast("🚀 Robot lancé !", icon="✅")
             time.sleep(40) 
             st.rerun()
-        else:
-            st.error(f"Erreur GitHub (Code {status}).")
 
-# --- RÉCUPÉRATION DES DONNÉES DU JOUR ---
+# Récupération des données Disney (Garde les 24 dernières heures pour le graphique)
 try:
+    hier_a_cette_heure = maintenant - timedelta(hours=24)
     response = supabase.table("disney_logs") \
         .select("*") \
-        .gte("created_at", f"{aujourd_hui}T00:00:00") \
+        .gte("created_at", hier_a_cette_heure.isoformat()) \
         .order("created_at", desc=True) \
         .execute()
     df = pd.DataFrame(response.data)
 except:
     df = pd.DataFrame()
 
-# --- LOGIQUE D'AFFICHAGE ---
 if not df.empty:
     df['created_at'] = pd.to_datetime(df['created_at']).dt.tz_convert('Europe/Paris')
     derniere_maj = df['created_at'].max().strftime("%H:%M:%S")
     
-    # --- GESTION DES FAVORIS (QUERY PARAMS) ---
     toutes_attractions = sorted(df['ride_name'].unique())
-    # Récupère les favoris dans l'URL pour les garder au refresh
-    params = st.query_params.get_all("fav")
     
+    # Favoris (Stockés dans l'URL)
+    st.write("**Favoris (Stockés dans l'URL)**")
+    params = st.query_params.get_all("fav")
     selected_options = st.multiselect(
-        "Ajouter des attractions à mes favoris :",
+        "Sélectionne tes attractions préférées :",
         options=toutes_attractions,
         default=params,
         format_func=lambda x: f"{get_emoji(x)} {x}",
-        placeholder="Rechercher une attraction..."
+        placeholder="Rechercher une attraction...",
+        key="favoris"
     )
-    
-    # Sauvegarde immédiate dans l'URL
     st.query_params["fav"] = selected_options
 
     st.caption(f"⏱️ Auto-refresh : {maintenant.strftime('%H:%M:%S')} | 🕒 Data : {derniere_maj}")
     st.divider()
 
-    # --- AFFICHAGE DES FAVORIS ---
+    # --- BOUCLE D'AFFICHAGE DES FAVORIS ---
     if not selected_options:
         st.info("👆 Sélectionne tes attractions pour les suivre en direct.")
     else:
@@ -91,46 +87,95 @@ if not df.empty:
             ride_df = df[df['ride_name'] == ride].sort_values('created_at', ascending=False)
             if not ride_df.empty:
                 last = ride_df.iloc[0]
-                emoji = get_emoji(ride)
                 
-                st.subheader(f"{emoji} {ride}")
+                st.subheader(f"{get_emoji(ride)} {ride}")
                 
                 c1, c2 = st.columns(2)
                 wait = last['wait_time']
                 is_open = last['is_open']
                 
-                # Statut et Temps
                 if is_open:
                     c1.success("🟢 OUVERT")
+                    
+                    # Choix de la couleur de l'émoji pour le titre du graphique
+                    color_emoji = "🟢 Vert" if wait <= 25 else "🟠 Orange" if wait <= 55 else "🔴 Rouge"
                     c2.metric("Attente", f"{int(wait)} min")
                 else:
                     c1.error("🔴 FERMÉ / PANNE")
                     c2.metric("Attente", "- - -")
                 
-                # Calcul de la durée de panne
+                # Gestion détaillée des pannes
                 if not is_open:
                     ride_chrono = ride_df.sort_values('created_at')
                     last_open = ride_chrono[ride_chrono['is_open'] == True].last_valid_index()
                     if last_open is not None:
-                        # On prend le premier point de données après la dernière ouverture connue
-                        try:
-                            start_panne = ride_chrono.loc[last_open + 1:].iloc[0]['created_at']
-                            diff = maintenant - start_panne
-                            h, r = divmod(diff.total_seconds(), 3600)
-                            m, _ = divmod(r, 60)
-                            temps_txt = f"{int(m)}min" if h == 0 else f"{int(h)}h{int(m)}min"
-                            st.warning(f"⚠️ En panne depuis {temps_txt} (à {start_panne.strftime('%H:%M')})")
-                        except:
-                            pass
+                        start_panne = ride_chrono.loc[last_open + 1:].iloc[0]['created_at']
+                        diff = maintenant - start_panne
+                        h, r = divmod(diff.total_seconds(), 3600)
+                        m, _ = divmod(r, 60)
+                        txt = f"{int(m)}min" if h == 0 else f"{int(h)}h{int(m)}min"
+                        st.warning(f"⚠️ En panne depuis {txt} (à {start_panne.strftime('%H:%M')})")
                 
+                # --- GRAPHIQUE EN DÉGRADÉ (DÉLIRANT) ---
+                # Ne générer le graphique que s'il y a assez de données
+                if len(ride_df) > 1 and is_open:
+                    st.caption(f"Evolution de l'attente ({int(wait)} min - {color_emoji})")
+                    
+                    # On ne garde que les 4 dernières heures pour plus de lisibilité
+                    four_hours_ago = maintenant - timedelta(hours=4)
+                    chart_data = ride_df[ride_df['created_at'] >= four_hours_ago].copy()
+                    
+                    # Nettoyage des données pour le dégradé
+                    chart_data['wait_time'] = chart_data['wait_time'].fillna(0)
+
+                    # Création du dégradé linéaire basé sur le temps d'attente
+                    gradient = alt.Gradient(
+                        gradient='linear',
+                        stops=[
+                            alt.GradientStop(color='green', offset=0),       # 0 min
+                            alt.GradientStop(color='green', offset=25/80),   # 25 min (Vert)
+                            alt.GradientStop(color='orange', offset=30/80),  # 30 min (Orange)
+                            alt.GradientStop(color='orange', offset=55/80),  # 55 min
+                            alt.GradientStop(color='red', offset=60/80),     # 60 min (Rouge)
+                            alt.GradientStop(color='red', offset=1)          # 80 min (Maximum)
+                        ],
+                        x1=1, x2=1, y1=1, y2=0 # Dégradé vertical (y-axis)
+                    )
+
+                    # Construction du graphique en aires
+                    # .mark_area() crée la forme remplie
+                    base = alt.Chart(chart_data).encode(
+                        x=alt.X('created_at:T', title="Heure", axis=alt.Axis(format="%H:%M")),
+                        y=alt.Y('wait_time:Q', title="Temps d'attente (Min)", scale=alt.Scale(domain=[0, 80])),
+                        tooltip=[alt.Tooltip('created_at:T', format="%H:%M"), alt.Tooltip('wait_time:Q', title="Min")]
+                    )
+
+                    # .mark_line() pour une ligne de contour propre
+                    line = base.mark_line(color='#1f77b4', size=2)
+                    
+                    # Appliquer le dégradé au remplissage
+                    area = base.mark_area(
+                        color=gradient,
+                        line=False # On utilise la ligne séparée pour le contour
+                    )
+
+                    # Combiner la ligne et l'aire remplie
+                    final_chart = (area + line).properties(
+                        height=250 # Hauteur fixe pour mobile
+                    ).configure_view(
+                        strokeOpacity=0 # Supprimer le cadre du graphique
+                    ).interactive(False) # DÉZOOOM/BOUGER SOURIS DÉSACTIVÉ
+
+                    st.altair_chart(final_chart, use_container_width=True)
+
                 st.divider()
 else:
-    st.warning("📭 Aucune donnée pour aujourd'hui.")
+    st.warning("📭 Aucune donnée disponible aujourd'hui.")
 
-# --- STYLE CSS ---
+# CSS (Métrics plus gros, Bouton 100% largeur)
 st.markdown("""
     <style>
-    [data-testid="stMetricValue"] { font-size: 1.8rem; }
+    [data-testid='stMetricValue'] { font-size: 1.8rem; } 
     .stButton button { width: 100%; border-radius: 10px; }
     </style>
     """, unsafe_allow_html=True)
