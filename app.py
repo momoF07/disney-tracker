@@ -25,7 +25,7 @@ def trigger_github_action():
     except: return 500
 
 # --- INTERFACE UTILISATEUR ---
-st.title("🎢 Mes Favoris Disney")
+st.title("🎢 Temps d'attente Disney")
 
 # Bouton de mise à jour forcée
 if st.button('🔄 Actualiser & Forcer un Relevé'):
