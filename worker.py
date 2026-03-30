@@ -9,7 +9,15 @@ supabase = create_client(url, key)
 
 # Les 2 parcs (DLP + DAW)
 PARKS = ["dae968d5-630d-4719-8b06-3d107e944401", "ca888437-ebb4-4d50-aed2-d227f7096968"]
-TARGETS = ["Big Thunder Mountain", "Phantom Manor", "Spider-Man W.E.B. Adventure"]
+# Ajoute simplement les noms exacts ici (ceux que tu as vus dans le scanner)
+TARGETS = [
+    "Big Thunder Mountain", 
+    "Phantom Manor", 
+    "Spider-Man W.E.B. Adventure",
+    "Star Wars Hyperspace Mountain",
+    "Ratatouille: L'Aventure Totalement Toquée de Rémy",
+    "Avengers Assemble: Flight Force"
+]
 
 for p_id in PARKS:
     res = requests.get(f"https://api.themeparks.wiki/v1/entity/{p_id}/live").json()
