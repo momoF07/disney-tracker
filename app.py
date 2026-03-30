@@ -116,7 +116,7 @@ if not df.empty:
                         txt = f"{int(m)}min" if h == 0 else f"{int(h)}h{int(m)}min"
                         st.warning(f"⚠️ En panne depuis {txt} (à {start_panne.strftime('%H:%M')})")
                 
-                # --- GRAPHIQUE EN DÉGRADÉ (DÉLIRANT) ---
+                # --- GRAPHIQUE EN DÉGRADÉ (DÉLIRANT ET CORRIGÉ) ---
                 # Ne générer le graphique que s'il y a assez de données
                 if len(ride_df) > 1 and is_open:
                     st.caption(f"Evolution de l'attente ({int(wait)} min - {color_emoji})")
@@ -128,42 +128,50 @@ if not df.empty:
                     # Nettoyage des données pour le dégradé
                     chart_data['wait_time'] = chart_data['wait_time'].fillna(0)
 
-                    # Création du dégradé linéaire basé sur le temps d'attente
+                    # 1. Définir le dégradé vertical basé sur les seuils réels
+                    # L'échelle Y est fixée de 0 à 80 pour la cohérence.
                     gradient = alt.Gradient(
                         gradient='linear',
                         stops=[
+                            # Zone Verte Fluide (0-25 min)
                             alt.GradientStop(color='green', offset=0),       # 0 min
-                            alt.GradientStop(color='green', offset=25/80),   # 25 min (Vert)
-                            alt.GradientStop(color='orange', offset=30/80),  # 30 min (Orange)
-                            alt.GradientStop(color='orange', offset=55/80),  # 55 min
-                            alt.GradientStop(color='red', offset=60/80),     # 60 min (Rouge)
-                            alt.GradientStop(color='red', offset=1)          # 80 min (Maximum)
+                            alt.GradientStop(color='green', offset=25/80),   # 25 min (Vert pur)
+                            
+                            # Zone Orange Modérée (30-55 min)
+                            alt.GradientStop(color='orange', offset=30/80),  # 30 min (Début orange pur)
+                            alt.GradientStop(color='orange', offset=55/80),  # 55 min (Fin orange pur)
+                            
+                            # Zone Rouge Saturée (60+ min)
+                            alt.GradientStop(color='red', offset=60/80),     # 60 min (Début rouge pur)
+                            alt.GradientStop(color='red', offset=1)          # 80 min (Rouge pur, maximum)
                         ],
                         x1=1, x2=1, y1=1, y2=0 # Dégradé vertical (y-axis)
                     )
 
-                    # Construction du graphique en aires
-                    # .mark_area() crée la forme remplie
+                    # 2. Construction de la base du graphique
                     base = alt.Chart(chart_data).encode(
                         x=alt.X('created_at:T', title="Heure", axis=alt.Axis(format="%H:%M")),
                         y=alt.Y('wait_time:Q', title="Temps d'attente (Min)", scale=alt.Scale(domain=[0, 80])),
                         tooltip=[alt.Tooltip('created_at:T', format="%H:%M"), alt.Tooltip('wait_time:Q', title="Min")]
                     )
 
-                    # .mark_line() pour une ligne de contour propre
-                    line = base.mark_line(color='#1f77b4', size=2)
-                    
-                    # Appliquer le dégradé au remplissage
+                    # 3. Création de l'aire remplie avec le dégradé correct
+                    # J'ai supprimé les aires empilées plates.
                     area = base.mark_area(
                         color=gradient,
                         line=False # On utilise la ligne séparée pour le contour
                     )
 
-                    # Combiner la ligne et l'aire remplie
+                    # 4. Création de la ligne de données unie (conserver le style bleu)
+                    line = base.mark_line(color='#1f77b4', size=2)
+
+                    # 5. Combiner l'aire dégradée et la ligne de contour
                     final_chart = (area + line).properties(
                         height=250 # Hauteur fixe pour mobile
                     ).configure_view(
                         strokeOpacity=0 # Supprimer le cadre du graphique
+                    ).configure_legend(
+                        disable=True # Supprimer toute légende générée automatiquement
                     ).interactive(False) # DÉZOOOM/BOUGER SOURIS DÉSACTIVÉ
 
                     st.altair_chart(final_chart, use_container_width=True)
