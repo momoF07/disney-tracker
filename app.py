@@ -43,7 +43,7 @@ if st.button('🔄 Actualiser & Forcer un Relevé'):
             time.sleep(40) 
             st.rerun()
 
-# --- RÉCUPÉRATION DES DONNÉES (24h de recul) ---
+# --- RÉCUPÉRATION DES DONNÉES (24h) ---
 try:
     hier = maintenant - timedelta(hours=24)
     response = supabase.table("disney_logs") \
@@ -80,22 +80,20 @@ if not df.empty:
         if en_panne:
             all_pannes.append({"ride": ride_name, "debut": debut_panne, "fin": None, "statut": "EN_COURS"})
 
-    # --- LOGIQUE DES RACCOURCIS MAGIQUES ---
+    # --- LOGIQUE DES RACCOURCIS ---
     st.write("---")
-    sc = st.text_input("Tape un raccourci : `*DLP`, `*DAW`, `*FANTASY`, `*AVENGERS`, `*FRONTIER`...", placeholder="Entrée pour valider")
+    sc = st.text_input("Raccourci : `*DLP`, `*DAW`, `*FANTASY`, `*AVENGERS`...", placeholder="Entrée pour valider")
     
-    # Récupération de la sélection actuelle dans l'URL
     current_selection = st.query_params.get_all("fav")
 
-    # Si un raccourci est utilisé, on met à jour la sélection
     if sc.startswith("*"):
         shortcut_selection = get_rides_by_zone(sc, toutes_attractions)
         if shortcut_selection:
             current_selection = shortcut_selection
 
-    # --- MULTISELECT FAVORIS ---
+    # --- MULTISELECT ---
     selected_options = st.multiselect(
-        "Sélection actuelle :", 
+        "Attractions suivies :", 
         options=toutes_attractions, 
         default=current_selection, 
         format_func=lambda x: f"{get_emoji(x)} {x}"
@@ -105,9 +103,9 @@ if not df.empty:
     st.caption(f"🕒 Donnée : {derniere_maj} | Auto-refresh : 60s")
     st.divider()
 
-    # --- AFFICHAGE DES ATTRACTIONS ---
+    # --- AFFICHAGE ---
     if not selected_options:
-        st.info("👆 Utilise les raccourcis ou la recherche pour afficher des attractions.")
+        st.info("👆 Sélectionne des attractions ou utilise un raccourci.")
     else:
         for ride in selected_options:
             ride_df = df[df['ride_name'] == ride].sort_values('created_at', ascending=False)
@@ -116,24 +114,23 @@ if not df.empty:
                 st.subheader(f"{get_emoji(ride)} {ride}")
                 
                 c1, c2 = st.columns(2)
-                wait = last['wait_time']
                 if last['is_open']:
                     c1.success("🟢 OUVERT")
-                    c2.metric("Attente", f"{int(wait)} min")
+                    c2.metric("Attente", f"{int(last['wait_time'])} min")
                 else:
                     c1.error("🔴 FERMÉ / PANNE")
                     c2.metric("Attente", "- - -")
 
-                # RECHERCHE DES PANNES
+                # RECHERCHE ET AFFICHAGE DES PANNES
                 ride_pannes = [p for p in all_pannes if p['ride'] == ride]
                 
-                # Bloc Alerte Jaune (Panne en cours)
+                # Bloc Alerte (si en panne maintenant)
                 panne_actuelle = next((p for p in ride_pannes if p['statut'] == "EN_COURS"), None)
                 if panne_actuelle:
                     min_encours = int((maintenant - panne_actuelle['debut']).total_seconds() / 60)
                     st.warning(f"⚠️ En panne depuis {min_encours} min (à {panne_actuelle['debut'].strftime('%H:%M')})")
 
-                # Historique des pannes
+                # HISTORIQUE SYSTÉMATIQUE
                 if ride_pannes:
                     with st.expander("📜 Historique des pannes du jour"):
                         for p in reversed(ride_pannes):
@@ -143,11 +140,12 @@ if not df.empty:
                                 diff_encours = int((maintenant - p['debut']).total_seconds() / 60)
                                 st.write(f"• ⚠️ **En cours** : depuis {p['debut'].strftime('%H:%M')} ({diff_encours} min)")
                 else:
-                    st.success("✅ Pas de panne détectée pour le moment")
+                    # Message si aucune panne n'a eu lieu
+                    st.write("✅ Pas de panne détectée pour le moment")
                 
                 st.divider()
 
-    # --- FLUX GLOBAL (Tout en bas) ---
+    # --- FLUX GLOBAL (Bas de page) ---
     st.subheader("🚨 Flux des dernières pannes du parc")
     flux_pannes = sorted(all_pannes, key=lambda x: x['debut'], reverse=True)[:5]
     if flux_pannes:
@@ -157,12 +155,11 @@ if not df.empty:
             else:
                 st.info(f"✅ **{p['ride']}** a rouvert à {p['fin'].strftime('%H:%M')} ({p['duree']} min)")
     else:
-        st.write("✅ Aucune panne enregistrée.")
+        st.write("✅ Aucune panne enregistrée aujourd'hui.")
 
 else:
     st.warning("📭 Aucune donnée disponible.")
 
-# --- STYLE CSS ---
 st.markdown("""
     <style>
     [data-testid='stMetricValue'] { font-size: 1.8rem; } 
