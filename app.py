@@ -111,6 +111,8 @@ if not df.empty:
                             txt = f"{int(m)}min" if h == 0 else f"{int(h)}h{int(m)}min"
                             st.warning(f"⚠️ En panne depuis {txt} (à {start_panne.strftime('%H:%M')})")
                         except: pass
+
+                st.divider()
 else:
     st.warning("📭 Aucune donnée disponible aujourd'hui.")
 
