@@ -16,9 +16,10 @@ if not df.empty:
     # Conversion du temps en heure française
     df['created_at'] = pd.to_datetime(df['created_at']).dt.tz_convert('Europe/Paris')
     
-    for ride in ["Big Thunder Mountain", "Phantom Manor", "Spider-Man W.E.B. Adventure"]:
+    liste_attractions = df['ride_name'].unique()
+    
+    for ride in liste_attractions:
         st.header(f"📍 {ride}")
-        ride_df = df[df['ride_name'] == ride].sort_values('created_at')
         
         if not ride_df.empty:
             # --- CALCUL DES PANNES ---
