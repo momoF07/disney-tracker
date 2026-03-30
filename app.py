@@ -17,10 +17,9 @@ df = pd.DataFrame(response.data)
 if not df.empty:
     # Conversion du temps en heure française
     df['created_at'] = pd.to_datetime(df['created_at']).dt.tz_convert('Europe/Paris')
-    
-    # --- LISTE AUTOMATIQUE ---
-    # On prend toutes les attractions présentes dans la base
-    liste_attractions = sorted(df['ride_name'].unique())
+
+    TARGETS_VISIBLES = ["Big Thunder Mountain", "Phantom Manor"]
+    liste_attractions = [r for r in df['ride_name'].unique() if r in TARGETS_VISIBLES]
     
     for ride in liste_attractions:
         st.header(f"📍 {ride}")
