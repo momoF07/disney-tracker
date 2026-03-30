@@ -35,8 +35,8 @@ if st.button('🔄 Actualiser & Forcer un Relevé'):
     with st.spinner("Demande envoyée au robot GitHub..."):
         status = trigger_github_action()
         if status == 204:
-            st.toast("🚀 Robot lancé ! Attente des données...", icon="✅")
-            time.sleep(10) # On attend 10s que le robot finisse son travail
+            st.toast("🚀 Robot lancé ! Attente des données..., le site s'actualisera dès les données reçues", icon="✅")
+            time.sleep(40) # On attend 40s que le robot finisse son travail
             st.rerun()
         else:
             st.error(f"Erreur lors du lancement du robot (Code {status})")
