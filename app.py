@@ -82,7 +82,7 @@ if not df.empty:
 
     # --- LOGIQUE DES RACCOURCIS ---
     st.write("---")
-    sc = st.text_input("Raccourci : `*DLP`, `*DAW`, `*FANTASY`, `*AVENGERS`...", placeholder="Entrée pour valider")
+    sc = st.text_input("Raccourci : `*DLP`, `*DAW`, `*FANTASY`...", placeholder="Entrée pour valider")
     
     current_selection = st.query_params.get_all("fav")
 
@@ -121,7 +121,7 @@ if not df.empty:
                     c1.error("🔴 FERMÉ / PANNE")
                     c2.metric("Attente", "- - -")
 
-                # RECHERCHE ET AFFICHAGE DES PANNES
+                # RECHERCHE DES PANNES
                 ride_pannes = [p for p in all_pannes if p['ride'] == ride]
                 
                 # Bloc Alerte (si en panne maintenant)
@@ -130,18 +130,18 @@ if not df.empty:
                     min_encours = int((maintenant - panne_actuelle['debut']).total_seconds() / 60)
                     st.warning(f"⚠️ En panne depuis {min_encours} min (à {panne_actuelle['debut'].strftime('%H:%M')})")
 
-                # HISTORIQUE SYSTÉMATIQUE
-                if ride_pannes:
-                    with st.expander("📜 Historique des pannes du jour"):
+                # MENU DÉROULANT SYSTÉMATIQUE
+                with st.expander("📜 Historique des pannes du jour"):
+                    if ride_pannes:
                         for p in reversed(ride_pannes):
                             if p['statut'] == "TERMINEE":
                                 st.write(f"• Panne de {p['debut'].strftime('%H:%M')} à {p['fin'].strftime('%H:%M')} ({p['duree']} min)")
                             else:
                                 diff_encours = int((maintenant - p['debut']).total_seconds() / 60)
                                 st.write(f"• ⚠️ **En cours** : depuis {p['debut'].strftime('%H:%M')} ({diff_encours} min)")
-                else:
-                    # Message si aucune panne n'a eu lieu
-                    st.write("✅ Pas de panne détectée pour le moment")
+                    else:
+                        # Message si aucune panne n'a eu lieu
+                        st.write("✅ Pas de panne détectée pour le moment")
                 
                 st.divider()
 
