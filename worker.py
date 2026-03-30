@@ -16,11 +16,16 @@ TARGETS = [
 ]
 
 for p_id in PARKS:
-    res = requests.get(f"https://api.themeparks.wiki/v1/entity/{p_id}/live").json()
-    for ride in res['liveData']:
-        if ride['name'] in TARGETS:
-            supabase.table("disney_logs").insert({
-                "ride_name": ride['name'],
-                "wait_time": ride.get('queue', {}).get('STANDBY', {}).get('waitTime', 0),
-                "is_open": ride['status'] == "OPERATING"
-            }).execute()
+    try:
+        response = requests.get(f"https://api.themeparks.wiki/v1/entity/{p_id}/live", timeout=10)
+        data = response.json()
+        for ride in data.get('liveData', []):
+            # On enregistre TOUT ce qui est une attraction (pas les restos/boutiques)
+            if ride.get('entityType') == "ATTRACTION":
+                supabase.table("disney_logs").insert({
+                    "ride_name": ride['name'],
+                    "wait_time": ride.get('queue', {}).get('STANDBY', {}).get('waitTime', 0),
+                    "is_open": ride['status'] == "OPERATING"
+                }).execute()
+    except Exception as e:
+        print(f"Erreur : {e}")
