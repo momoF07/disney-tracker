@@ -1,29 +1,31 @@
+import os
 import pandas as pd
 from supabase import create_client
-import streamlit as st
 
-# Connexion (Utilise tes propres credentials)
-url = st.secrets["SUPABASE_URL"]
-key = st.secrets["SUPABASE_KEY"]
+# Récupération des secrets depuis l'environnement GitHub
+url = os.environ.get("SUPABASE_URL")
+key = os.environ.get("SUPABASE_KEY")
+
+if not url or not key:
+    print("❌ Erreur : Les secrets SUPABASE_URL ou SUPABASE_KEY sont manquants.")
+    exit(1)
+
 supabase = create_client(url, key)
 
 def get_all_ride_names():
-    # On récupère TOUS les noms de la table sans limite de date
+    print("⏳ Connexion à Supabase...")
     response = supabase.table("disney_logs").select("ride_name").execute()
     
     if response.data:
         df = pd.DataFrame(response.data)
-        # On extrait les noms uniques et on les trie
         noms_uniques = sorted(df['ride_name'].unique())
         
-        print(f"--- {len(noms_uniques)} ATTRACTIONS TROUVÉES ---")
+        print(f"\n--- {len(noms_uniques)} ATTRACTIONS TROUVÉES ---\n")
+        print("Copie-colle cette liste pour ton fichier emojis.py :\n")
         for name in noms_uniques:
-            print(f'"{name}": "🎡",') # Format prêt pour emojis.py
-        
-        return noms_uniques
+            print(f'    "{name}": "🎡",')
     else:
-        print("Aucune donnée trouvée dans la table.")
-        return []
+        print("📭 Aucune donnée trouvée.")
 
 if __name__ == "__main__":
     get_all_ride_names()
