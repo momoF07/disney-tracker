@@ -45,7 +45,7 @@ if st.button('🔄 Forcer un relevé maintenant'):
             time.sleep(40) 
             st.rerun()
 
-# Récupération des données (24h pour le recul du graphique)
+# Récupération des données (24h de recul)
 try:
     hier = maintenant - timedelta(hours=24)
     response = supabase.table("disney_logs") \
@@ -111,27 +111,27 @@ if not df.empty:
                             st.warning(f"⚠️ En panne depuis {txt} (à {start_panne.strftime('%H:%M')})")
                         except: pass
 
-                # --- GRAPHIQUE EN DÉGRADÉ ABSOLU (FIXÉ) ---
+                # --- GRAPHIQUE ARC-EN-CIEL FIXE ---
                 if len(ride_df) > 1:
                     four_hours_ago = maintenant - timedelta(hours=4)
                     chart_data = ride_df[ride_df['created_at'] >= four_hours_ago].copy()
                     chart_data['wait_time'] = chart_data['wait_time'].fillna(0)
 
-                    # On définit la hauteur fixe pour verrouiller les couleurs
-                    CHART_HEIGHT = 200 
+                    # Hauteur fixe pour le mapping du dégradé
+                    CHART_HEIGHT = 200
 
-                    # Configuration du dégradé ABSOLU (Verrouillé sur la grille)
-                    gradient = alt.Gradient(
+                    # Dégradé lié à la hauteur du graphique (y1=200, y2=0)
+                    gradient_strict = alt.Gradient(
                         gradient='linear',
                         stops=[
-                            alt.GradientStop(color='green', offset=1),          # Bas (0 min)
-                            alt.GradientStop(color='green', offset=1 - (25/80)), # 25 min -> VERT
-                            alt.GradientStop(color='orange', offset=1 - (35/80)),# 35 min -> ORANGE
-                            alt.GradientStop(color='orange', offset=1 - (55/80)),# 55 min -> ORANGE
-                            alt.GradientStop(color='red', offset=1 - (65/80)),   # 65 min -> ROUGE
-                            alt.GradientStop(color='red', offset=0)             # Haut (80 min) -> ROUGE
+                            alt.GradientStop(color='green', offset=1),           # 0 min
+                            alt.GradientStop(color='green', offset=1-(25/80)),   # 25 min
+                            alt.GradientStop(color='orange', offset=1-(35/80)),  # 35 min
+                            alt.GradientStop(color='orange', offset=1-(55/80)),  # 55 min
+                            alt.GradientStop(color='red', offset=1-(60/80)),     # 60 min
+                            alt.GradientStop(color='red', offset=0)              # 80 min
                         ],
-                        x1=0, x2=0, y1=CHART_HEIGHT, y2=0 # Force le mapping vertical fixe
+                        x1=0, x2=0, y1=CHART_HEIGHT, y2=0 
                     )
 
                     base = alt.Chart(chart_data).encode(
@@ -141,15 +141,21 @@ if not df.empty:
                     )
 
                     area = base.mark_area(
-                        color=gradient,
-                        line={'color': '#1f77b4', 'strokeWidth': 2},
+                        color=gradient_strict,
                         opacity=0.9,
-                        interpolate='monotone' # Courbe lisse
+                        interpolate='monotone'
                     )
 
-                    final_chart = area.properties(height=CHART_HEIGHT).configure_view(strokeWidth=0).interactive(False)
+                    line = base.mark_line(color='#1f77b4', strokeWidth=2, interpolate='monotone')
 
-                    # theme=None pour garder le contrôle total des couleurs
+                    # Seuils visuels gris pour vérifier le dégradé
+                    threshold_data = pd.DataFrame([{'w': 25}, {'w': 55}, {'w': 60}])
+                    rules = alt.Chart(threshold_data).mark_rule(
+                        strokeDash=[4,4], color='gray', opacity=0.2
+                    ).encode(y='w:Q')
+
+                    final_chart = (area + line + rules).properties(height=CHART_HEIGHT).configure_view(strokeWidth=0).interactive(False)
+
                     st.altair_chart(final_chart, use_container_width=True, theme=None)
 
                 st.divider()
