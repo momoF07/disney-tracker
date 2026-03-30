@@ -7,7 +7,6 @@ import requests
 import time
 from streamlit_autorefresh import st_autorefresh 
 from emojis import get_emoji 
-import altair as alt
 
 # --- CONFIGURATION DE LA PAGE ---
 st.set_page_config(page_title="Disney Live Control", page_icon="🏰", layout="centered")
@@ -15,8 +14,8 @@ st.set_page_config(page_title="Disney Live Control", page_icon="🏰", layout="c
 # --- CONNEXION SUPABASE ---
 supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 
-# --- ACTUALISATION AUTOMATIQUE (60 secondes) ---
-st_autorefresh(interval=60000, key="datarefresh")
+# --- ACTUALISATION AUTOMATIQUE (30 secondes) ---
+st_autorefresh(interval=30000, key="datarefresh")
 
 # --- FONCTION POUR GITHUB ---
 def trigger_github_action():
@@ -61,12 +60,13 @@ if not df.empty:
     df['created_at'] = pd.to_datetime(df['created_at']).dt.tz_convert('Europe/Paris')
     derniere_maj = df['created_at'].max().strftime("%H:%M:%S")
 
-    # --- CALCUL GLOBAL DES PANNES (Pour usage plus bas) ---
+    # --- CALCUL DE TOUTES LES PANNES (Logique partagée) ---
     all_pannes = []
     for ride_name in df['ride_name'].unique():
         ride_data = df[df['ride_name'] == ride_name].sort_values('created_at')
         en_panne = False
         debut_panne = None
+        
         for i, row in ride_data.iterrows():
             if not row['is_open'] and not en_panne:
                 en_panne = True
@@ -79,15 +79,16 @@ if not df.empty:
                     "statut": "TERMINEE"
                 })
                 en_panne = False
+        
         if en_panne:
             all_pannes.append({"ride": ride_name, "debut": debut_panne, "fin": None, "statut": "EN_COURS"})
 
-    # --- SECTION FAVORIS ---
+    # --- SECTION : FAVORIS ---
     toutes_attractions = sorted(df['ride_name'].unique())
     selected_options = st.multiselect("Favoris :", options=toutes_attractions, default=st.query_params.get_all("fav"), format_func=lambda x: f"{get_emoji(x)} {x}")
     st.query_params["fav"] = selected_options
     
-    st.caption(f"🕒 Donnée : {derniere_maj} | Auto-refresh : 60s")
+    st.caption(f"🕒 Donnée : {derniere_maj} | Auto-refresh : 30s")
     st.divider()
 
     if selected_options:
@@ -98,42 +99,24 @@ if not df.empty:
                 st.subheader(f"{get_emoji(ride)} {ride}")
                 
                 c1, c2 = st.columns(2)
-                wait = last['wait_time']
                 if last['is_open']:
                     c1.success("🟢 OUVERT")
-                    c2.metric("Attente", f"{int(wait)} min")
+                    c2.metric("Attente", f"{int(last['wait_time'])} min")
                 else:
                     c1.error("🔴 FERMÉ / PANNE")
                     c2.metric("Attente", "- - -")
 
-                # 1. BLOC JAUNE ALERTE
+                # RECHERCHE DES PANNES POUR CETTE ATTRACTION
                 ride_pannes = [p for p in all_pannes if p['ride'] == ride]
+                
+                # 1. BLOC JAUNE ALERTE (Si en panne actuellement)
                 panne_actuelle = next((p for p in ride_pannes if p['statut'] == "EN_COURS"), None)
                 if panne_actuelle:
-                    min_encours = int((maintenant - panne_actuelle['debut']).total_seconds() / 60)
+                    diff = maintenant - panne_actuelle['debut']
+                    min_encours = int(diff.total_seconds() / 60)
                     st.warning(f"⚠️ En panne depuis {min_encours} min (à {panne_actuelle['debut'].strftime('%H:%M')})")
 
-                # 2. GRAPHIQUE IMMOBILE
-                if len(ride_df) > 1 and last['is_open']:
-                    four_h = maintenant - timedelta(hours=4)
-                    chart_data = ride_df[ride_df['created_at'] >= four_h].copy()
-                    gradient = alt.Gradient(
-                        gradient='linear',
-                        stops=[
-                            alt.GradientStop(color='green', offset=0), alt.GradientStop(color='green', offset=25/80),
-                            alt.GradientStop(color='orange', offset=35/80), alt.GradientStop(color='orange', offset=55/80),
-                            alt.GradientStop(color='red', offset=65/80), alt.GradientStop(color='red', offset=1)
-                        ],
-                        x1=0, x2=0, y1=1, y2=0 
-                    )
-                    base = alt.Chart(chart_data).encode(
-                        x=alt.X('created_at:T', title=None, axis=alt.Axis(format="%H:%M", grid=False)),
-                        y=alt.Y('wait_time:Q', title=None, scale=alt.Scale(domain=[0, 80]), axis=alt.Axis(grid=True))
-                    )
-                    area = base.mark_area(color=gradient, line={'color': '#1f77b4', 'strokeWidth': 2}, opacity=0.9, interpolate='monotone', tooltip=False)
-                    st.altair_chart(area.properties(height=200).interactive(False), use_container_width=True, theme=None)
-
-                # 3. HISTORIQUE LOCAL
+                # 2. HISTORIQUE LOCAL (Expander)
                 if ride_pannes:
                     with st.expander("📜 Historique des pannes"):
                         for p in reversed(ride_pannes):
@@ -141,11 +124,13 @@ if not df.empty:
                                 st.write(f"• Panne de {p['debut'].strftime('%H:%M')} à {p['fin'].strftime('%H:%M')} ({p['duree']} min)")
                             else:
                                 diff_encours = int((maintenant - p['debut']).total_seconds() / 60)
-                                st.write(f"• ⚠️ **En cours** : depuis {p['debut'].strftime('%H:%M')} ({diff_encours} min)")
+                                st.write(f"• ⚠️ **En cours** : depuis {p['debut'].strftime('%H:%M')} (soit {diff_encours} min)")
                 st.divider()
 
-    # --- SECTION : FLUX DES DERNIÈRES PANNES (EN BAS) ---
+    # --- SECTION : FLUX GLOBAL DES PANNES (DÉPLACÉ EN BAS) ---
     st.subheader("🚨 Flux des dernières pannes du parc")
+    
+    # Affichage rapide du flux (5 derniers événements)
     flux_pannes = sorted(all_pannes, key=lambda x: x['debut'], reverse=True)[:5]
     if flux_pannes:
         for p in flux_pannes:
@@ -163,6 +148,5 @@ st.markdown("""
     <style>
     [data-testid='stMetricValue'] { font-size: 1.8rem; } 
     .stButton button { width: 100%; border-radius: 10px; }
-    details { display: none !important; }
     </style>
     """, unsafe_allow_html=True)
