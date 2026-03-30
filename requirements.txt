@@ -4,3 +4,4 @@ supabase
 requests
 pytz
 streamlit-autorefresh
+altair
