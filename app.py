@@ -17,11 +17,9 @@ supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 # --- ACTUALISATION AUTOMATIQUE (60 secondes) ---
 st_autorefresh(interval=60000, key="datarefresh")
 
-# --- FONCTION POUR DÉCLENCHER LE ROBOT GITHUB ---
+# --- FONCTION POUR GITHUB ---
 def trigger_github_action():
-    REPO = "momoF07/disney-tracker" 
-    WORKFLOW_ID = "check.yml"
-    TOKEN = st.secrets["GITHUB_TOKEN"]
+    REPO, WORKFLOW_ID, TOKEN = "momoF07/disney-tracker", "check.yml", st.secrets["GITHUB_TOKEN"]
     url = f"https://api.github.com/repos/{REPO}/actions/workflows/{WORKFLOW_ID}/dispatches"
     headers = {"Authorization": f"Bearer {TOKEN}", "Accept": "application/vnd.github.v3+json"}
     try:
@@ -37,20 +35,13 @@ maintenant = datetime.now(paris_tz)
 
 if st.button('🔄 Actualiser & Forcer un Relevé'):
     with st.spinner("Signal envoyé au robot..."):
-        status = trigger_github_action()
-        if status == 204:
-            st.toast("🚀 Robot lancé !", icon="✅")
-            time.sleep(40) 
-            st.rerun()
+        if trigger_github_action() == 204:
+            st.toast("🚀 Robot lancé !"); time.sleep(40); st.rerun()
 
 # --- RÉCUPÉRATION DES DONNÉES (24h) ---
 try:
     hier = maintenant - timedelta(hours=24)
-    response = supabase.table("disney_logs") \
-        .select("*") \
-        .gte("created_at", hier.isoformat()) \
-        .order("created_at", desc=False) \
-        .execute()
+    response = supabase.table("disney_logs").select("*").gte("created_at", hier.isoformat()).order("created_at", desc=False).execute()
     df = pd.DataFrame(response.data)
 except:
     df = pd.DataFrame()
@@ -70,10 +61,9 @@ if not df.empty:
             if not row['is_open'] and not en_panne:
                 en_panne, debut_panne = True, row['created_at']
             elif row['is_open'] and en_panne:
-                fin_p = row['created_at']
                 all_pannes.append({
-                    "ride": ride_name, "debut": debut_panne, "fin": fin_p,
-                    "duree": int((fin_p - debut_panne).total_seconds() / 60),
+                    "ride": ride_name, "debut": debut_panne, "fin": row['created_at'],
+                    "duree": int((row['created_at'] - debut_panne).total_seconds() / 60),
                     "statut": "TERMINEE"
                 })
                 en_panne = False
@@ -82,22 +72,23 @@ if not df.empty:
 
     # --- LOGIQUE DES RACCOURCIS ---
     st.write("---")
-    sc = st.text_input("Raccourci : `*DLP`, `*DAW`, `*FANTASY`...", placeholder="Entrée pour valider")
+    sc = st.text_input("Raccourci : `*DLP`, `*FANTASY`, `*101`, `*102`...", placeholder="Tape ici...")
     
     current_selection = st.query_params.get_all("fav")
 
-    if sc.startswith("*"):
+    if sc == "*101":
+        # Affiche uniquement les attractions actuellement fermées/en panne
+        current_selection = [p['ride'] for p in all_pannes if p['statut'] == "EN_COURS"]
+    elif sc == "*102":
+        # Affiche toutes les attractions ayant eu au moins 1 incident sur 24h
+        current_selection = list(set([p['ride'] for p in all_pannes]))
+    elif sc.startswith("*"):
         shortcut_selection = get_rides_by_zone(sc, toutes_attractions)
         if shortcut_selection:
             current_selection = shortcut_selection
 
     # --- MULTISELECT ---
-    selected_options = st.multiselect(
-        "Attractions suivies :", 
-        options=toutes_attractions, 
-        default=current_selection, 
-        format_func=lambda x: f"{get_emoji(x)} {x}"
-    )
+    selected_options = st.multiselect("Attractions suivies :", options=toutes_attractions, default=current_selection, format_func=lambda x: f"{get_emoji(x)} {x}")
     st.query_params["fav"] = selected_options
     
     st.caption(f"🕒 Donnée : {derniere_maj} | Auto-refresh : 60s")
@@ -121,48 +112,34 @@ if not df.empty:
                     c1.error("🔴 FERMÉ / PANNE")
                     c2.metric("Attente", "- - -")
 
-                # RECHERCHE DES PANNES
                 ride_pannes = [p for p in all_pannes if p['ride'] == ride]
-                
-                # Bloc Alerte (si en panne maintenant)
                 panne_actuelle = next((p for p in ride_pannes if p['statut'] == "EN_COURS"), None)
                 if panne_actuelle:
-                    min_encours = int((maintenant - panne_actuelle['debut']).total_seconds() / 60)
-                    st.warning(f"⚠️ En panne depuis {min_encours} min (à {panne_actuelle['debut'].strftime('%H:%M')})")
+                    min_e = int((maintenant - panne_actuelle['debut']).total_seconds() / 60)
+                    st.warning(f"⚠️ En panne depuis {min_e} min (à {panne_actuelle['debut'].strftime('%H:%M')})")
 
-                # MENU DÉROULANT SYSTÉMATIQUE
                 with st.expander("📜 Historique des pannes du jour"):
                     if ride_pannes:
                         for p in reversed(ride_pannes):
                             if p['statut'] == "TERMINEE":
                                 st.write(f"• Panne de {p['debut'].strftime('%H:%M')} à {p['fin'].strftime('%H:%M')} ({p['duree']} min)")
                             else:
-                                diff_encours = int((maintenant - p['debut']).total_seconds() / 60)
-                                st.write(f"• ⚠️ **En cours** : depuis {p['debut'].strftime('%H:%M')} ({diff_encours} min)")
+                                diff = int((maintenant - p['debut']).total_seconds() / 60)
+                                st.write(f"• ⚠️ **En cours** : depuis {p['debut'].strftime('%H:%M')} ({diff} min)")
                     else:
-                        # Message si aucune panne n'a eu lieu
                         st.write("✅ Pas de panne détectée pour le moment")
-                
                 st.divider()
 
     # --- FLUX GLOBAL (Bas de page) ---
     st.subheader("🚨 Flux des dernières pannes du parc")
-    flux_pannes = sorted(all_pannes, key=lambda x: x['debut'], reverse=True)[:5]
-    if flux_pannes:
-        for p in flux_pannes:
-            if p['statut'] == "EN_COURS":
-                st.error(f"🔴 **{p['ride']}** est tombé en panne à {p['debut'].strftime('%H:%M')}")
-            else:
-                st.info(f"✅ **{p['ride']}** a rouvert à {p['fin'].strftime('%H:%M')} ({p['duree']} min)")
-    else:
-        st.write("✅ Aucune panne enregistrée aujourd'hui.")
+    flux = sorted(all_pannes, key=lambda x: x['debut'], reverse=True)[:5]
+    if flux:
+        for p in flux:
+            if p['statut'] == "EN_COURS": st.error(f"🔴 **{p['ride']}** en panne à {p['debut'].strftime('%H:%M')}")
+            else: st.info(f"✅ **{p['ride']}** rouvert à {p['fin'].strftime('%H:%M')} ({p['duree']} min)")
+    else: st.write("✅ Aucune panne enregistrée.")
 
 else:
     st.warning("📭 Aucune donnée disponible.")
 
-st.markdown("""
-    <style>
-    [data-testid='stMetricValue'] { font-size: 1.8rem; } 
-    .stButton button { width: 100%; border-radius: 10px; }
-    </style>
-    """, unsafe_allow_html=True)
+st.markdown("<style>[data-testid='stMetricValue'] { font-size: 1.8rem; } .stButton button { width: 100%; border-radius: 10px; }</style>", unsafe_allow_html=True)
