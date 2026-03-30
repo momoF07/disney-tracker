@@ -14,7 +14,7 @@ st.set_page_config(page_title="Disney Live Control", page_icon="🏰", layout="c
 # --- CONNEXION SUPABASE ---
 supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 
-# --- ACTUALISATION AUTOMATIQUE (Toutes les 30 secondes) ---
+# --- ACTUALISATION AUTOMATIQUE ---
 st_autorefresh(interval=30000, key="datarefresh")
 
 # --- FONCTION POUR DÉCLENCHER LE ROBOT GITHUB ---
@@ -32,74 +32,62 @@ def trigger_github_action():
 # --- INTERFACE UTILISATEUR ---
 st.title("🏰 My Disney Dashboard")
 
-# Heure locale
 paris_tz = pytz.timezone('Europe/Paris')
 maintenant = datetime.now(paris_tz)
 aujourd_hui = maintenant.strftime("%Y-%m-%d")
 
-# Bouton de mise à jour forcée
 if st.button('🔄 Actualiser & Forcer un Relevé'):
-    with st.spinner("Signal envoyé au robot... Patientez 40s."):
+    with st.spinner("Signal envoyé au robot..."):
         status = trigger_github_action()
         if status == 204:
-            st.toast("🚀 Robot lancé ! Analyse en cours...", icon="✅")
+            st.toast("🚀 Robot lancé !", icon="✅")
             time.sleep(40) 
             st.rerun()
         else:
             st.error(f"Erreur GitHub (Code {status}).")
 
-# --- RÉCUPÉRATION DES DONNÉES DU JOUR ---
+# --- RÉCUPÉRATION DES DONNÉES ---
 try:
     response = supabase.table("disney_logs") \
         .select("*") \
         .gte("created_at", f"{aujourd_hui}T00:00:00") \
-        .order("created_at", desc=True) \
+        .order("created_at", desc=False) \
         .execute()
     df = pd.DataFrame(response.data)
 except:
     df = pd.DataFrame()
 
-# --- LOGIQUE D'AFFICHAGE ---
 if not df.empty:
     df['created_at'] = pd.to_datetime(df['created_at']).dt.tz_convert('Europe/Paris')
     derniere_maj = df['created_at'].max().strftime("%H:%M:%S")
     
-    # --- GESTION DES FAVORIS (QUERY PARAMS) ---
     toutes_attractions = sorted(df['ride_name'].unique())
-    # Récupère les favoris dans l'URL pour les garder au refresh
     params = st.query_params.get_all("fav")
     
     selected_options = st.multiselect(
         "Ajouter des attractions à mes favoris :",
         options=toutes_attractions,
         default=params,
-        format_func=lambda x: f"{get_emoji(x)} {x}",
-        placeholder="Rechercher une attraction..."
+        format_func=lambda x: f"{get_emoji(x)} {x}"
     )
-    
-    # Sauvegarde immédiate dans l'URL
     st.query_params["fav"] = selected_options
 
     st.caption(f"⏱️ Auto-refresh : {maintenant.strftime('%H:%M:%S')} | 🕒 Data : {derniere_maj}")
     st.divider()
 
-    # --- AFFICHAGE DES FAVORIS ---
     if not selected_options:
-        st.info("👆 Sélectionne tes attractions pour les suivre en direct.")
+        st.info("👆 Sélectionne tes attractions pour les suivre.")
     else:
         for ride in selected_options:
-            ride_df = df[df['ride_name'] == ride].sort_values('created_at', ascending=False)
+            # On trie par date ascendante pour l'analyse des pannes
+            ride_df = df[df['ride_name'] == ride].sort_values('created_at')
             if not ride_df.empty:
-                last = ride_df.iloc[0]
-                emoji = get_emoji(ride)
-                
-                st.subheader(f"{emoji} {ride}")
+                last = ride_df.iloc[-1]
+                st.subheader(f"{get_emoji(ride)} {ride}")
                 
                 c1, c2 = st.columns(2)
-                wait = last['wait_time']
-                is_open = last['is_open']
+                wait, is_open = last['wait_time'], last['is_open']
                 
-                # Statut et Temps
                 if is_open:
                     c1.success("🟢 OUVERT")
                     c2.metric("Attente", f"{int(wait)} min")
@@ -107,27 +95,46 @@ if not df.empty:
                     c1.error("🔴 FERMÉ / PANNE")
                     c2.metric("Attente", "- - -")
                 
-                # Calcul de la durée de panne
-                if not is_open:
-                    ride_chrono = ride_df.sort_values('created_at')
-                    last_open = ride_chrono[ride_chrono['is_open'] == True].last_valid_index()
-                    if last_open is not None:
-                        # On prend le premier point de données après la dernière ouverture connue
-                        try:
-                            start_panne = ride_chrono.loc[last_open + 1:].iloc[0]['created_at']
-                            diff = maintenant - start_panne
-                            h, r = divmod(diff.total_seconds(), 3600)
-                            m, _ = divmod(r, 60)
-                            temps_txt = f"{int(m)}min" if h == 0 else f"{int(h)}h{int(m)}min"
-                            st.warning(f"⚠️ En panne depuis {temps_txt} (à {start_panne.strftime('%H:%M')})")
-                        except:
-                            pass
+                # --- LOGIQUE DU JOURNAL DES PANNES ---
+                pannes_trouvees = []
+                en_panne = False
+                debut_panne = None
+                
+                for i, row in ride_df.iterrows():
+                    # Détection début de panne (Ouvert -> Fermé)
+                    if not row['is_open'] and not en_panne:
+                        en_panne = True
+                        debut_panne = row['created_at']
+                    
+                    # Détection fin de panne (Fermé -> Ouvert)
+                    elif row['is_open'] and en_panne:
+                        fin_panne = row['created_at']
+                        duree = fin_panne - debut_panne
+                        min_totaux = int(duree.total_seconds() / 60)
+                        
+                        pannes_trouvees.append({
+                            "txt": f"Panne de {debut_panne.strftime('%H:%M')} à {fin_panne.strftime('%H:%M')}",
+                            "duree": f"{min_totaux} min"
+                        })
+                        en_panne = False
+                        debut_panne = None
+
+                # Affichage de la panne en cours si elle existe
+                if en_panne:
+                    diff = maintenant - debut_panne
+                    min_encours = int(diff.total_seconds() / 60)
+                    st.warning(f"⚠️ En panne depuis {debut_panne.strftime('%H:%M')} ({min_encours} min)")
+
+                # Affichage de la liste des pannes passées
+                if pannes_trouvees:
+                    with st.expander("📜 Historique des pannes du jour"):
+                        for p in reversed(pannes_trouvees): # Les plus récentes en premier
+                            st.write(f"• {p['txt']} (durée {p['duree']})")
                 
                 st.divider()
 else:
     st.warning("📭 Aucune donnée pour aujourd'hui.")
 
-# --- STYLE CSS ---
 st.markdown("""
     <style>
     [data-testid="stMetricValue"] { font-size: 1.8rem; }
