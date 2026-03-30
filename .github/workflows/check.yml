@@ -2,7 +2,7 @@ name: Disney Check
 
 on:
   schedule:
-    - cron: '*/10 07-22 * * *'  # Tourne toutes les 10 min de 7h à 22h
+    - cron: '*/5 07-22 * * *'  # Tourne toutes les 5 min de 7h à 22h
   workflow_dispatch:            # <--- PERMET LE LANCEMENT MANUEL (IMPORTANT)
 
 jobs:
