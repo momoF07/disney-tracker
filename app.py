@@ -35,7 +35,6 @@ st.title("🏰 My Disney Dashboard")
 
 paris_tz = pytz.timezone('Europe/Paris')
 maintenant = datetime.now(paris_tz)
-aujourd_hui = maintenant.strftime("%Y-%m-%d")
 
 if st.button('🔄 Forcer un relevé maintenant'):
     with st.spinner("Le robot analyse les parcs..."):
@@ -45,7 +44,7 @@ if st.button('🔄 Forcer un relevé maintenant'):
             time.sleep(40) 
             st.rerun()
 
-# Récupération des données (24h pour avoir du recul sur le graphique)
+# Récupération des données (24h)
 try:
     hier = maintenant - timedelta(hours=24)
     response = supabase.table("disney_logs") \
@@ -62,9 +61,8 @@ if not df.empty:
     derniere_maj = df['created_at'].max().strftime("%H:%M:%S")
     
     toutes_attractions = sorted(df['ride_name'].unique())
-    
-    # Favoris (Persistance via URL)
     params = st.query_params.get_all("fav")
+    
     selected_options = st.multiselect(
         "Sélectionne tes favoris :",
         options=toutes_attractions,
@@ -98,7 +96,6 @@ if not df.empty:
                     c1.error("🔴 FERMÉ / PANNE")
                     c2.metric("Attente", "- - -")
                 
-                # Gestion des pannes
                 if not is_open:
                     ride_chrono = ride_df.sort_values('created_at')
                     last_open = ride_chrono[ride_chrono['is_open'] == True].last_valid_index()
@@ -112,43 +109,51 @@ if not df.empty:
                             st.warning(f"⚠️ En panne depuis {txt} (à {start_panne.strftime('%H:%M')})")
                         except: pass
 
-                # --- GRAPHIQUE EN DÉGRADÉ VERTICAL FIXE ---
+                # --- GRAPHIQUE EN DÉGRADÉ 100% IMMOBILE ---
                 if len(ride_df) > 1:
                     four_hours_ago = maintenant - timedelta(hours=4)
                     chart_data = ride_df[ride_df['created_at'] >= four_hours_ago].copy()
                     chart_data['wait_time'] = chart_data['wait_time'].fillna(0)
 
-                    # Le dégradé est lié aux coordonnées Y de 0 à 80
-                    # x1=0, x2=0, y1=1, y2=0 force l'orientation verticale absolue
+                    # Configuration du dégradé (On garde ton réglage vertical)
                     gradient = alt.Gradient(
                         gradient='linear',
                         stops=[
-                            alt.GradientStop(color='green', offset=0),       # 0 min
-                            alt.GradientStop(color='green', offset=25/80),   # 25 min -> VERT
-                            alt.GradientStop(color='orange', offset=35/80),  # 35 min -> ORANGE
-                            alt.GradientStop(color='orange', offset=55/80),  # 55 min -> ORANGE
-                            alt.GradientStop(color='red', offset=65/80),     # 65 min -> ROUGE
-                            alt.GradientStop(color='red', offset=1)          # 80 min -> ROUGE
+                            alt.GradientStop(color='green', offset=0),
+                            alt.GradientStop(color='green', offset=25/80),
+                            alt.GradientStop(color='orange', offset=35/80),
+                            alt.GradientStop(color='orange', offset=55/80),
+                            alt.GradientStop(color='red', offset=65/80),
+                            alt.GradientStop(color='red', offset=1)
                         ],
                         x1=0, x2=0, y1=1, y2=0 
                     )
 
+                    # Le graphique sans tooltip (pour éviter toute réaction au survol)
                     base = alt.Chart(chart_data).encode(
                         x=alt.X('created_at:T', title=None, axis=alt.Axis(format="%H:%M", grid=False)),
-                        y=alt.Y('wait_time:Q', title=None, scale=alt.Scale(domain=[0, 80], clamp=True), axis=alt.Axis(grid=True)),
-                        tooltip=[alt.Tooltip('created_at:T', format="%H:%M"), alt.Tooltip('wait_time:Q', title="Attente")]
+                        y=alt.Y('wait_time:Q', title=None, scale=alt.Scale(domain=[0, 80], clamp=True), axis=alt.Axis(grid=True))
                     )
 
                     area = base.mark_area(
                         color=gradient,
                         line={'color': '#1f77b4', 'strokeWidth': 2},
                         opacity=0.9,
-                        interpolate='monotone'
+                        interpolate='monotone',
+                        tooltip=False # <-- DÉSACTIVE LES BULLES D'INFOS
                     )
 
-                    final_chart = area.properties(height=200).configure_view(strokeWidth=0).interactive(False)
+                    # Configuration finale pour bloquer toute interaction
+                    final_chart = area.properties(
+                        height=200
+                    ).configure_view(
+                        strokeWidth=0
+                    ).configure_selection(
+                        # Désactive les sélections de données
+                        toggle=False
+                    ).interactive(False) # <-- BLOQUE LE ZOOM / PAN
 
-                    # theme=None est crucial pour garder nos couleurs et éviter le gris Streamlit
+                    # On affiche sans le menu de téléchargement "..." de Streamlit
                     st.altair_chart(final_chart, use_container_width=True, theme=None)
 
                 st.divider()
@@ -160,5 +165,7 @@ st.markdown("""
     <style>
     [data-testid='stMetricValue'] { font-size: 1.8rem; } 
     .stButton button { width: 100%; border-radius: 10px; }
+    /* Cache le menu '...' en haut à droite des graphiques Altair */
+    details { display: none; }
     </style>
     """, unsafe_allow_html=True)
