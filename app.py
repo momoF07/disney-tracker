@@ -3,6 +3,7 @@ import pandas as pd
 from supabase import create_client
 from datetime import datetime
 import pytz
+import altair as alt
 
 # Config de la page
 st.set_page_config(page_title="Disney Live Tracker", page_icon="🎢", layout="wide")
