@@ -3,7 +3,7 @@ name: Disney Check
 on:
   schedule:
     - cron: '*/5 07-22 * * *'  # Tourne toutes les 5 min de 7h à 22h
-  workflow_dispatch:            # <--- PERMET LE LANCEMENT MANUEL (IMPORTANT)
+  workflow_dispatch:           # <--- PERMET LE LANCEMENT MANUEL (IMPORTANT)
 
 jobs:
   run-robot:
