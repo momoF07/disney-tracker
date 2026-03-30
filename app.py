@@ -62,11 +62,34 @@ if not df.empty:
             nb_pannes = ride_df['switched_off'].sum()
             c3.metric("Pannes (Aujourd'hui)", nb_pannes)
 
-            # --- GRAPHIQUE D'ÉVOLUTION FIXE ---
+            # --- GRAPHIQUE D'ÉVOLUTION STATIQUE ---
             st.subheader("📈 Évolution de l'attente")
-            # On prépare les données pour le graphique
-            chart_data = ride_df.set_index('created_at')[['wait_time']]
-            st.area_chart(chart_data, color="#29b5e8")
+            
+            if not ride_df.empty:
+                # 1. Préparation des données (arrondi à 5min)
+                chart_data = ride_df.copy()
+                chart_data['created_at'] = chart_data['created_at'].dt.round('5min')
+                
+                # 2. Création du graphique Altair SANS interaction
+                chart = alt.Chart(chart_data).mark_area(
+                    line={'color':'#29b5e8'},
+                    color=alt.Gradient(
+                        gradient='linear',
+                        stops=[alt.GradientStop(color='#29b5e8', offset=0),
+                               alt.GradientStop(color='rgba(41, 181, 232, 0.1)', offset=1)],
+                        x1=1, x2=1, y1=1, y2=0
+                    )
+                ).encode(
+                    x=alt.X('created_at:T', title=None, axis=alt.Axis(grid=False)),
+                    y=alt.Y('wait_time:Q', title="Minutes", axis=alt.Axis(grid=True)),
+                    tooltip=[] # On vide les tooltips pour qu'il ne se passe rien au survol
+                ).properties(
+                    height=250
+                ).configure_view(
+                    strokeWidth=0 # Enlève la bordure
+                ).interactive(False) # <--- LA LIGNE MAGIQUE : Désactive tout mouvement
+            
+                st.altair_chart(chart, use_container_width=True)
             
             # --- DÉTAIL DES PANNES ---
             if nb_pannes > 0:
