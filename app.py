@@ -2,59 +2,83 @@ import streamlit as st
 import pandas as pd
 from supabase import create_client
 from datetime import datetime
+import pytz
 
-st.set_page_config(page_title="Disney Check Time", page_icon="🎢")
+# Config de la page
+st.set_page_config(page_title="Disney Live Tracker", page_icon="🎢", layout="wide")
 
 # Connexion Supabase
 supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 
-st.title("📊 Rapport d'Incidents - DAW & DLP")
+# --- GESTION DU TEMPS ---
+paris_tz = pytz.timezone('Europe/Paris')
+maintenant = datetime.now(paris_tz)
+aujourd_hui = maintenant.strftime("%Y-%m-%d")
 
-# 1. Récupération des données
-response = supabase.table("disney_logs").select("*").order("created_at", desc=True).limit(500).execute()
-df = pd.DataFrame(response.data)
+st.title("🎢 Suivi en Direct - Disneyland Paris")
+st.caption(f"Données du jour : {maintenant.strftime('%d/%m/%Y')}")
+
+# --- 1. RÉCUPÉRATION DES DONNÉES DU JOUR UNIQUEMENT ---
+try:
+    response = supabase.table("disney_logs") \
+        .select("*") \
+        .gte("created_at", f"{aujourd_hui}T00:00:00") \
+        .order("created_at", desc=True) \
+        .execute()
+    
+    df = pd.DataFrame(response.data)
+except Exception as e:
+    st.error(f"Erreur de connexion : {e}")
+    df = pd.DataFrame()
 
 if not df.empty:
-    # Conversion du temps en heure française
+    # Conversion du temps et tri
     df['created_at'] = pd.to_datetime(df['created_at']).dt.tz_convert('Europe/Paris')
-
-    TARGETS_VISIBLES = ["Big Thunder Mountain", "Phantom Manor"]
-    liste_attractions = [r for r in df['ride_name'].unique() if r in TARGETS_VISIBLES]
+    
+    # --- AFFICHAGE DE LA DERNIÈRE MAJ ---
+    derniere_maj = df['created_at'].max().strftime("%H:%M:%S")
+    st.info(f"🕒 Dernière actualisation du robot : **{derniere_maj}**")
+    
+    # --- LISTE DES ATTRACTIONS ---
+    liste_attractions = sorted(df['ride_name'].unique())
     
     for ride in liste_attractions:
-        st.header(f"📍 {ride}")
-        
-        # On crée le petit tableau spécifique à CETTE attraction
         ride_df = df[df['ride_name'] == ride].sort_values('created_at')
         
-        # On vérifie s'il y a bien des données pour cette attraction
         if not ride_df.empty:
-            # --- CALCUL DES PANNES ---
-            # Détection du passage de True (ouvert) à False (fermé)
+            st.header(f"📍 {ride}")
+            
+            # État actuel
+            last_row = ride_df.iloc[-1]
+            statut = "🟢 OUVERT" if last_row['is_open'] else "🔴 FERMÉ / EN PANNE"
+            
+            # Metrics
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Statut", statut)
+            c2.metric("Attente", f"{last_row['wait_time']} min")
+            
+            # Calcul des pannes (changement True -> False)
             ride_df['switched_off'] = (ride_df['is_open'] == False) & (ride_df['is_open'].shift(1) == True)
-            pannes = ride_df[ride_df['switched_off'] == True]
-            nb_pannes = len(pannes)
+            nb_pannes = ride_df['switched_off'].sum()
+            c3.metric("Pannes (Aujourd'hui)", nb_pannes)
+
+            # --- GRAPHIQUE D'ÉVOLUTION ---
+            st.subheader("📈 Évolution de l'attente")
+            # On prépare les données pour le graphique
+            chart_data = ride_df.set_index('created_at')[['wait_time']]
+            st.area_chart(chart_data, color="#29b5e8")
             
-            # --- AFFICHAGE METRICS ---
-            last_status = ride_df.iloc[-1]['is_open']
-            current_wait = ride_df.iloc[-1]['wait_time']
-            
-            # Couleur du statut
-            statut_texte = "🟢 OUVERT" if last_status else "🔴 EN PANNE / FERMÉ"
-            st.subheader(statut_texte)
-            
-            c1, c2 = st.columns(2)
-            c1.metric("Attente Actuelle", f"{current_wait} min")
-            c2.metric("Pannes aujourd'hui", nb_pannes)
-            
-            # --- JOURNAL DES INCIDENTS ---
+            # --- DÉTAIL DES PANNES ---
             if nb_pannes > 0:
-                with st.expander("Voir le détail des pannes"):
-                    for _, row in pannes.iterrows():
-                        st.warning(f"⚠️ Coupure détectée vers {row['created_at'].strftime('%H:%M')}")
-            else:
-                st.success("✅ Aucune interruption majeure enregistrée.")
+                with st.expander("🔎 Historique des coupures"):
+                    pannes_detectees = ride_df[ride_df['switched_off'] == True]
+                    for _, p in pannes_detectees.iterrows():
+                        st.warning(f"⚠️ Panne détectée vers {p['created_at'].strftime('%H:%M')}")
         
         st.divider()
 else:
-    st.info("🔄 En attente de la première analyse du robot GitHub...")
+    st.warning("⚠️ Aucune donnée pour aujourd'hui. Lancez le 'Disney Check' sur GitHub pour démarrer le suivi !")
+
+# --- BOUTON DE RAFRAÎCHISSEMENT MANUEL ---
+if st.button('🔄 Actualiser la page'):
+    st.rerun()
