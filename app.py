@@ -35,6 +35,7 @@ st.title("🏰 My Disney Dashboard")
 
 paris_tz = pytz.timezone('Europe/Paris')
 maintenant = datetime.now(paris_tz)
+aujourd_hui = maintenant.strftime("%Y-%m-%d")
 
 if st.button('🔄 Forcer un relevé maintenant'):
     with st.spinner("Le robot analyse les parcs..."):
@@ -44,7 +45,7 @@ if st.button('🔄 Forcer un relevé maintenant'):
             time.sleep(40) 
             st.rerun()
 
-# Récupération des données (24h)
+# Récupération des données (24h pour avoir du recul sur le graphique)
 try:
     hier = maintenant - timedelta(hours=24)
     response = supabase.table("disney_logs") \
@@ -61,8 +62,9 @@ if not df.empty:
     derniere_maj = df['created_at'].max().strftime("%H:%M:%S")
     
     toutes_attractions = sorted(df['ride_name'].unique())
-    params = st.query_params.get_all("fav")
     
+    # Favoris (Persistance via URL)
+    params = st.query_params.get_all("fav")
     selected_options = st.multiselect(
         "Sélectionne tes favoris :",
         options=toutes_attractions,
@@ -72,7 +74,7 @@ if not df.empty:
     )
     st.query_params["fav"] = selected_options
 
-    st.caption(f"🕒 Donnée : {derniere_maj} | Auto-refresh : 60s")
+    st.caption(f"⏱️ Refresh auto : 60s | 🕒 Dernière donnée : {derniere_maj}")
     st.divider()
 
     if not selected_options:
@@ -96,30 +98,45 @@ if not df.empty:
                     c1.error("🔴 FERMÉ / PANNE")
                     c2.metric("Attente", "- - -")
                 
-                # --- GRAPHIQUE IMMOBILE ---
+                # Gestion des pannes
+                if not is_open:
+                    ride_chrono = ride_df.sort_values('created_at')
+                    last_open = ride_chrono[ride_chrono['is_open'] == True].last_valid_index()
+                    if last_open is not None:
+                        try:
+                            start_panne = ride_chrono.loc[last_open + 1:].iloc[0]['created_at']
+                            diff = maintenant - start_panne
+                            h, r = divmod(diff.total_seconds(), 3600)
+                            m, _ = divmod(r, 60)
+                            txt = f"{int(m)}min" if h == 0 else f"{int(h)}h{int(m)}min"
+                            st.warning(f"⚠️ En panne depuis {txt} (à {start_panne.strftime('%H:%M')})")
+                        except: pass
+
+                # --- GRAPHIQUE EN DÉGRADÉ VERTICAL FIXE ---
                 if len(ride_df) > 1:
                     four_hours_ago = maintenant - timedelta(hours=4)
                     chart_data = ride_df[ride_df['created_at'] >= four_hours_ago].copy()
                     chart_data['wait_time'] = chart_data['wait_time'].fillna(0)
 
-                    # Dégradé vertical fixe
+                    # Le dégradé est lié aux coordonnées Y de 0 à 80
+                    # x1=0, x2=0, y1=1, y2=0 force l'orientation verticale absolue
                     gradient = alt.Gradient(
                         gradient='linear',
                         stops=[
-                            alt.GradientStop(color='green', offset=0),
-                            alt.GradientStop(color='green', offset=25/80),
-                            alt.GradientStop(color='orange', offset=35/80),
-                            alt.GradientStop(color='orange', offset=55/80),
-                            alt.GradientStop(color='red', offset=65/80),
-                            alt.GradientStop(color='red', offset=1)
+                            alt.GradientStop(color='green', offset=0),       # 0 min
+                            alt.GradientStop(color='green', offset=25/80),   # 25 min -> VERT
+                            alt.GradientStop(color='orange', offset=35/80),  # 35 min -> ORANGE
+                            alt.GradientStop(color='orange', offset=55/80),  # 55 min -> ORANGE
+                            alt.GradientStop(color='red', offset=65/80),     # 65 min -> ROUGE
+                            alt.GradientStop(color='red', offset=1)          # 80 min -> ROUGE
                         ],
                         x1=0, x2=0, y1=1, y2=0 
                     )
 
-                    # Graphique SANS tooltips
                     base = alt.Chart(chart_data).encode(
                         x=alt.X('created_at:T', title=None, axis=alt.Axis(format="%H:%M", grid=False)),
-                        y=alt.Y('wait_time:Q', title=None, scale=alt.Scale(domain=[0, 80], clamp=True), axis=alt.Axis(grid=True))
+                        y=alt.Y('wait_time:Q', title=None, scale=alt.Scale(domain=[0, 80], clamp=True), axis=alt.Axis(grid=True)),
+                        tooltip=[alt.Tooltip('created_at:T', format="%H:%M"), alt.Tooltip('wait_time:Q', title="Attente")]
                     )
 
                     area = base.mark_area(
@@ -129,27 +146,19 @@ if not df.empty:
                         interpolate='monotone'
                     )
 
-                    # On configure l'immobilité ici
-                    final_chart = area.properties(
-                        height=200
-                    ).configure_view(
-                        strokeWidth=0
-                    ).interactive(False) # Bloque zoom/pan
+                    final_chart = area.properties(height=200).configure_view(strokeWidth=0).interactive(False)
 
-                    # Affichage sans le menu Altair et sans thème Streamlit
+                    # theme=None est crucial pour garder nos couleurs et éviter le gris Streamlit
                     st.altair_chart(final_chart, use_container_width=True, theme=None)
 
                 st.divider()
 else:
-    st.warning("📭 Aucune donnée disponible.")
+    st.warning("📭 Aucune donnée disponible aujourd'hui.")
 
-# CSS pour le bouton et cacher les options du graphique
+# CSS Final
 st.markdown("""
     <style>
     [data-testid='stMetricValue'] { font-size: 1.8rem; } 
     .stButton button { width: 100%; border-radius: 10px; }
-    /* Cache les menus du graphique */
-    details { display: none !important; }
-    summary { display: none !important; }
     </style>
     """, unsafe_allow_html=True)
