@@ -79,7 +79,7 @@ if not df.empty:
                 chart_data['created_at'] = chart_data['created_at'].dt.round('5min')
                 
                 # Création du graphique
-                base = alt.Chart(chart_data).mark_area(
+                chart = alt.Chart(chart_data).mark_area(
                     line={'color':'#29b5e8'},
                     color=alt.Gradient(
                         gradient='linear',
@@ -89,14 +89,16 @@ if not df.empty:
                     )
                 ).encode(
                     x=alt.X('created_at:T', title=None, axis=alt.Axis(grid=False, labels=True)),
-                    y=alt.Y('wait_time:Q', title="Min", axis=alt.Axis(grid=True)),
-                    tooltip=None # Supprime la bulle d'info au toucher
+                    y=alt.Y('wait_time:Q', title="Min", axis=alt.Axis(grid=True))
+                    # Suppression du paramètre tooltip ici pour éviter l'erreur
                 ).properties(
                     height=250
-                )
+                ).configure_selection(
+                    # On désactive explicitement les sélections
+                ).interactive(False)
             
-                # On affiche le graphique en désactivant TOUTES les options de menu et d'interaction
-                st.altair_chart(base, use_container_width=True, theme=None)
+                # Affichage
+                st.altair_chart(chart, use_container_width=True)
             
             # --- DÉTAIL DES PANNES ---
             if nb_pannes > 0:
