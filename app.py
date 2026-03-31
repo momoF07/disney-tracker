@@ -74,8 +74,24 @@ try:
         .order("created_at", desc=False)\
         .execute()
     df = pd.DataFrame(response.data)
-except:
+except Exception as e:
+    st.error(f"Erreur Supabase : {e}")
     df = pd.DataFrame()
+
+if not df.empty:
+    # On transforme en datetime
+    df['created_at'] = pd.to_datetime(df['created_at'])
+    
+    # SI la donnée a déjà un fuseau (aware), on convertit. 
+    # SINON (naive), on localise en UTC puis on convertit.
+    if df['created_at'].dt.tz is not None:
+        df['created_at'] = df['created_at'].dt.tz_convert('Europe/Paris')
+    else:
+        df['created_at'] = df['created_at'].dt.tz_localize('UTC').dt.tz_convert('Europe/Paris')
+    
+    # Exclusion Maintenance : 2h-8h Paris
+    df = df[~((df['created_at'].dt.hour >= 2) & (df['created_at'].dt.hour < 8))].copy()
+
 
 if not df.empty:
     # On transforme les dates de la base en Heure de Paris (+2h) pour l'affichage utilisateur
