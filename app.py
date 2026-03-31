@@ -11,30 +11,35 @@ from emojis import get_emoji, get_rides_by_zone
 # --- CONFIGURATION DE LA PAGE ---
 st.set_page_config(page_title="Disney Wait Time", page_icon="🏰", layout="centered")
 
-# --- STYLE CSS POUR LA POPUP AU MILIEU ET TRANSPARENTE ---
+# --- STYLE CSS : POPUP CENTRALE & TRANSPARENTE ---
 st.markdown("""
 <style>
-    /* Cibler le conteneur de la popup (popover) */
+    /* Cibler le conteneur du popover */
     [data-testid="stPopoverBody"] {
-        position: fixed;
+        position: fixed !important;
         top: 50% !important;
         left: 50% !important;
         transform: translate(-50%, -50%) !important;
-        width: 80vw !important; /* Plus large (80% de l'écran) */
-        max-width: 600px !important;
-        background-color: rgba(28, 31, 46, 0.9) !important; /* Couleur sombre avec transparence */
-        backdrop-filter: blur(10px); /* Flou d'arrière-plan stylé */
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        z-index: 9999;
+        width: 85vw !important;
+        max-width: 650px !important;
+        max-height: 80vh !important;
+        overflow-y: auto !important;
+        background-color: rgba(17, 20, 28, 0.85) !important; /* Transparence sombre */
+        backdrop-filter: blur(15px) !important; /* Effet de flou */
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.7) !important;
+        border-radius: 20px !important;
+        padding: 20px !important;
+        z-index: 999999 !important;
     }
-    
-    /* Boutons et éléments à l'intérieur */
-    [data-testid="stPopoverBody"] stMarkdown {
-        color: white;
+
+    /* Style des blocs de code dans la popup */
+    [data-testid="stPopoverBody"] code {
+        background-color: rgba(255, 255, 255, 0.1) !important;
+        color: #00ffcc !important;
     }
-    
-    /* Ajustements CSS divers */
+
+    /* Ajustements généraux */
     [data-testid='stMetricValue'] { font-size: 1.8rem; }
     .stButton button { width: 100%; border-radius: 10px; }
 </style>
@@ -106,53 +111,57 @@ if not df_raw.empty:
         
         with col_help:
             with st.popover("❓"):
-                st.markdown("### 🔍 Raccourcis")
+                st.markdown("## 🔍 Tous les Raccourcis")
                 
-                # Parcs & Analyse
-                c_p1, c_p2 = st.columns(2)
-                with c_p1:
-                    st.info("**🎡 Parcs**")
-                    st.code("*ALL\n*DLP\n*DAW")
-                with c_p2:
-                    st.error("**📊 Analyse**")
-                    st.code("*101\n*102")
+                # SECTION PARCS & ANALYSE
+                c1, c2 = st.columns(2)
+                with c1:
+                    st.info("🎡 **Parcs**")
+                    st.code("*DLP\n*DAW / *WDS\n*ALL")
+                with c2:
+                    st.error("📊 **Analyse**")
+                    st.code("*101 (Live)\n*102 (Histo)")
 
                 st.divider()
 
-                # Disneyland Park
+                # SECTION DISNEYLAND PARK
                 st.success("### 🏰 Disneyland Park")
-                c_d1, c_d2 = st.columns(2)
-                with c_d1:
+                cd1, cd2 = st.columns(2)
+                with cd1:
                     st.caption("Main Street")
-                    st.code("*MS")
+                    st.code("*MS\n*MAINSTREET")
                     st.caption("Frontierland")
-                    st.code("*FRONTIER")
-                with c_d2:
+                    st.code("*FRONTIER\n*FRONTIERLAND")
+                with cd2:
                     st.caption("Adventureland")
-                    st.code("*ADVENTURE")
+                    st.code("*ADVENTURE\n*ADVENTURELAND")
+                    st.caption("Fantasyland")
+                    st.code("*FANTASY\n*FANTASYLAND")
                     st.caption("Discoveryland")
-                    st.code("*DISCO")
+                    st.code("*DISCO\n*DISCOVERYLAND")
 
                 st.divider()
 
-                # Adventure World
+                # SECTION ADVENTURE WORLD
                 st.warning("### 🎬 Adventure World")
-                c_a1, c_a2 = st.columns(2)
-                with c_a1:
-                    st.caption("Avengers")
-                    st.code("*CAMPUS")
-                    st.caption("Pixar")
-                    st.code("*PIXAR")
-                with c_a2:
-                    st.caption("Frozen")
-                    st.code("*WOF")
-                    st.caption("Way")
-                    st.code("*WAY")
+                ca1, ca2 = st.columns(2)
+                with ca1:
+                    st.caption("Avengers Campus")
+                    st.code("*AVENGERS\n*CAMPUS\n*AVENGERS-CAMPUS")
+                    st.caption("Worlds of Pixar")
+                    st.code("*PIXAR\n*WORLD-OF-PIXAR\n*PROD4\n*PRODUCTION4")
+                with ca2:
+                    st.caption("Production 3")
+                    st.code("*PROD3\n*PRODUCTION 3")
+                    st.caption("World of Frozen")
+                    st.code("*WOF\n*FROZEN\n*WORLD-OF-FROZEN")
+                    st.caption("Adventure Way")
+                    st.code("*WAY\n*ADVENTURE-WAY")
 
         with col_sc:
             sc = st.text_input("Raccourci :", placeholder="ex: *FANTASY, *101...", label_visibility="collapsed")
         
-        # Gestion sélection
+        # Logique de filtrage
         current_selection = st.query_params.get_all("fav")
         if sc == "*101":
             current_selection = [p['ride'] for p in all_pannes if p['statut'] == "EN_COURS"]
@@ -167,7 +176,6 @@ if not df_raw.empty:
         
         st.caption(f"🕒 Donnée : {derniere_maj} | Auto-refresh : {st.session_state.last_refresh} (60s)")
         
-        # --- AFFICHAGE ---
         if not selected_options:
             st.info(f"👆 Sélectionne des attractions. (Reset à 02:00)")
             st.divider()
@@ -204,7 +212,6 @@ if not df_raw.empty:
                             st.write("✅ Pas de panne détectée aujourd'hui")
                     st.divider()
 
-        # --- FLUX GLOBAL ---
         st.subheader("🚨 Flux des dernières pannes")
         flux = sorted(all_pannes, key=lambda x: x['debut'], reverse=True)[:5]
         if flux:
@@ -213,6 +220,6 @@ if not df_raw.empty:
                 else: st.info(f"✅ **{p['ride']}** rouvert à {p['fin'].strftime('%H:%M')} ({p['duree']} min)")
         else: st.write("✅ Aucune panne enregistrée aujourd'hui.")
     else:
-        st.warning(f"😴 Maintenance nocturne (02h-08h). Reset effectué à {debut_journee.strftime('%H:%M')}.")
+        st.warning(f"😴 Maintenance nocturne. Reset à {debut_journee.strftime('%H:%M')}.")
 else:
-    st.warning("📭 Aucune donnée disponible pour aujourd'hui.")
+    st.warning("📭 Aucune donnée disponible.")
