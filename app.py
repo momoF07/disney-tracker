@@ -21,7 +21,7 @@ st.markdown("""
         left: 50% !important;
         transform: translate(-50%, -50%) !important;
         width: 90vw !important;
-        max-width: 650px !important;
+        max-width: 850px !important;
         max-height: 85vh !important;
         background: rgba(15, 18, 25, 0.8) !important;
         backdrop-filter: blur(20px) !important;
