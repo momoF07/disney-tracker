@@ -65,7 +65,7 @@ except:
 if not df_raw.empty:
     df_raw['created_at'] = pd.to_datetime(df_raw['created_at']).dt.tz_convert('Europe/Paris')
     
-    # --- FILTRAGE : Exclure maintenance (2h -> 8h) ---
+    # --- FILTRAGE : Exclure maintenance nocturne (2h -> 8h) ---
     df = df_raw[~((df_raw['created_at'].dt.hour >= 2) & (df_raw['created_at'].dt.hour < 8))].copy()
     
     if not df.empty:
@@ -91,26 +91,67 @@ if not df_raw.empty:
             if en_panne:
                 all_pannes.append({"ride": ride_name, "debut": debut_panne, "fin": None, "statut": "EN_COURS"})
 
-        # --- LOGIQUE RACCOURCIS AVEC GRANDE POPUP ---
+        # --- LOGIQUE RACCOURCIS AVEC POPUP D'AIDE COLORÉE ---
         st.write("---")
         col_sc, col_help = st.columns([0.88, 0.12])
         
         with col_help:
             with st.popover("❓", help="Voir tous les raccourcis"):
                 st.markdown("## 🏰 Guide des Raccourcis")
+                
+                # --- BLOC PARCS & ÉTATS (BLEU) ---
+                st.info("### 🎢 Parcs & États")
                 c1, c2 = st.columns(2)
                 with c1:
-                    st.markdown("### 🎢 Parcs & États")
-                    st.code("*ALL\n*DLP\n*DAW / *WDS\n*101 (Panne)\n*102 (Histo)")
-                    st.markdown("### 🏰 Disneyland Park")
-                    st.code("*MS / *MAINSTREET\n*FRONTIER\n*ADVENTURE\n*FANTASY\n*DISCO")
+                    st.code("*ALL")
+                    st.caption("Tout le complexe")
+                    st.code("*DLP")
+                    st.caption("Parc Disneyland")
                 with c2:
-                    st.markdown("### 🎬 Adventure World")
-                    st.code("*CAMPUS / *AVENGERS\n*PIXAR / *PROD4\n*PROD3\n*FROZEN / *WOF\n*WAY")
-                    st.info("💡 Cliquez sur un code pour le copier.")
+                    st.code("*DAW")
+                    st.caption("Adventure World")
+                    st.code("*101")
+                    st.caption("Pannes en cours")
+
+                # --- BLOC DISNEYLAND PARK (VERT) ---
+                st.success("### 🏰 Disneyland Park")
+                c3, c4 = st.columns(2)
+                with c3:
+                    st.code("*MS")
+                    st.caption("Main Street")
+                    st.code("*FRONTIER")
+                    st.caption("Frontierland")
+                    st.code("*ADVENTURE")
+                    st.caption("Adventureland")
+                with c4:
+                    st.code("*FANTASY")
+                    st.caption("Fantasyland")
+                    st.code("*DISCO")
+                    st.caption("Discoveryland")
+
+                # --- BLOC ADVENTURE WORLD (ORANGE) ---
+                st.warning("### 🎬 Adventure World")
+                c5, c6 = st.columns(2)
+                with c5:
+                    st.code("*CAMPUS")
+                    st.caption("Avengers Campus")
+                    st.code("*PIXAR")
+                    st.caption("Worlds of Pixar")
+                    st.code("*PROD3")
+                    st.caption("Production 3")
+                with c6:
+                    st.code("*FROZEN")
+                    st.caption("World of Frozen")
+                    st.code("*WAY")
+                    st.caption("Adventure Way")
+
+                # --- BLOC ANALYSE (ROUGE) ---
+                st.error("### 📊 Analyse")
+                st.code("*102")
+                st.caption("Toutes les attractions ayant eu une panne aujourd'hui.")
 
         with col_sc:
-            sc = st.text_input("Raccourci :", placeholder="ex: *CAMPUS, *101...", label_visibility="collapsed")
+            sc = st.text_input("Raccourci :", placeholder="ex: *FANTASY, *101...", label_visibility="collapsed")
         
         # Gestion des favoris via URL
         current_selection = st.query_params.get_all("fav")
@@ -130,7 +171,7 @@ if not df_raw.empty:
         
         # --- AFFICHAGE DES ATTRACTIONS ---
         if not selected_options:
-            st.info(f"👆 Sélectionne des attractions ou un raccourci. (Reset quotidien à 02:00)")
+            st.info(f"👆 Sélectionne des attractions ou utilise un raccourci. (Reset quotidien à 02:00)")
             st.divider()
         else:
             st.divider()
@@ -180,5 +221,5 @@ if not df_raw.empty:
 else:
     st.warning("📭 Aucune donnée disponible pour aujourd'hui.")
 
-# Style CSS pour arrondir les boutons et ajuster les métriques
+# Style CSS final
 st.markdown("<style>[data-testid='stMetricValue'] { font-size: 1.8rem; } .stButton button { width: 100%; border-radius: 10px; }</style>", unsafe_allow_html=True)
