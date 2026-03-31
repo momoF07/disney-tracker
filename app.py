@@ -9,7 +9,7 @@ from streamlit_autorefresh import st_autorefresh
 from emojis import get_emoji, get_rides_by_zone
 
 # --- CONFIGURATION DE LA PAGE ---
-st.set_page_config(page_title="Disney Live Control", page_icon="🏰", layout="centered")
+st.set_page_config(page_title="Disney Wait Time", page_icon="🏰", layout="centered")
 
 # --- CONNEXION SUPABASE ---
 supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
@@ -17,12 +17,9 @@ supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 # --- ACTUALISATION AUTOMATIQUE (60 secondes) ---
 st_autorefresh(interval=60000, key="datarefresh")
 
-# Stockage de l'heure du dernier refresh pour l'affichage
+# Stockage de l'heure du dernier refresh
 paris_tz = pytz.timezone('Europe/Paris')
-if "last_refresh" not in st.session_state:
-    st.session_state.last_refresh = datetime.now(paris_tz).strftime("%H:%M:%S")
-else:
-    st.session_state.last_refresh = datetime.now(paris_tz).strftime("%H:%M:%S")
+st.session_state.last_refresh = datetime.now(paris_tz).strftime("%H:%M:%S")
 
 # --- FONCTION POUR GITHUB ---
 def trigger_github_action():
@@ -65,16 +62,15 @@ except:
 if not df_raw.empty:
     df_raw['created_at'] = pd.to_datetime(df_raw['created_at']).dt.tz_convert('Europe/Paris')
     
-    # --- FILTRAGE : Exclure maintenance nocturne (2h -> 8h) ---
+    # --- FILTRAGE MAINTENANCE NOCTURNE (2h -> 8h) ---
     df = df_raw[~((df_raw['created_at'].dt.hour >= 2) & (df_raw['created_at'].dt.hour < 8))].copy()
     
     if not df.empty:
         derniere_maj = df['created_at'].max().strftime("%H:%M:%S")
-
-        # --- CALCUL GLOBAL DES PANNES ---
         all_pannes = []
         toutes_attractions = sorted(df['ride_name'].unique())
         
+        # Calcul des pannes
         for ride_name in toutes_attractions:
             ride_data = df[df['ride_name'] == ride_name].sort_values('created_at')
             en_panne, debut_panne = False, None
@@ -91,71 +87,64 @@ if not df_raw.empty:
             if en_panne:
                 all_pannes.append({"ride": ride_name, "debut": debut_panne, "fin": None, "statut": "EN_COURS"})
 
-        # --- LOGIQUE RACCOURCIS AVEC POPUP D'AIDE COLORÉE ---
+        # --- LOGIQUE RACCOURCIS AVEC POPUP COMPACTE ---
         st.write("---")
         col_sc, col_help = st.columns([0.88, 0.12])
         
         with col_help:
-            with st.popover("❓", help="Voir tous les raccourcis"):
-                st.markdown("## 🏰 Guide des Raccourcis")
+            with st.popover("❓"):
+                st.markdown("### 🔍 Raccourcis")
                 
-                # --- BLOC PARCS & ÉTATS (BLEU) ---
-                st.info("### 🎢 Parcs & États")
-                c1, c2 = st.columns(2)
-                with c1:
-                    st.code("*ALL")
-                    st.caption("Tout le complexe")
-                    st.code("*DLP")
-                    st.caption("Parc Disneyland")
-                with c2:
-                    st.code("*DAW")
-                    st.caption("Adventure World")
-                    st.code("*101")
-                    st.caption("Pannes en cours")
+                # Parcs & Analyse
+                c_p1, c_p2 = st.columns(2)
+                with c_p1:
+                    st.info("**🎡 Parcs**")
+                    st.code("*ALL\n*DLP\n*DAW")
+                with c_p2:
+                    st.error("**📊 Analyse**")
+                    st.code("*101\n*102")
 
-                # --- BLOC DISNEYLAND PARK (VERT) ---
+                st.divider()
+
+                # Disneyland Park
                 st.success("### 🏰 Disneyland Park")
-                c3, c4 = st.columns(2)
-                with c3:
-                    st.code("*MS")
+                c_d1, c_d2 = st.columns(2)
+                with c_d1:
                     st.caption("Main Street")
-                    st.code("*FRONTIER")
+                    st.code("*MS")
                     st.caption("Frontierland")
-                    st.code("*ADVENTURE")
+                    st.code("*FRONTIER")
                     st.caption("Adventureland")
-                with c4:
-                    st.code("*FANTASY")
+                    st.code("*ADVENTURE")
+                with c_d2:
                     st.caption("Fantasyland")
-                    st.code("*DISCO")
+                    st.code("*FANTASY")
                     st.caption("Discoveryland")
+                    st.code("*DISCO")
 
-                # --- BLOC ADVENTURE WORLD (ORANGE) ---
+                st.divider()
+
+                # Adventure World
                 st.warning("### 🎬 Adventure World")
-                c5, c6 = st.columns(2)
-                with c5:
+                c_a1, c_a2 = st.columns(2)
+                with c_a1:
+                    st.caption("Avengers")
                     st.code("*CAMPUS")
-                    st.caption("Avengers Campus")
+                    st.caption("Pixar")
                     st.code("*PIXAR")
-                    st.caption("Worlds of Pixar")
+                    st.caption("Prod 3")
                     st.code("*PROD3")
-                    st.caption("Production 3")
-                with c6:
-                    st.code("*FROZEN")
-                    st.caption("World of Frozen")
+                with c_a2:
+                    st.caption("Frozen")
+                    st.code("*WOF")
+                    st.caption("Way")
                     st.code("*WAY")
-                    st.caption("Adventure Way")
-
-                # --- BLOC ANALYSE (ROUGE) ---
-                st.error("### 📊 Analyse")
-                st.code("*102")
-                st.caption("Toutes les attractions ayant eu une panne aujourd'hui.")
 
         with col_sc:
             sc = st.text_input("Raccourci :", placeholder="ex: *FANTASY, *101...", label_visibility="collapsed")
         
-        # Gestion des favoris via URL
+        # Gestion de la sélection
         current_selection = st.query_params.get_all("fav")
-        
         if sc == "*101":
             current_selection = [p['ride'] for p in all_pannes if p['statut'] == "EN_COURS"]
         elif sc == "*102":
@@ -169,9 +158,9 @@ if not df_raw.empty:
         
         st.caption(f"🕒 Donnée : {derniere_maj} | Auto-refresh : {st.session_state.last_refresh} (60s)")
         
-        # --- AFFICHAGE DES ATTRACTIONS ---
+        # --- AFFICHAGE ---
         if not selected_options:
-            st.info(f"👆 Sélectionne des attractions ou utilise un raccourci. (Reset quotidien à 02:00)")
+            st.info(f"👆 Sélectionne des attractions. (Reset à 02:00)")
             st.divider()
         else:
             st.divider()
@@ -180,7 +169,6 @@ if not df_raw.empty:
                 if not ride_df.empty:
                     last = ride_df.iloc[0]
                     st.subheader(f"{get_emoji(ride)} {ride}")
-                    
                     c1, c2 = st.columns(2)
                     if last['is_open']:
                         c1.success("🟢 OUVERT")
@@ -208,7 +196,7 @@ if not df_raw.empty:
                     st.divider()
 
         # --- FLUX GLOBAL ---
-        st.subheader("🚨 Flux des dernières pannes du parc")
+        st.subheader("🚨 Flux des dernières pannes")
         flux = sorted(all_pannes, key=lambda x: x['debut'], reverse=True)[:5]
         if flux:
             for p in flux:
@@ -216,10 +204,8 @@ if not df_raw.empty:
                 else: st.info(f"✅ **{p['ride']}** rouvert à {p['fin'].strftime('%H:%M')} ({p['duree']} min)")
         else: st.write("✅ Aucune panne enregistrée aujourd'hui.")
     else:
-        st.warning(f"😴 Le parc est en maintenance nocturne. (Reset à {debut_journee.strftime('%H:%M')})")
-
+        st.warning(f"😴 Maintenance nocturne (02h-08h). Reset effectué à {debut_journee.strftime('%H:%M')}.")
 else:
     st.warning("📭 Aucune donnée disponible pour aujourd'hui.")
 
-# Style CSS final
 st.markdown("<style>[data-testid='stMetricValue'] { font-size: 1.8rem; } .stButton button { width: 100%; border-radius: 10px; }</style>", unsafe_allow_html=True)
