@@ -134,7 +134,7 @@ if not df_raw.empty:
         st.write("---")
         col_sc, col_help = st.columns([0.88, 0.12])
         
-            with col_help:
+        with col_help:
             with st.popover("❓"):
                 st.markdown("<h2 style='text-align:center; color:white; margin-bottom:20px;'>🔍 Raccourcis</h2>", unsafe_allow_html=True)
                 
