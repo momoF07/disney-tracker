@@ -192,7 +192,7 @@ if not df_raw.empty:
         if flux and not est_nuit_actuellement:
             for p in flux:
                 if p['statut'] == "EN_COURS": 
-                    st.error(f"🔴 {p['ride']} >> 101 à ({p['debut'].strftime('%H:%M')})")
+                    st.error(f"🔴 {p['ride']} >> 101 à {p['debut'].strftime('%H:%M')}")
                 else: 
                     st.info(f"✅ {p['ride']} >> 102 à {p['fin'].strftime('%H:%M')} ({p['duree']} min)")
         else:
