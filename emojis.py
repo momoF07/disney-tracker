@@ -36,7 +36,6 @@ PARKS_DATA = {
             "Casey Jr. – le Petit Train du Cirque": "🚂",
             "Le Pays des Contes de Fées, presented by Vittel": "📖",
             "La Tanière du Dragon": "🐉",
-            "Raiponce Tangled Spin": "🍳",
         },
         "Discoveryland": {
             "Star Wars Hyperspace Mountain": "🚀",
@@ -47,26 +46,30 @@ PARKS_DATA = {
             "Les Mystères du Nautilus": "🌀",
         }
     },
-    "Walt Disney Studios": {
+    "Disney Adventure World": {
         "Avengers Campus": {
             "Avengers Assemble: Flight Force": "🛡️",
             "Spider-Man W.E.B. Adventure": "🕷️",
         },
         "Worlds of Pixar": {
-            "Crush's Coaster": "🐢",
             "Ratatouille : L’Aventure Totalement Toquée de Rémy​": "🐭",
             "RC Racer": "🏎️",
             "Slinky® Dog Zigzag Spin": "🐶",
             "Toy Soldiers Parachute Drop": "🪂",
-            "Cars Quatre Roues Rallye": "🏁",
             "Cars ROAD TRIP": "🌵",
         },
-        "Production Courtyard": {
+        "Production 3": {
+            "Les Tapis Volants - Flying Carpets Over Agrabah®": "
+            "Crush's Coaster": "🐢",
             "The Twilight Zone Tower of Terror": "🏨",
+            "Cars Quatre Roues Rallye": "🏁",
         },
         "World of Frozen": {
             "Entry to World of Frozen": "❄️",
             "Frozen Ever After": "⛄",
+        }
+        "Adventure Way": {
+            "Raiponce Tangled Spin": "🍳",
         }
     }
 }
@@ -94,7 +97,7 @@ def get_rides_by_zone(zone_code, all_rides_list):
         for land in PARKS_DATA["Disneyland Park"].values():
             targets.extend(land.keys())
     elif zone_code in ["DAW", "WDS"]:
-        for land in PARKS_DATA["Walt Disney Studios"].values():
+        for land in PARKS_DATA["Disney Adventure World"].values():
             targets.extend(land.keys())
     
     # Raccourcis par Lands spécifiques
