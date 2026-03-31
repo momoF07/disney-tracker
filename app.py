@@ -95,7 +95,7 @@ if not df_raw.empty:
 
         # --- LOGIQUE RACCOURCIS ---
         st.write("---")
-        sc = st.text_input("Raccourci : `*DLP`, `*FANTASY`, `*101`, `*102`...", placeholder="Tape ici...")
+        sc = st.text_input("Raccourci : `*DLP`, `*FANTASY`, `*CAMPUS`, `*FROZEN`...", placeholder="Tape ici...")
         
         current_selection = st.query_params.get_all("fav")
         if sc == "*101":
@@ -110,12 +110,15 @@ if not df_raw.empty:
         st.query_params["fav"] = selected_options
         
         st.caption(f"🕒 Donnée : {derniere_maj} | Auto-refresh : {st.session_state.last_refresh} (60s)")
-        st.divider()
-
+        
         # --- AFFICHAGE ---
         if not selected_options:
             st.info(f"👆 Sélectionne des attractions. (Données reset à {debut_journee.strftime('%H:%M')})")
+        st.divider()
+
+        
         else:
+            st.divider()
             for ride in selected_options:
                 ride_df = df[df['ride_name'] == ride].sort_values('created_at', ascending=False)
                 if not ride_df.empty:
