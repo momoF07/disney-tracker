@@ -11,17 +11,44 @@ from emojis import get_emoji, get_rides_by_zone
 # --- CONFIGURATION DE LA PAGE ---
 st.set_page_config(page_title="Disney Wait Time", page_icon="🏰", layout="centered")
 
+# --- STYLE CSS POUR LA POPUP AU MILIEU ET TRANSPARENTE ---
+st.markdown("""
+<style>
+    /* Cibler le conteneur de la popup (popover) */
+    [data-testid="stPopoverBody"] {
+        position: fixed;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        width: 80vw !important; /* Plus large (80% de l'écran) */
+        max-width: 600px !important;
+        background-color: rgba(28, 31, 46, 0.9) !important; /* Couleur sombre avec transparence */
+        backdrop-filter: blur(10px); /* Flou d'arrière-plan stylé */
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        z-index: 9999;
+    }
+    
+    /* Boutons et éléments à l'intérieur */
+    [data-testid="stPopoverBody"] stMarkdown {
+        color: white;
+    }
+    
+    /* Ajustements CSS divers */
+    [data-testid='stMetricValue'] { font-size: 1.8rem; }
+    .stButton button { width: 100%; border-radius: 10px; }
+</style>
+""", unsafe_allow_html=True)
+
 # --- CONNEXION SUPABASE ---
 supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 
-# --- ACTUALISATION AUTOMATIQUE (60 secondes) ---
+# --- ACTUALISATION AUTOMATIQUE ---
 st_autorefresh(interval=60000, key="datarefresh")
 
-# Stockage de l'heure du dernier refresh
 paris_tz = pytz.timezone('Europe/Paris')
 st.session_state.last_refresh = datetime.now(paris_tz).strftime("%H:%M:%S")
 
-# --- FONCTION POUR GITHUB ---
 def trigger_github_action():
     REPO, WORKFLOW_ID, TOKEN = "momoF07/disney-tracker", "check.yml", st.secrets["GITHUB_TOKEN"]
     url = f"https://api.github.com/repos/{REPO}/actions/workflows/{WORKFLOW_ID}/dispatches"
@@ -33,10 +60,8 @@ def trigger_github_action():
 
 # --- INTERFACE ---
 st.title("🏰 Disney Wait Time")
-
 maintenant = datetime.now(paris_tz)
 
-# --- LOGIQUE DE RESET À 02:00 DU MATIN ---
 heure_reset = maintenant.replace(hour=2, minute=0, second=0, microsecond=0)
 if maintenant < heure_reset:
     debut_journee = heure_reset - timedelta(days=1)
@@ -48,21 +73,14 @@ if st.button('🔄 Actualiser & Forcer un Relevé'):
         if trigger_github_action() == 204:
             st.toast("🚀 Robot lancé !"); time.sleep(45); st.rerun()
 
-# --- RÉCUPÉRATION DES DONNÉES (Depuis 2h du matin) ---
 try:
-    response = supabase.table("disney_logs") \
-        .select("*") \
-        .gte("created_at", debut_journee.isoformat()) \
-        .order("created_at", desc=False) \
-        .execute()
+    response = supabase.table("disney_logs").select("*").gte("created_at", debut_journee.isoformat()).order("created_at", desc=False).execute()
     df_raw = pd.DataFrame(response.data)
 except:
     df_raw = pd.DataFrame()
 
 if not df_raw.empty:
     df_raw['created_at'] = pd.to_datetime(df_raw['created_at']).dt.tz_convert('Europe/Paris')
-    
-    # --- FILTRAGE MAINTENANCE NOCTURNE (2h -> 8h) ---
     df = df_raw[~((df_raw['created_at'].dt.hour >= 2) & (df_raw['created_at'].dt.hour < 8))].copy()
     
     if not df.empty:
@@ -70,7 +88,6 @@ if not df_raw.empty:
         all_pannes = []
         toutes_attractions = sorted(df['ride_name'].unique())
         
-        # Calcul des pannes
         for ride_name in toutes_attractions:
             ride_data = df[df['ride_name'] == ride_name].sort_values('created_at')
             en_panne, debut_panne = False, None
@@ -78,16 +95,12 @@ if not df_raw.empty:
                 if not row['is_open'] and not en_panne:
                     en_panne, debut_panne = True, row['created_at']
                 elif row['is_open'] and en_panne:
-                    all_pannes.append({
-                        "ride": ride_name, "debut": debut_panne, "fin": row['created_at'],
-                        "duree": int((row['created_at'] - debut_panne).total_seconds() / 60),
-                        "statut": "TERMINEE"
-                    })
+                    all_pannes.append({"ride": ride_name, "debut": debut_panne, "fin": row['created_at'], "duree": int((row['created_at'] - debut_panne).total_seconds() / 60), "statut": "TERMINEE"})
                     en_panne = False
             if en_panne:
                 all_pannes.append({"ride": ride_name, "debut": debut_panne, "fin": None, "statut": "EN_COURS"})
 
-        # --- LOGIQUE RACCOURCIS AVEC POPUP COMPACTE ---
+        # --- LOGIQUE RACCOURCIS ---
         st.write("---")
         col_sc, col_help = st.columns([0.88, 0.12])
         
@@ -114,11 +127,9 @@ if not df_raw.empty:
                     st.code("*MS")
                     st.caption("Frontierland")
                     st.code("*FRONTIER")
+                with c_d2:
                     st.caption("Adventureland")
                     st.code("*ADVENTURE")
-                with c_d2:
-                    st.caption("Fantasyland")
-                    st.code("*FANTASY")
                     st.caption("Discoveryland")
                     st.code("*DISCO")
 
@@ -132,8 +143,6 @@ if not df_raw.empty:
                     st.code("*CAMPUS")
                     st.caption("Pixar")
                     st.code("*PIXAR")
-                    st.caption("Prod 3")
-                    st.code("*PROD3")
                 with c_a2:
                     st.caption("Frozen")
                     st.code("*WOF")
@@ -143,7 +152,7 @@ if not df_raw.empty:
         with col_sc:
             sc = st.text_input("Raccourci :", placeholder="ex: *FANTASY, *101...", label_visibility="collapsed")
         
-        # Gestion de la sélection
+        # Gestion sélection
         current_selection = st.query_params.get_all("fav")
         if sc == "*101":
             current_selection = [p['ride'] for p in all_pannes if p['statut'] == "EN_COURS"]
@@ -207,5 +216,3 @@ if not df_raw.empty:
         st.warning(f"😴 Maintenance nocturne (02h-08h). Reset effectué à {debut_journee.strftime('%H:%M')}.")
 else:
     st.warning("📭 Aucune donnée disponible pour aujourd'hui.")
-
-st.markdown("<style>[data-testid='stMetricValue'] { font-size: 1.8rem; } .stButton button { width: 100%; border-radius: 10px; }</style>", unsafe_allow_html=True)
