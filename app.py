@@ -6,183 +6,163 @@ import pytz
 import requests
 import time
 from streamlit_autorefresh import st_autorefresh 
-from emojis import get_emoji
+from emojis import get_emoji, get_rides_by_zone
 
-# --- CONFIGURATION DE LA PAGE ---
-st.set_page_config(page_title="Disney Live Control", page_icon="🏰", layout="centered")
+# --- CONFIGURATION ---
+st.set_page_config(page_title="Disney Wait Time", page_icon="🏰", layout="centered")
 
-# --- CONNEXION SUPABASE ---
+# --- STYLE CSS POPUP ---
+st.markdown("""
+<style>
+    [data-testid="stPopoverBody"] {
+        position: fixed !important; top: 50% !important; left: 50% !important;
+        transform: translate(-50%, -50%) !important; width: 85vw !important;
+        max-width: 650px !important; background-color: rgba(17, 20, 28, 0.9) !important;
+        backdrop-filter: blur(15px) !important; border-radius: 20px !important;
+        padding: 20px !important; z-index: 999999 !important;
+    }
+    .shortcut-card { background: rgba(255, 255, 255, 0.05); border-radius: 10px; padding: 8px; margin-top: 10px; }
+    .title-blue { color: #4facfe; font-weight: bold; }
+    .title-green { color: #00f2fe; font-weight: bold; }
+    .title-orange { color: #f9d423; font-weight: bold; }
+    [data-testid='stMetricValue'] { font-size: 1.8rem; }
+    .stButton button { width: 100%; border-radius: 10px; }
+</style>
+""", unsafe_allow_html=True)
+
+# --- INITIALISATION ---
+paris_tz = pytz.timezone('Europe/Paris')
 supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
-
-# --- ACTUALISATION AUTOMATIQUE (60 secondes) ---
 st_autorefresh(interval=60000, key="datarefresh")
 
-# Stockage de l'heure du dernier refresh
-paris_tz = pytz.timezone('Europe/Paris')
 if "last_refresh" not in st.session_state:
     st.session_state.last_refresh = datetime.now(paris_tz).strftime("%H:%M:%S")
 st.session_state.last_refresh = datetime.now(paris_tz).strftime("%H:%M:%S")
 
-# --- FONCTION POUR DÉCLENCHER LE ROBOT ---
 def trigger_github_action():
-    REPO = "momoF07/disney-tracker"
-    WORKFLOW_ID = "check.yml"
-    TOKEN = st.secrets["GITHUB_TOKEN"]
+    REPO, WORKFLOW_ID, TOKEN = "momoF07/disney-tracker", "check.yml", st.secrets["GITHUB_TOKEN"]
     url = f"https://api.github.com/repos/{REPO}/actions/workflows/{WORKFLOW_ID}/dispatches"
-    headers = {
-        "Authorization": f"Bearer {TOKEN}",
-        "Accept": "application/vnd.github.v3+json"
-    }
+    headers = {"Authorization": f"Bearer {TOKEN}", "Accept": "application/vnd.github.v3+json"}
     try:
         res = requests.post(url, headers=headers, json={"ref": "main"})
         return res.status_code
-    except:
-        return 500
+    except: return 500
+
+# --- LOGIQUE TEMPORELLE ---
+maintenant = datetime.now(paris_tz)
+# Reset à 2h du mat Paris
+heure_reset = maintenant.replace(hour=2, minute=0, second=0, microsecond=0)
+debut_journee = heure_reset - timedelta(days=1) if maintenant < heure_reset else heure_reset
+
+# On retire 2h pour la requête Supabase (UTC)
+query_date = (debut_journee - timedelta(hours=2)).replace(tzinfo=None).isoformat()
 
 # --- INTERFACE ---
 st.title("🏰 Disney Wait Time")
 
-maintenant = datetime.now(paris_tz)
-
-# Logique de Reset à 02:00 du matin
-heure_reset = maintenant.replace(hour=2, minute=0, second=0, microsecond=0)
-if maintenant < heure_reset:
-    debut_journee = heure_reset - timedelta(days=1)
-else:
-    debut_journee = heure_reset
-
 if st.button('🔄 Actualiser & Forcer un Relevé'):
-    with st.spinner("Signal envoyé au robot..."):
-        status = trigger_github_action()
-        if status == 204:
-            st.toast("🚀 Robot lancé ! Attente des données...")
-            time.sleep(45)
-            st.rerun()
-        else:
-            st.error("Erreur lors du lancement du robot.")
+    with st.spinner("Signal envoyé..."):
+        if trigger_github_action() == 204:
+            st.toast("🚀 Robot lancé !"); time.sleep(45); st.rerun()
 
-# --- RÉCUPÉRATION DES DONNÉES (Depuis 2h du matin) ---
+# --- RÉCUPÉRATION ---
 try:
-    response = supabase.table("disney_logs") \
-        .select("*") \
-        .gte("created_at", debut_journee.isoformat()) \
-        .order("created_at", desc=False) \
-        .execute()
-    df_raw = pd.DataFrame(response.data)
-except Exception as e:
-    st.error(f"Erreur de connexion : {e}")
-    df_raw = pd.DataFrame()
+    response = supabase.table("disney_logs").select("*").gte("created_at", query_date).order("created_at", desc=False).execute()
+    df = pd.DataFrame(response.data)
+except:
+    df = pd.DataFrame()
 
-if not df_raw.empty:
-    # Conversion des dates
-    df_raw['created_at'] = pd.to_datetime(df_raw['created_at']).dt.tz_convert('Europe/Paris')
+if not df.empty:
+    # On convertit juste pour l'affichage (sans toucher aux heures brutes pour le calcul)
+    df['created_at'] = pd.to_datetime(df['created_at'])
     
-    # Filtrage : Exclure maintenance nocturne (2h -> 8h)
-    df = df_raw[~((df_raw['created_at'].dt.hour >= 2) & (df_raw['created_at'].dt.hour < 8))].copy()
+    toutes_attractions = sorted(df['ride_name'].unique())
+    all_pannes = []
+
+    # Calcul Pannes
+    for ride_name in toutes_attractions:
+        ride_data = df[df['ride_name'] == ride_name].sort_values('created_at')
+        en_panne, debut_panne = False, None
+        for i, row in ride_data.iterrows():
+            if not row['is_open'] and not en_panne:
+                en_panne, debut_panne = True, row['created_at']
+            elif row['is_open'] and en_panne:
+                all_pannes.append({"ride": ride_name, "debut": debut_panne, "fin": row['created_at'], "statut": "TERMINEE"})
+                en_panne = False
+        if en_panne:
+            all_pannes.append({"ride": ride_name, "debut": debut_panne, "fin": None, "statut": "EN_COURS"})
+
+    # --- RACCOURCIS ---
+    st.write("---")
+    col_sc, col_help = st.columns([0.88, 0.12])
+    with col_help:
+        with st.popover("❓"):
+            st.markdown("### 🔍 Raccourcis")
+            st.markdown('<div class="shortcut-card"><p class="title-blue">🎡 Parcs</p></div>', unsafe_allow_html=True)
+            cp1, cp2, cp3 = st.columns(3)
+            cp1.code("*ALL"); cp2.code("*DLP"); cp3.code("*DAW")
+            
+            st.markdown('<p class="title-green" style="text-align:center; margin-top:20px;">🏰 Disneyland Park</p>', unsafe_allow_html=True)
+            lands = {"Main Street": ["*MS", "*MAINSTREET"], "Frontierland": ["*FRONTIER", "*FRONTIERLAND"], "Adventureland": ["*ADVENTURE", "*ADVENTURELAND"], "Fantasyland": ["*FANTASY", "*FANTASYLAND"], "Discoveryland": ["*DISCO", "*DISCOVERYLAND"]}
+            for land, codes in lands.items():
+                st.markdown(f'<div class="shortcut-card"><small>{land}</small></div>', unsafe_allow_html=True)
+                cl1, cl2 = st.columns(2)
+                cl1.code(codes[0]); cl2.code(codes[1])
+
+            st.markdown('<p class="title-orange" style="text-align:center; margin-top:20px;">🎬 Adventure World</p>', unsafe_allow_html=True)
+            st.markdown('<div class="shortcut-card"><small>Avengers / Pixar</small></div>', unsafe_allow_html=True)
+            ca1, ca2 = st.columns(2)
+            ca1.code("*CAMPUS"); ca2.code("*PIXAR")
+            st.markdown('<div class="shortcut-card"><small>Autres</small></div>', unsafe_allow_html=True)
+            st.code("*PROD3"); st.code("*WAY"); st.code("*WOF")
+
+    with col_sc:
+        sc = st.text_input("Raccourci :", placeholder="ex: *FANTASY...", label_visibility="collapsed")
     
-    if not df.empty:
-        derniere_maj = df['created_at'].max().strftime("%H:%M:%S")
-        toutes_attractions = sorted(df['ride_name'].unique())
-        
-        # --- CALCUL DES PANNES ---
-        all_pannes = []
-        for ride_name in toutes_attractions:
-            ride_data = df[df['ride_name'] == ride_name].sort_values('created_at')
-            en_panne = False
-            debut_panne = None
-            
-            for i, row in ride_data.iterrows():
-                if not row['is_open'] and not en_panne:
-                    en_panne = True
-                    debut_panne = row['created_at']
-                elif row['is_open'] and en_panne:
-                    all_pannes.append({
-                        "ride": ride_name,
-                        "debut": debut_panne,
-                        "fin": row['created_at'],
-                        "duree": int((row['created_at'] - debut_panne).total_seconds() / 60),
-                        "statut": "TERMINEE"
-                    })
-                    en_panne = False
-            
-            if en_panne:
-                all_pannes.append({
-                    "ride": ride_name,
-                    "debut": debut_panne,
-                    "fin": None,
-                    "statut": "EN_COURS"
-                })
+    current_selection = st.query_params.get_all("fav")
+    if sc.startswith("*"):
+        shortcut_selection = get_rides_by_zone(sc, toutes_attractions)
+        if shortcut_selection: current_selection = shortcut_selection
 
-        # --- FILTRE ET SÉLECTION ---
-        selected_options = st.multiselect(
-            "Sélectionne des attractions :",
-            options=toutes_attractions,
-            default=st.query_params.get_all("fav"),
-            format_func=lambda x: f"{get_emoji(x)} {x}"
-        )
-        st.query_params["fav"] = selected_options
+    selected_options = st.multiselect("Attractions :", options=toutes_attractions, default=current_selection, format_func=lambda x: f"{get_emoji(x)} {x}")
+    st.query_params["fav"] = selected_options
+    
+    derniere_maj = df['created_at'].max().strftime("%H:%M")
+    st.caption(f"🕒 Donnée : {derniere_maj} | Refresh : {st.session_state.last_refresh}")
 
-        st.caption(f"🕒 Dernière donnée : {derniere_maj} | Auto-refresh : {st.session_state.last_refresh} (60s)")
-
-        # --- AFFICHAGE DES ATTRACTIONS ---
-        if not selected_options:
-            st.info("Sélectionne des attractions pour voir les temps d'attente.")
-        else:
-            st.divider()
-            for ride in selected_options:
-                ride_df = df[df['ride_name'] == ride].sort_values('created_at', ascending=False)
-                if not ride_df.empty:
-                    last = ride_df.iloc[0]
-                    st.subheader(f"{get_emoji(ride)} {ride}")
-                    
-                    c1, c2 = st.columns(2)
-                    if last['is_open']:
-                        c1.success("🟢 OUVERT")
-                        c2.metric("Attente", f"{int(last['wait_time'])} min")
-                    else:
-                        c1.error("🔴 FERMÉ / PANNE")
-                        c2.metric("Attente", "- - -")
-
-                    # Affichage panne actuelle
-                    ride_pannes = [p for p in all_pannes if p['ride'] == ride]
-                    panne_actuelle = next((p for p in ride_pannes if p['statut'] == "EN_COURS"), None)
-                    if panne_actuelle:
-                        duree_actuelle = int((maintenant - panne_actuelle['debut']).total_seconds() / 60)
-                        st.warning(f"⚠️ En panne depuis {duree_actuelle} min (début à {panne_actuelle['debut'].strftime('%H:%M')})")
-
-                    # Historique
-                    with st.expander("Historique des pannes aujourd'hui"):
-                        if ride_pannes:
-                            for p in reversed(ride_pannes):
-                                if p['statut'] == "TERMINEE":
-                                    st.write(f"• De {p['debut'].strftime('%H:%M')} à {p['fin'].strftime('%H:%M')} ({p['duree']} min)")
-                                else:
-                                    st.write(f"• ⚠️ En cours depuis {p['debut'].strftime('%H:%M')}")
-                        else:
-                            st.write("✅ Aucune panne détectée aujourd'hui.")
-                    st.divider()
-
-        # --- FLUX DES DERNIÈRES PANNES ---
-        st.subheader("🚨 Flux des dernières pannes")
-        flux_pannes = sorted(all_pannes, key=lambda x: x['debut'], reverse=True)[:5]
-        if flux_pannes:
-            for p in flux_pannes:
-                if p['statut'] == "EN_COURS":
-                    st.error(f"🔴 **{p['ride']}** est tombé en panne à {p['debut'].strftime('%H:%M')}")
+    if selected_options:
+        for ride in selected_options:
+            ride_df = df[df['ride_name'] == ride].sort_values('created_at', ascending=False)
+            if not ride_df.empty:
+                last = ride_df.iloc[0]
+                st.subheader(f"{get_emoji(ride)} {ride}")
+                c1, c2 = st.columns(2)
+                if last['is_open']:
+                    c1.success("🟢 OUVERT")
+                    c2.metric("Attente", f"{int(last['wait_time'])} min")
                 else:
-                    st.info(f"✅ **{p['ride']}** a rouvert à {p['fin'].strftime('%H:%M')} (durée : {p['duree']} min)")
-        else:
-            st.write("Aucune panne enregistrée aujourd'hui.")
+                    c1.error("🔴 FERMÉ")
+                
+                ride_pannes = [p for p in all_pannes if p['ride'] == ride]
+                with st.expander("📜 Historique des pannes"):
+                    if ride_pannes:
+                        for p in reversed(ride_pannes):
+                            d_str = p['debut'].strftime('%H:%M')
+                            if p['statut'] == "TERMINEE":
+                                f_str = p['fin'].strftime('%H:%M')
+                                st.write(f"• De {d_str} à {f_str}")
+                            else:
+                                st.write(f"• ⚠️ En cours depuis {d_str}")
+                    else:
+                        st.write("✅ Pas de panne détectée")
+                st.divider()
 
-    else:
-        st.warning("Le parc est actuellement fermé ou en maintenance (relevés entre 08:00 et 02:00).")
+    st.subheader("🚨 Flux des pannes")
+    for p in sorted(all_pannes, key=lambda x: x['debut'], reverse=True)[:5]:
+        d_str = p['debut'].strftime('%H:%M')
+        if p['statut'] == "EN_COURS": st.error(f"🔴 {p['ride']} ({d_str})")
+        else: st.info(f"✅ {p['ride']} rouvert")
 else:
-    st.warning("Aucune donnée disponible pour le moment.")
+    st.warning("📭 Aucune donnée.")
 
-# Style pour les cartes
-st.markdown("""
-<style>
-[data-testid="stMetricValue"] { font-size: 1.8rem; }
-.stButton button { width: 100%; border-radius: 10px; }
-</style>
-""", unsafe_allow_html=True)
+st.markdown("<style>[data-testid='stMetricValue'] { font-size: 1.8rem; } .stButton button { width: 100%; border-radius: 10px; }</style>", unsafe_allow_html=True)
