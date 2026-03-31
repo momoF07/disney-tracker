@@ -112,7 +112,7 @@ if not df_raw.empty:
                 st.markdown("<h2 style='text-align:center; color:white; margin-bottom:20px;'>🔍 Raccourcis</h2>", unsafe_allow_html=True)
                 
                 # --- SECTION 1 : GÉNÉRAL & ANALYSE ---
-               st.markdown('<div class="shortcut-card"><p class="title-blue">🎡 Parcs</p></div>', unsafe_allow_html=True)
+                st.markdown('<div class="shortcut-card"><p class="title-blue">🎡 Parcs</p></div>', unsafe_allow_html=True)
                 col_p1, col_p2, col_p3 = st.columns(3)
                 col_p1.code("*ALL")
                 col_p2.code("*DLP")
