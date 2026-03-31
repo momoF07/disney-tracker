@@ -3,11 +3,11 @@
 # Structure organisée par Parc > Land > Attraction: Emoji
 PARKS_DATA = {
     "Disneyland Park": {
-        "Main Street": {
+        "MAINSTREET": {
             "Disneyland Railroad Main Street Station": "🚉",
             "Main Street Vehicles": "🚔",
         },
-        "Frontierland": {
+        "FRONTIERLAND": {
             "Big Thunder Mountain": "⛰️",
             "Phantom Manor": "👻",
             "Thunder Mesa Riverboat Landing": "🚢",
@@ -15,7 +15,7 @@ PARKS_DATA = {
             "Disneyland Railroad Frontierland Depot": "🚂",
             "Frontierland Playground": "🌵",
         },
-        "Adventureland": {
+        "ADVENTURELAND": {
             "Pirates of the Caribbean": "⚔️",
             "Indiana Jones™ and the Temple of Peril": "🤠",
             "La Cabane des Robinson": "🌳",
@@ -24,7 +24,7 @@ PARKS_DATA = {
             "Pirates' Beach": "🏖️",
             "Le Passage Enchanté d'Aladdin": "🧞",
         },
-        "Fantasyland": {
+        "FANTASYLAND": {
             "Peter Pan's Flight": "🧚",
             "it's a small world": "🌍",
             "Dumbo the Flying Elephant": "🐘",
@@ -37,7 +37,7 @@ PARKS_DATA = {
             "Le Pays des Contes de Fées, presented by Vittel": "📖",
             "La Tanière du Dragon": "🐉",
         },
-        "Discoveryland": {
+        "DISCOVERYLAND": {
             "Star Wars Hyperspace Mountain": "🚀",
             "Star Tours: The Adventures Continue*": "🌌",
             "Buzz Lightyear Laser Blast": "🔫",
@@ -47,28 +47,28 @@ PARKS_DATA = {
         }
     },
     "Disney Adventure World": {
-        "Avengers Campus": {
+        "AVENGERS CAMPUS": {
             "Avengers Assemble: Flight Force": "🛡️",
             "Spider-Man W.E.B. Adventure": "🕷️",
         },
-        "Worlds of Pixar": {
+        "WORLD OF PIXAR": {
             "Ratatouille : L’Aventure Totalement Toquée de Rémy​": "🐭",
             "RC Racer": "🏎️",
             "Slinky® Dog Zigzag Spin": "🐶",
             "Toy Soldiers Parachute Drop": "🪂",
             "Cars ROAD TRIP": "🌵",
         },
-        "Production 3": {
-            "Les Tapis Volants - Flying Carpets Over Agrabah®": "
+        "PRODUCTION 3": {
+            "Les Tapis Volants - Flying Carpets Over Agrabah®": "🧞",
             "Crush's Coaster": "🐢",
             "The Twilight Zone Tower of Terror": "🏨",
             "Cars Quatre Roues Rallye": "🏁",
         },
-        "World of Frozen": {
+        "WORLD OF FROZEN": {
             "Entry to World of Frozen": "❄️",
             "Frozen Ever After": "⛄",
-        }
-        "Adventure Way": {
+        },
+        "ADVENTURE WAY": {
             "Raiponce Tangled Spin": "🍳",
         }
     }
@@ -87,28 +87,56 @@ def get_emoji(name):
 
 def get_rides_by_zone(zone_code, all_rides_list):
     """
-    Filtre les attractions selon les raccourcis *DLP, *DAW ou les LANDS.
+    Filtre les attractions selon les raccourcis parcs ou les LANDS (avec alias).
     """
     zone_code = zone_code.upper().replace("*", "")
     targets = []
 
-    # Raccourcis de Parcs complets
+    # 1. Dictionnaire d'alias complet
+    ALIAS_MAP = {
+        "MS": "MAINSTREET",
+        "MAINSTREET": "MAINSTREET",
+        "FRONTIER": "FRONTIERLAND",
+        "FRONTIERLAND": "FRONTIERLAND",
+        "ADVENTURE": "ADVENTURELAND",
+        "ADVENTURELAND": "ADVENTURELAND",
+        "FANTASY": "FANTASYLAND",
+        "FANTASYLAND": "FANTASYLAND",
+        "DISCO": "DISCOVERYLAND",
+        "DISCOVERYLAND": "DISCOVERYLAND",
+        "AVENGERS": "AVENGERS CAMPUS",
+        "CAMPUS": "AVENGERS CAMPUS",
+        "AVENGERS-CAMPUS": "AVENGERS CAMPUS",
+        "PIXAR": "WORLD OF PIXAR",
+        "WORLD-OF-PIXAR": "WORLD OF PIXAR",
+        "PROD4": "WORLD OF PIXAR", # Souvent confondu
+        "PRODUCTION4": "WORLD OF PIXAR",
+        "PROD3": "PRODUCTION 3",
+        "PRODUCTION 3": "PRODUCTION 3",
+        "WOF": "WORLD OF FROZEN",
+        "FROZEN": "WORLD OF FROZEN",
+        "WORLD-OF-FROZEN": "WORLD OF FROZEN",
+        "WAY": "ADVENTURE WAY",
+        "ADVENTURE-WAY": "ADVENTURE WAY"
+    }
+
+    # 2. Gestion des Parcs
     if zone_code == "DLP":
         for land in PARKS_DATA["Disneyland Park"].values():
             targets.extend(land.keys())
     elif zone_code in ["DAW", "WDS"]:
         for land in PARKS_DATA["Disney Adventure World"].values():
             targets.extend(land.keys())
-    
-    # Raccourcis par Lands spécifiques
+
+    # 3. Gestion des Lands
     else:
+        target_land_name = ALIAS_MAP.get(zone_code, zone_code)
         for park, lands in PARKS_DATA.items():
             for land_name, attractions in lands.items():
-                # Si le raccourci correspond au nom du land (ex: FANTASY dans FANTASYLAND)
-                if zone_code in land_name.upper():
+                if target_land_name in land_name.upper():
                     targets.extend(attractions.keys())
 
-    # Filtrage final : on ne garde que ce qui existe réellement dans les logs actuels
+    # Filtrage final : on compare les noms cibles avec la liste réelle de l'API
     matched = []
     for ride in all_rides_list:
         if any(target.lower() in ride.lower() for target in targets):
