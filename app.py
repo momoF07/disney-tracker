@@ -69,23 +69,26 @@ def trigger_github_action():
 
 # --- INTERFACE ---
 st.title("🏰 Disney Wait Time")
-maintenant = datetime.now(paris_tz)
+maintenant_paris = datetime.now(paris_tz)
 
 # Logique de Reset (2h du matin Paris)
-heure_reset = maintenant.replace(hour=2, minute=0, second=0, microsecond=0)
-debut_journee = heure_reset - timedelta(days=1) if maintenant < heure_reset else heure_reset
+heure_reset_paris = maintenant_paris.replace(hour=2, minute=0, second=0, microsecond=0)
+debut_journee_paris = heure_reset_paris - timedelta(days=1) if maintenant_paris < heure_reset_paris else heure_reset_paris
 
 if st.button('🔄 Actualiser & Forcer un Relevé'):
     with st.spinner("Signal envoyé..."):
         if trigger_github_action() == 204:
             st.toast("🚀 Robot lancé !"); time.sleep(45); st.rerun()
 
-# --- RÉCUPÉRATION DES DONNÉES SÉCURISÉE ---
+# --- RÉCUPÉRATION DES DONNÉES FORMAT ISO BRUT ---
 try:
-    # On demande les logs un peu avant le reset pour éviter les problèmes de fuseau
+    # On calcule 00:00 UTC (qui correspond à 02:00 Paris)
+    # On l'envoie en STRING ISO pur sans fuseau pour forcer Supabase à tout donner
+    query_iso_brut = (debut_journee_paris - timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%S")
+    
     response = supabase.table("disney_logs")\
         .select("*")\
-        .gte("created_at", (debut_journee - timedelta(hours=2)).isoformat())\
+        .gte("created_at", query_iso_brut)\
         .order("created_at", desc=False)\
         .execute()
     df_raw = pd.DataFrame(response.data)
@@ -93,11 +96,17 @@ except:
     df_raw = pd.DataFrame()
 
 if not df_raw.empty:
-    # Conversion forcée UTC -> Paris
-    df_raw['created_at'] = pd.to_datetime(df_raw['created_at']).dt.tz_convert('Europe/Paris')
+    # Conversion forcée en datetime aware (UTC -> Paris)
+    df_raw['created_at'] = pd.to_datetime(df_raw['created_at'])
+    try:
+        df_raw['created_at'] = df_raw['created_at'].dt.tz_convert('Europe/Paris')
+    except:
+        df_raw['created_at'] = df_raw['created_at'].dt.tz_localize('UTC').dt.tz_convert('Europe/Paris')
     
-    # Filtrage : Uniquement depuis le reset de 2h du matin ET hors maintenance 2h-8h
-    df = df_raw[df_raw['created_at'] >= debut_journee].copy()
+    # Filtrage définitif sur l'heure de Paris
+    df = df_raw[df_raw['created_at'] >= debut_journee_paris].copy()
+    
+    # Exclusion maintenance 2h-8h
     df = df[~((df['created_at'].dt.hour >= 2) & (df['created_at'].dt.hour < 8))].copy()
     
     if not df.empty:
@@ -105,7 +114,6 @@ if not df_raw.empty:
         all_pannes = []
         toutes_attractions = sorted(df['ride_name'].unique())
         
-        # --- CALCUL COMPLET DES PANNES ---
         for ride_name in toutes_attractions:
             ride_data = df[df['ride_name'] == ride_name].sort_values('created_at')
             en_panne, debut_panne = False, None
@@ -166,7 +174,6 @@ if not df_raw.empty:
         
         st.caption(f"🕒 Donnée : {derniere_maj} | Auto-refresh : {st.session_state.last_refresh} (60s)")
         
-        # --- AFFICHAGE DES ATTRACTIONS ---
         if selected_options:
             st.divider()
             for ride in selected_options:
@@ -182,11 +189,10 @@ if not df_raw.empty:
                         c1.error("🔴 FERMÉ / PANNE")
                         c2.metric("Attente", "--")
                     
-                    # Logique spécifique Panne + Historique
                     ride_pannes = [p for p in all_pannes if p['ride'] == ride]
                     panne_actuelle = next((p for p in ride_pannes if p['statut'] == "EN_COURS"), None)
                     if panne_actuelle:
-                        diff = int((maintenant - panne_actuelle['debut']).total_seconds() / 60)
+                        diff = int((maintenant_paris - panne_actuelle['debut']).total_seconds() / 60)
                         st.warning(f"⚠️ En panne depuis {diff} min (à {panne_actuelle['debut'].strftime('%H:%M')})")
                     
                     with st.expander("📜 Historique des pannes"):
@@ -197,18 +203,15 @@ if not df_raw.empty:
                                 else:
                                     st.write(f"• ⚠️ En cours depuis {p['debut'].strftime('%H:%M')}")
                         else:
-                            st.write("✅ Pas de panne détectée aujourd'hui")
+                            st.write("✅ Pas de panne détectée")
                     st.divider()
 
-        # --- FLUX DES PANNES GLOBAL ---
         st.subheader("🚨 Flux des pannes")
         flux = sorted(all_pannes, key=lambda x: x['debut'], reverse=True)[:5]
         if flux:
             for p in flux:
                 if p['statut'] == "EN_COURS": st.error(f"🔴 {p['ride']} ({p['debut'].strftime('%H:%M')})")
                 else: st.info(f"✅ {p['ride']} rouvert à {p['fin'].strftime('%H:%M')} ({p['duree']} min)")
-        else:
-            st.write("✅ Aucune panne enregistrée.")
     else:
         st.warning("😴 Maintenance nocturne (02h-08h).")
 else:
