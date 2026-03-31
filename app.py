@@ -188,7 +188,7 @@ if not df_raw.empty:
                         c2.metric("Attente", f"{int(last['wait_time'])} min")
                     else:
                         c1.error("🔴 FERMÉ / PANNE")
-                        c2.metric("Attente", "--")
+                        c2.metric("Attente", "- - -")
                     
                     # Historique et pannes actuelles
                     ride_pannes = [p for p in all_pannes if p['ride'] == ride]
