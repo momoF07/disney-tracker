@@ -2,8 +2,10 @@ name: Disney Check
 
 on:
   schedule:
-    - cron: '*/5 * * * *'  # Toutes les 5 min, 24h/24
-  workflow_dispatch:      # Garde le bouton manuel
+    - cron: '*/10 * * * *'   # On le garde en secours
+  workflow_dispatch:        # Pour ton bouton Streamlit
+  repository_dispatch:      # <--- AJOUTE ÇA pour Cron-job.org
+    types: [run-disney-bot]
 
 jobs:
   run-robot:
