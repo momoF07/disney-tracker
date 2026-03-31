@@ -137,7 +137,7 @@ if not df_raw.empty:
                     panne_actuelle = next((p for p in ride_pannes if p['statut'] == "EN_COURS"), None)
                     if panne_actuelle:
                         min_e = int((maintenant - panne_actuelle['debut']).total_seconds() / 60)
-                        st.warning(f"⚠️ En panne depuis {min_e} min (à {panne_actuelle['debut'].strftime('%H:%M')})")
+                        st.warning(f"⚠️ Down depuis {min_e} min (à {panne_actuelle['debut'].strftime('%H:%M')})")
 
                     with st.expander("📜 Historique des pannes du jour"):
                         if ride_pannes:
