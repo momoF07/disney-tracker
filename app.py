@@ -179,12 +179,15 @@ if not df_raw.empty:
                     col_pix4.code("*PROD4")
 
                     st.markdown('<div class="shortcut-card"><small>World of Frozen</small></div>', unsafe_allow_html=True)
-                    col_fz1, col_fz2 = st.columns(2)
-                    col_fz1.code("*WOF")
-                    col_fz2.code("*FROZEN")
+                    col_fz1, col_fz2, col_fz3 = st.columns(3)
+                    col_fz1.code("*WORLD-OF-FROZEN")
+                    col_fz2.code("*WOF")
+                    col_fz3.code("*FROZEN")
 
                     st.markdown('<div class="shortcut-card"><small>Adventure Way</small></div>', unsafe_allow_html=True)
-                    st.code("*WAY")
+                    col_aw1, col_aw2 = st.columns(2)
+                    col_aw1.code("*ADVENTURE-WAY")
+                    col_aw2.code("*WAY")
 
         with col_sc:
             sc = st.text_input("Raccourci :", placeholder="ex: *FANTASY, *101...", label_visibility="collapsed")
