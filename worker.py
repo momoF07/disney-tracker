@@ -1,27 +1,15 @@
 import requests
 import os
 from supabase import create_client
-from datetime import datetime, timedelta
+from datetime import datetime
 
-# Configuration Supabase
 url = os.environ.get("SUPABASE_URL")
 key = os.environ.get("SUPABASE_KEY")
 supabase = create_client(url, key)
 
-# IDs des Parcs
 PARKS = ["dae968d5-630d-4719-8b06-3d107e944401", "ca888437-ebb4-4d50-aed2-d227f7096968"]
 
 def run_worker():
-    # 1. Nettoyage des vieux logs (> 24h) pour garder la base légère
-    try:
-        hier = (datetime.utcnow() - timedelta(days=1)).isoformat()
-        supabase.table("disney_logs").delete().lt("created_at", hier).execute()
-        print("🧹 Nettoyage des anciens logs effectué.")
-    except Exception as e:
-        print(f"Erreur nettoyage : {e}")
-
-    # 2. Récupération et Insertion
-    all_logs = []
     for p_id in PARKS:
         try:
             response = requests.get(f"https://api.themeparks.wiki/v1/entity/{p_id}/live", timeout=15)
@@ -29,25 +17,34 @@ def run_worker():
             
             for ride in data.get('liveData', []):
                 if ride.get('entityType') == "ATTRACTION":
+                    name = ride['name']
+                    status = ride.get('status')
+                    is_open = (status == "OPERATING")
+                    
                     queue = ride.get('queue', {})
                     standby = queue.get('STANDBY', {}) if queue else {}
-                    
-                    all_logs.append({
-                        "ride_name": ride['name'],
-                        "wait_time": standby.get('waitTime', 0) if standby else 0,
-                        "is_open": ride['status'] == "OPERATING",
-                        "created_at": datetime.utcnow().isoformat()
-                    })
-        except Exception as e:
-            print(f"Erreur parc {p_id}: {e}")
+                    wait = standby.get('waitTime', 0) if standby else 0
 
-    # 3. Envoi groupé à Supabase
-    if all_logs:
-        try:
-            supabase.table("disney_logs").insert(all_logs).execute()
-            print(f"🚀 {len(all_logs)} logs insérés avec succès.")
+                    # LOGIQUE :
+                    if is_open:
+                        # 1. On nettoie les anciens temps d'attente "OUVERT" pour cette attraction
+                        # On ne garde que le plus frais pour ne pas saturer la base
+                        supabase.table("disney_logs").delete().eq("ride_name", name).eq("is_open", True).execute()
+                    
+                    # 2. On insère la nouvelle donnée
+                    # Si c'est fermé (is_open=False), on ne supprime rien avant : 
+                    # cela va créer une suite de logs "Fermé" qui permet à l'App de calculer la durée de la panne.
+                    supabase.table("disney_logs").insert({
+                        "ride_name": name,
+                        "wait_time": wait,
+                        "is_open": is_open,
+                        "created_at": datetime.utcnow().isoformat()
+                    }).execute()
+                        
+            print(f"✅ Synchro hybride terminée pour le parc {p_id}")
+
         except Exception as e:
-            print(f"Erreur insertion : {e}")
+            print(f"❌ Erreur : {e}")
 
 if __name__ == "__main__":
     run_worker()
