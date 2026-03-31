@@ -11,11 +11,11 @@ supabase = create_client(url, key)
 PARKS = ["dae968d5-630d-4719-8b06-3d107e944401", "ca888437-ebb4-4d50-aed2-d227f7096968"]
 
 def run_worker():
-    # --- LOGIQUE DE RESET (Cible : 01h00 - 01h20 Paris) ---
+    # --- LOGIQUE DE RESET (Cible : 02h00 - 02h20 Paris) ---
     now_utc = datetime.utcnow()
     
-    # 23h UTC (Eté) ou 00h UTC (Hiver) et dans les 20 premières minutes
-    if now_utc.hour in [23, 0] and now_utc.minute < 20:
+    # 00h UTC (Eté) ou 01h UTC (Hiver) et dans les 20 premières minutes
+    if now_utc.hour in [0, 1] and now_utc.minute < 20:
         try:
             # On vide la table pour recommencer la journée à neuf
             supabase.table("disney_logs").delete().gt("id", 0).execute()
