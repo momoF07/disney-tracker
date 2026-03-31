@@ -92,6 +92,9 @@ def get_rides_by_zone(zone_code, all_rides_list):
     zone_code = zone_code.upper().replace("*", "")
     targets = []
 
+    if zone_code == "ALL":
+        return all_rides_list
+
     # 1. Dictionnaire d'alias complet
     ALIAS_MAP = {
         "MS": "MAINSTREET",
