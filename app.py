@@ -80,23 +80,31 @@ if st.button('🔄 Actualiser & Forcer un Relevé'):
         if trigger_github_action() == 204:
             st.toast("🚀 Robot lancé !"); time.sleep(45); st.rerun()
 
-# --- RÉCUPÉRATION DES DONNÉES SÉCURISÉE ---
+# --- RÉCUPÉRATION DES DONNÉES SÉCURISÉE (Correction du bug de 15h30) ---
 try:
-    # On demande les logs un peu avant le reset pour éviter les problèmes de fuseau
+    # On convertit le début de journée Paris en UTC pour la requête Supabase
+    debut_utc = debut_journee.astimezone(pytz.utc)
+    
     response = supabase.table("disney_logs")\
         .select("*")\
-        .gte("created_at", (debut_journee - timedelta(hours=2)).isoformat())\
+        .gte("created_at", debut_utc.isoformat())\
         .order("created_at", desc=False)\
         .execute()
     df_raw = pd.DataFrame(response.data)
-except:
+except Exception as e:
+    st.error(f"Erreur Supabase : {e}")
     df_raw = pd.DataFrame()
 
 if not df_raw.empty:
-    # Conversion forcée UTC -> Paris
-    df_raw['created_at'] = pd.to_datetime(df_raw['created_at']).dt.tz_convert('Europe/Paris')
+    # On s'assure que Pandas traite bien les dates comme de l'UTC avant de convertir
+    df_raw['created_at'] = pd.to_datetime(df_raw['created_at'])
+    if df_raw['created_at'].dt.tz is None:
+        df_raw['created_at'] = df_raw['created_at'].dt.tz_localize('UTC')
     
-    # Filtrage : Uniquement depuis le reset de 2h du matin ET hors maintenance 2h-8h
+    # Conversion finale en heure de Paris
+    df_raw['created_at'] = df_raw['created_at'].dt.tz_convert('Europe/Paris')
+    
+    # Filtrage final : Uniquement depuis le reset de 2h du matin ET hors maintenance
     df = df_raw[df_raw['created_at'] >= debut_journee].copy()
     df = df[~((df['created_at'].dt.hour >= 2) & (df['created_at'].dt.hour < 8))].copy()
     
@@ -182,14 +190,14 @@ if not df_raw.empty:
                         c1.error("🔴 FERMÉ / PANNE")
                         c2.metric("Attente", "--")
                     
-                    # Logique spécifique Panne + Historique
+                    # Historique et pannes actuelles
                     ride_pannes = [p for p in all_pannes if p['ride'] == ride]
                     panne_actuelle = next((p for p in ride_pannes if p['statut'] == "EN_COURS"), None)
                     if panne_actuelle:
                         diff = int((maintenant - panne_actuelle['debut']).total_seconds() / 60)
                         st.warning(f"⚠️ En panne depuis {diff} min (à {panne_actuelle['debut'].strftime('%H:%M')})")
                     
-                    with st.expander("📜 Historique des pannes"):
+                    with st.expander("📜 Historique des pannes du jour"):
                         if ride_pannes:
                             for p in reversed(ride_pannes):
                                 if p['statut'] == "TERMINEE":
@@ -197,11 +205,11 @@ if not df_raw.empty:
                                 else:
                                     st.write(f"• ⚠️ En cours depuis {p['debut'].strftime('%H:%M')}")
                         else:
-                            st.write("✅ Pas de panne détectée aujourd'hui")
+                            st.write("✅ Pas de panne détectée")
                     st.divider()
 
         # --- FLUX DES PANNES GLOBAL ---
-        st.subheader("🚨 Flux des pannes")
+        st.subheader("🚨 Flux des dernières pannes")
         flux = sorted(all_pannes, key=lambda x: x['debut'], reverse=True)[:5]
         if flux:
             for p in flux:
