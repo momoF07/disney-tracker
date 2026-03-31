@@ -78,12 +78,19 @@ PARKS_DATA = {
 
 def get_emoji(name):
     """Parcourt la structure pour trouver l'émoji correspondant au nom"""
+    if "Test" in ride_name:
+        return "🤖"
     for park, lands in PARKS_DATA.items():
         for land, attractions in lands.items():
             for attr_name, emoji in attractions.items():
                 if attr_name.lower() in name.lower():
                     return emoji
     return "🎡"
+    
+# Dans ton fichier emojis.py (ou là où tu gères les emojis)
+def get_emoji(ride_name):
+    
+
 
 def get_rides_by_zone(zone_code, all_rides_list):
     """
