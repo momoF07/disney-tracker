@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from supabase import create_client
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time as dt_time
 import pytz
 import requests
 import time
@@ -17,7 +17,7 @@ supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 # --- ACTUALISATION AUTOMATIQUE (60 secondes) ---
 st_autorefresh(interval=60000, key="datarefresh")
 
-# Stockage de l'heure du dernier refresh pour l'affichage
+# Stockage de l'heure du dernier refresh
 paris_tz = pytz.timezone('Europe/Paris')
 if "last_refresh" not in st.session_state:
     st.session_state.last_refresh = datetime.now(paris_tz).strftime("%H:%M:%S")
@@ -39,25 +39,35 @@ st.title("🏰 My Disney Dashboard")
 
 maintenant = datetime.now(paris_tz)
 
+# --- LOGIQUE DE RESET À 02:00 DU MATIN ---
+# On définit l'heure charnière à 2h00
+heure_reset = maintenant.replace(hour=2, minute=0, second=0, microsecond=0)
+# Si il est moins de 2h du matin, le reset a eu lieu hier à 2h
+if maintenant < heure_reset:
+    debut_journee = heure_reset - timedelta(days=1)
+else:
+    debut_journee = heure_reset
+
 if st.button('🔄 Actualiser & Forcer un Relevé'):
     with st.spinner("Signal envoyé au robot..."):
         if trigger_github_action() == 204:
             st.toast("🚀 Robot lancé !"); time.sleep(45); st.rerun()
 
-# --- RÉCUPÉRATION DES DONNÉES (24h) ---
+# --- RÉCUPÉRATION DES DONNÉES (Depuis 2h du matin) ---
 try:
-    hier = maintenant - timedelta(hours=24)
-    response = supabase.table("disney_logs").select("*").gte("created_at", hier.isoformat()).order("created_at", desc=False).execute()
+    response = supabase.table("disney_logs") \
+        .select("*") \
+        .gte("created_at", debut_journee.isoformat()) \
+        .order("created_at", desc=False) \
+        .execute()
     df_raw = pd.DataFrame(response.data)
 except:
     df_raw = pd.DataFrame()
 
 if not df_raw.empty:
-    # Conversion du fuseau horaire
     df_raw['created_at'] = pd.to_datetime(df_raw['created_at']).dt.tz_convert('Europe/Paris')
     
-    # --- FILTRAGE : Exclure les données entre 2h00 et 7h59 ---
-    # On ne garde que les données dont l'heure est < 2 ou >= 8
+    # --- FILTRAGE : Exclure maintenance (2h -> 8h) ---
     df = df_raw[~((df_raw['created_at'].dt.hour >= 2) & (df_raw['created_at'].dt.hour < 8))].copy()
     
     if not df.empty:
@@ -83,32 +93,28 @@ if not df_raw.empty:
             if en_panne:
                 all_pannes.append({"ride": ride_name, "debut": debut_panne, "fin": None, "statut": "EN_COURS"})
 
-        # --- LOGIQUE DES RACCOURCIS ---
+        # --- LOGIQUE RACCOURCIS ---
         st.write("---")
-        sc = st.text_input("Raccourci : `*DLP`, `*FANTASY`, `*CAMPUS`, `*DAW`...", placeholder="Tape ici...")
+        sc = st.text_input("Raccourci : `*DLP`, `*FANTASY`, `*101`, `*102`...", placeholder="Tape ici...")
         
         current_selection = st.query_params.get_all("fav")
-
         if sc == "*101":
             current_selection = [p['ride'] for p in all_pannes if p['statut'] == "EN_COURS"]
         elif sc == "*102":
             current_selection = list(set([p['ride'] for p in all_pannes]))
         elif sc.startswith("*"):
             shortcut_selection = get_rides_by_zone(sc, toutes_attractions)
-            if shortcut_selection:
-                current_selection = shortcut_selection
+            if shortcut_selection: current_selection = shortcut_selection
 
-        # --- MULTISELECT ---
         selected_options = st.multiselect("Attractions suivies :", options=toutes_attractions, default=current_selection, format_func=lambda x: f"{get_emoji(x)} {x}")
         st.query_params["fav"] = selected_options
         
-        # Affichage avec heure du refresh et délai
         st.caption(f"🕒 Donnée : {derniere_maj} | Auto-refresh : {st.session_state.last_refresh} (60s)")
         st.divider()
 
         # --- AFFICHAGE ---
         if not selected_options:
-            st.info("👆 Sélectionne des attractions ou utilise un raccourci.")
+            st.info(f"👆 Sélectionne des attractions. (Données reset à {debut_journee.strftime('%H:%M')})")
         else:
             for ride in selected_options:
                 ride_df = df[df['ride_name'] == ride].sort_values('created_at', ascending=False)
@@ -139,7 +145,7 @@ if not df_raw.empty:
                                     diff = int((maintenant - p['debut']).total_seconds() / 60)
                                     st.write(f"• ⚠️ **En cours** : depuis {p['debut'].strftime('%H:%M')} ({diff} min)")
                         else:
-                            st.write("✅ Pas de panne détectée pour le moment")
+                            st.write("✅ Pas de panne détectée aujourd'hui")
                     st.divider()
 
         # --- FLUX GLOBAL ---
@@ -149,11 +155,11 @@ if not df_raw.empty:
             for p in flux:
                 if p['statut'] == "EN_COURS": st.error(f"🔴 **{p['ride']}** en panne à {p['debut'].strftime('%H:%M')}")
                 else: st.info(f"✅ **{p['ride']}** rouvert à {p['fin'].strftime('%H:%M')} ({p['duree']} min)")
-        else: st.write("✅ Aucune panne enregistrée.")
+        else: st.write("✅ Aucune panne enregistrée aujourd'hui.")
     else:
-        st.warning("📭 Aucune donnée en dehors de la période nocturne.")
+        st.warning(f"😴 Le parc est en maintenance. (Dernier reset à {debut_journee.strftime('%H:%M')})")
 
 else:
-    st.warning("📭 Aucune donnée disponible.")
+    st.warning("📭 Aucune donnée disponible pour aujourd'hui.")
 
 st.markdown("<style>[data-testid='stMetricValue'] { font-size: 1.8rem; } .stButton button { width: 100%; border-radius: 10px; }</style>", unsafe_allow_html=True)
