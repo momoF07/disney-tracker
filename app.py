@@ -35,7 +35,7 @@ def trigger_github_action():
     except: return 500
 
 # --- INTERFACE ---
-st.title("🏰 My Disney Dashboard")
+st.title("🏰 Disney Wait Time")
 
 maintenant = datetime.now(paris_tz)
 
