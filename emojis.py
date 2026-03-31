@@ -109,7 +109,7 @@ def get_rides_by_zone(zone_code, all_rides_list):
         "AVENGERS-CAMPUS": "AVENGERS CAMPUS",
         "PIXAR": "WORLD OF PIXAR",
         "WORLD-OF-PIXAR": "WORLD OF PIXAR",
-        "PROD4": "WORLD OF PIXAR", # Souvent confondu
+        "PROD4": "WORLD OF PIXAR",
         "PRODUCTION4": "WORLD OF PIXAR",
         "PROD3": "PRODUCTION 3",
         "PRODUCTION 3": "PRODUCTION 3",
@@ -136,7 +136,7 @@ def get_rides_by_zone(zone_code, all_rides_list):
                 if target_land_name in land_name.upper():
                     targets.extend(attractions.keys())
 
-    # Filtrage final : on compare les noms cibles avec la liste réelle de l'API
+    # Filtrage final
     matched = []
     for ride in all_rides_list:
         if any(target.lower() in ride.lower() for target in targets):
