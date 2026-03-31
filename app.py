@@ -126,7 +126,7 @@ if not df_raw.empty:
                 st.markdown("<br>", unsafe_allow_html=True)
 
                 # --- SECTION 2 : DISNEYLAND PARK (Boîtes individuelles toute largeur) ---
-                st.markdown('<p class="title-green" style="text-align:center; background: rgba(0,242,254,0.1); border-radius:10px; padding:5px;">🏰 Disneyland Park</p>', unsafe_allow_html=True)
+                st.markdown('<p class="title-green" style="text-align:center; background: rgba(0,242,254,0.1); border-radius:15px; padding:5px;">🏰 Disneyland Park</p>', unsafe_allow_html=True)
                 
                 with st.container():
                     st.markdown('<div class="shortcut-card"><small>Main Street</small></div>', unsafe_allow_html=True)
@@ -157,7 +157,7 @@ if not df_raw.empty:
                 st.markdown("<br>", unsafe_allow_html=True)
 
                 # --- SECTION 3 : ADVENTURE WORLD (Boîtes individuelles toute largeur) ---
-                st.markdown('<p class="title-orange" style="text-align:center; background: rgba(249,212,35,0.1); border-radius:10px; padding:5px;">🎬 Adventure World</p>', unsafe_allow_html=True)
+                st.markdown('<p class="title-orange" style="text-align:center; background: rgba(249,212,35,0.1); border-radius:15px; padding:5px;">🎬 Disney Adventure World</p>', unsafe_allow_html=True)
                 
                 with st.container():
                     st.markdown('<div class="shortcut-card"><small>Avengers Campus</small></div>', unsafe_allow_html=True)
