@@ -167,9 +167,11 @@ if not df_raw.empty:
                     col_av3.code("*AVENGERS-CAMPUS")
 
                     st.markdown('<div class="shortcut-card"><small>Worlds of Pixar</small></div>', unsafe_allow_html=True)
-                    col_pix1, col_pix2 = st.columns(2)
+                    col_pix1, col_pix2, col_pix3, col_pix4 = st.columns(4)
                     col_pix1.code("*PIXAR")
-                    col_pix2.code("*PROD4")
+                    col_pix2.code("*WORLD-OF-PIXAR")
+                    col_pix3.code("*PRODUCTION4*")
+                    col_pix4.code("*PROD4")
 
                     st.markdown('<div class="shortcut-card"><small>Production 3</small></div>', unsafe_allow_html=True)
                     st.code("*PROD3")
