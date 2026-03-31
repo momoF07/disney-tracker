@@ -17,7 +17,7 @@ supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 # --- ACTUALISATION AUTOMATIQUE (60 secondes) ---
 st_autorefresh(interval=60000, key="datarefresh")
 
-# Stockage de l'heure du dernier refresh
+# Stockage de l'heure du dernier refresh pour l'affichage
 paris_tz = pytz.timezone('Europe/Paris')
 if "last_refresh" not in st.session_state:
     st.session_state.last_refresh = datetime.now(paris_tz).strftime("%H:%M:%S")
@@ -91,24 +91,28 @@ if not df_raw.empty:
             if en_panne:
                 all_pannes.append({"ride": ride_name, "debut": debut_panne, "fin": None, "statut": "EN_COURS"})
 
-        # --- LOGIQUE RACCOURCIS AVEC POPUP D'AIDE ---
+        # --- LOGIQUE RACCOURCIS AVEC GRANDE POPUP ---
         st.write("---")
-        
         col_sc, col_help = st.columns([0.88, 0.12])
         
         with col_help:
-            with st.popover("❓"):
-                st.markdown("### 🔍 Raccourcis & Alias")
-                st.info("**Parcs :** `*DLP`, `*WDS`, `*DAW`, `*ALL`")
-                st.error("**États :** `*101` (pannes), `*102` (historique)")
-                st.success("**Disneyland Park :**")
-                st.code("*MS, *FRONTIER, *ADVENTURE, *FANTASY, *DISCO")
-                st.warning("**Adventure World :**")
-                st.code("*CAMPUS, *PIXAR, *PROD3, *FROZEN, *WAY")
+            with st.popover("❓", help="Voir tous les raccourcis"):
+                st.markdown("## 🏰 Guide des Raccourcis")
+                c1, c2 = st.columns(2)
+                with c1:
+                    st.markdown("### 🎢 Parcs & États")
+                    st.code("*ALL\n*DLP\n*DAW / *WDS\n*101 (Panne)\n*102 (Histo)")
+                    st.markdown("### 🏰 Disneyland Park")
+                    st.code("*MS / *MAINSTREET\n*FRONTIER\n*ADVENTURE\n*FANTASY\n*DISCO")
+                with c2:
+                    st.markdown("### 🎬 Adventure World")
+                    st.code("*CAMPUS / *AVENGERS\n*PIXAR / *PROD4\n*PROD3\n*FROZEN / *WOF\n*WAY")
+                    st.info("💡 Cliquez sur un code pour le copier.")
 
         with col_sc:
-            sc = st.text_input("Raccourci :", placeholder="Tape ici (ex: *FANTASY)...", label_visibility="collapsed")
+            sc = st.text_input("Raccourci :", placeholder="ex: *CAMPUS, *101...", label_visibility="collapsed")
         
+        # Gestion des favoris via URL
         current_selection = st.query_params.get_all("fav")
         
         if sc == "*101":
@@ -124,9 +128,9 @@ if not df_raw.empty:
         
         st.caption(f"🕒 Donnée : {derniere_maj} | Auto-refresh : {st.session_state.last_refresh} (60s)")
         
-        # --- AFFICHAGE ---
+        # --- AFFICHAGE DES ATTRACTIONS ---
         if not selected_options:
-            st.info(f"👆 Sélectionne des attractions. (Données reset à {debut_journee.strftime('%H:%M')})")
+            st.info(f"👆 Sélectionne des attractions ou un raccourci. (Reset quotidien à 02:00)")
             st.divider()
         else:
             st.divider()
@@ -148,9 +152,9 @@ if not df_raw.empty:
                     panne_actuelle = next((p for p in ride_pannes if p['statut'] == "EN_COURS"), None)
                     if panne_actuelle:
                         min_e = int((maintenant - panne_actuelle['debut']).total_seconds() / 60)
-                        st.warning(f"⚠️ Down depuis {min_e} min (à {panne_actuelle['debut'].strftime('%H:%M')})")
+                        st.warning(f"⚠️ En panne depuis {min_e} min (à {panne_actuelle['debut'].strftime('%H:%M')})")
 
-                    with st.expander("📜 Historique des pannes du jour"):
+                    with st.expander("📜 Historique des pannes"):
                         if ride_pannes:
                             for p in reversed(ride_pannes):
                                 if p['statut'] == "TERMINEE":
@@ -171,9 +175,10 @@ if not df_raw.empty:
                 else: st.info(f"✅ **{p['ride']}** rouvert à {p['fin'].strftime('%H:%M')} ({p['duree']} min)")
         else: st.write("✅ Aucune panne enregistrée aujourd'hui.")
     else:
-        st.warning(f"😴 Le parc est en maintenance. (Dernier reset à {debut_journee.strftime('%H:%M')})")
+        st.warning(f"😴 Le parc est en maintenance nocturne. (Reset à {debut_journee.strftime('%H:%M')})")
 
 else:
     st.warning("📭 Aucune donnée disponible pour aujourd'hui.")
 
+# Style CSS pour arrondir les boutons et ajuster les métriques
 st.markdown("<style>[data-testid='stMetricValue'] { font-size: 1.8rem; } .stButton button { width: 100%; border-radius: 10px; }</style>", unsafe_allow_html=True)
