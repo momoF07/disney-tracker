@@ -20,7 +20,7 @@ PARKS_DATA = {
             "Indiana Jones™ and the Temple of Peril": "🤠",
             "La Cabane des Robinson": "🌳",
             "Adventure Isle": "🏝️",
-            "Pirate Galleon": "🏴‍☠️",
+            "Pirate Galleon": "🏴‍C️",
             "Pirates' Beach": "🏖️",
             "Le Passage Enchanté d'Aladdin": "🧞",
         },
@@ -78,7 +78,7 @@ PARKS_DATA = {
 
 def get_emoji(name):
     """Parcourt la structure pour trouver l'émoji correspondant au nom"""
-    if "Test" in ride_name:
+    if "Test" in name:
         return "🤖"
     for park, lands in PARKS_DATA.items():
         for land, attractions in lands.items():
@@ -86,11 +86,6 @@ def get_emoji(name):
                 if attr_name.lower() in name.lower():
                     return emoji
     return "🎡"
-    
-# Dans ton fichier emojis.py (ou là où tu gères les emojis)
-def get_emoji(ride_name):
-    
-
 
 def get_rides_by_zone(zone_code, all_rides_list):
     """
@@ -99,10 +94,15 @@ def get_rides_by_zone(zone_code, all_rides_list):
     zone_code = zone_code.upper().replace("*", "")
     targets = []
 
+    # --- LOGIQUE TEST ---
+    if zone_code == "TEST":
+        return [r for r in all_rides_list if "Test" in r]
+
+    # --- LOGIQUE ALL ---
     if zone_code == "ALL":
         return all_rides_list
-
-    # 1. Dictionnaire d'alias complet
+        
+    # --- DICTIONNAIRE D'ALIAS ---
     ALIAS_MAP = {
         "MS": "MAINSTREET",
         "MAINSTREET": "MAINSTREET",
@@ -130,15 +130,15 @@ def get_rides_by_zone(zone_code, all_rides_list):
         "ADVENTURE-WAY": "ADVENTURE WAY"
     }
 
-    # 2. Gestion des Parcs
+    # --- GESTION PARCS ---
     if zone_code == "DLP":
         for land in PARKS_DATA["Disneyland Park"].values():
             targets.extend(land.keys())
-    elif zone_code in ["DAW", "WDS"]:
+    elif zone_code in ["DAW", "WDS", "STUDIOS"]:
         for land in PARKS_DATA["Disney Adventure World"].values():
             targets.extend(land.keys())
 
-    # 3. Gestion des Lands
+    # --- GESTION LANDS ---
     else:
         target_land_name = ALIAS_MAP.get(zone_code, zone_code)
         for park, lands in PARKS_DATA.items():
