@@ -114,7 +114,7 @@ if not df_raw.empty:
         # --- AFFICHAGE ---
         if not selected_options:
             st.info(f"👆 Sélectionne des attractions. (Données reset à {debut_journee.strftime('%H:%M')})")
-        st.divider()
+            st.divider()
 
         
         else:
