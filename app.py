@@ -26,8 +26,7 @@ if maintenant < heure_reset:
 else:
     debut_journee = heure_reset
 
-# On demande à Supabase les données brutes (UTC par défaut sur leurs serveurs)
-# On prend une marge de 4h pour être certain d'englober le reset de 2h du mat
+# On demande à Supabase avec une marge pour être sûr de capter les données UTC
 query_date = (debut_journee - timedelta(hours=4)).isoformat()
 
 # --- FONCTION ROBOT ---
@@ -57,26 +56,31 @@ except Exception as e:
     df_raw = pd.DataFrame()
 
 if not df_raw.empty:
-    # --- FIX CRITIQUE DU DÉCALAGE HORAIRE ---
-    # 1. On convertit en datetime
-    df_raw['created_at'] = pd.to_datetime(df_raw['created_at'], utc=True)
-    # 2. On passe en heure de Paris (+2h actuellement)
-    df_raw['created_at'] = df_raw['created_at'].dt.tz_convert('Europe/Paris')
+    # --- CORRECTION HEURE (13h30 -> 15h30) ---
+    df_raw['created_at'] = pd.to_datetime(df_raw['created_at'])
     
-    # Filtrage : Uniquement ce qui appartient à la journée commencée à 2h du mat
+    # Si Supabase envoie déjà un fuseau (tz-aware), on convertit juste.
+    # Sinon (naive), on lui dit que c'est de l'UTC puis on convertit.
+    if df_raw['created_at'].dt.tz is not None:
+        df_raw['created_at'] = df_raw['created_at'].dt.tz_convert('Europe/Paris')
+    else:
+        df_raw['created_at'] = df_raw['created_at'].dt.tz_localize('UTC').dt.tz_convert('Europe/Paris')
+    
+    # Filtrage final : Uniquement ce qui appartient à la journée (Paris)
     df = df_raw[df_raw['created_at'] >= debut_journee].copy()
     
     if not df.empty:
         derniere_maj = df['created_at'].max().strftime("%H:%M:%S")
         toutes_attractions = sorted(df['ride_name'].unique())
         
+        # Sélection (Tes raccourcis fav sont conservés ici)
         selected_options = st.multiselect(
             "Attractions :", options=toutes_attractions, 
             default=st.query_params.get_all("fav"),
             format_func=lambda x: f"{get_emoji(x)} {x}"
         )
         st.query_params["fav"] = selected_options
-        st.caption(f"🕒 Dernière donnée (Heure Paris) : {derniere_maj}")
+        st.caption(f"🕒 Dernière donnée (Paris) : {derniere_maj}")
 
         if selected_options:
             st.divider()
@@ -93,8 +97,8 @@ if not df_raw.empty:
                         c1.error("🔴 FERMÉ")
                     st.divider()
     else:
-        st.warning(f"⚠️ Aucune donnée après {debut_journee.strftime('%H:%M')}. (Dernière trouvée en base : {df_raw['created_at'].max().strftime('%H:%M')})")
+        st.warning(f"⚠️ Données filtrées. Dernière en base : {df_raw['created_at'].max().strftime('%H:%M')}")
 else:
-    st.warning("📭 La base de données ne renvoie rien pour le moment.")
+    st.warning("📭 Aucune donnée reçue de Supabase.")
 
 st.markdown("<style>[data-testid='stMetricValue'] { font-size: 1.8rem; } .stButton button { width: 100%; border-radius: 10px; }</style>", unsafe_allow_html=True)
