@@ -40,9 +40,7 @@ st.title("🏰 Disney Wait Time")
 maintenant = datetime.now(paris_tz)
 
 # --- LOGIQUE DE RESET À 02:00 DU MATIN ---
-# On définit l'heure charnière à 2h00
 heure_reset = maintenant.replace(hour=2, minute=0, second=0, microsecond=0)
-# Si il est moins de 2h du matin, le reset a eu lieu hier à 2h
 if maintenant < heure_reset:
     debut_journee = heure_reset - timedelta(days=1)
 else:
@@ -93,11 +91,26 @@ if not df_raw.empty:
             if en_panne:
                 all_pannes.append({"ride": ride_name, "debut": debut_panne, "fin": None, "statut": "EN_COURS"})
 
-        # --- LOGIQUE RACCOURCIS ---
+        # --- LOGIQUE RACCOURCIS AVEC POPUP D'AIDE ---
         st.write("---")
-        sc = st.text_input("Raccourci : `*DLP`, `*FANTASY`, `*CAMPUS`, `*FROZEN`...", placeholder="Tape ici...")
+        
+        col_sc, col_help = st.columns([0.88, 0.12])
+        
+        with col_help:
+            with st.popover("❓"):
+                st.markdown("### 🔍 Raccourcis & Alias")
+                st.info("**Parcs :** `*DLP`, `*WDS`, `*DAW`, `*ALL`")
+                st.error("**États :** `*101` (pannes), `*102` (historique)")
+                st.success("**Disneyland Park :**")
+                st.code("*MS, *FRONTIER, *ADVENTURE, *FANTASY, *DISCO")
+                st.warning("**Adventure World :**")
+                st.code("*CAMPUS, *PIXAR, *PROD3, *FROZEN, *WAY")
+
+        with col_sc:
+            sc = st.text_input("Raccourci :", placeholder="Tape ici (ex: *FANTASY)...", label_visibility="collapsed")
         
         current_selection = st.query_params.get_all("fav")
+        
         if sc == "*101":
             current_selection = [p['ride'] for p in all_pannes if p['statut'] == "EN_COURS"]
         elif sc == "*102":
@@ -115,8 +128,6 @@ if not df_raw.empty:
         if not selected_options:
             st.info(f"👆 Sélectionne des attractions. (Données reset à {debut_journee.strftime('%H:%M')})")
             st.divider()
-
-        
         else:
             st.divider()
             for ride in selected_options:
