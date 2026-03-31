@@ -11,7 +11,7 @@ from emojis import get_emoji, get_rides_by_zone
 # --- CONFIGURATION DE LA PAGE ---
 st.set_page_config(page_title="Disney Wait Time", page_icon="🏰", layout="centered")
 
-# --- STYLE CSS : POPUP CENTRALE & ESTHÉTIQUE ---
+# --- STYLE CSS ---
 st.markdown("""
 <style>
     [data-testid="stPopoverBody"] {
@@ -67,7 +67,6 @@ def trigger_github_action():
 st.title("🏰 Disney Wait Time")
 maintenant = datetime.now(paris_tz)
 
-# Logique de Reset (2h du matin Paris)
 heure_reset = maintenant.replace(hour=2, minute=0, second=0, microsecond=0)
 debut_journee = heure_reset - timedelta(days=1) if maintenant < heure_reset else heure_reset
 
@@ -95,7 +94,6 @@ if not df_raw.empty:
         df_raw['created_at'] = df_raw['created_at'].dt.tz_localize('UTC')
     df_raw['created_at'] = df_raw['created_at'].dt.tz_convert('Europe/Paris')
     
-    # Filtrage : On garde tout pour les calculs, mais on prépare la variable d'affichage
     df = df_raw[df_raw['created_at'] >= debut_journee].copy()
     
     if not df.empty:
@@ -108,35 +106,32 @@ if not df_raw.empty:
             ride_data = df[df['ride_name'] == ride_name].sort_values('created_at')
             en_panne, debut_panne = False, None
             for i, row in ride_data.iterrows():
-                # On ne compte pas comme "panne" les relevés entre 02h et 08h
                 est_nuit_log = 2 <= row['created_at'].hour < 8
                 
                 if not row['is_open'] and not en_panne and not est_nuit_log:
                     en_panne, debut_panne = True, row['created_at']
                 elif row['is_open'] and en_panne:
+                    duree = int((row['created_at'] - debut_panne).total_seconds() / 60)
                     all_pannes.append({
                         "ride": ride_name, "debut": debut_panne, "fin": row['created_at'], 
-                        "duree": int((row['created_at'] - debut_panne).total_seconds() / 60), 
-                        "statut": "TERMINEE"
+                        "duree": duree, "statut": "TERMINEE"
                     })
                     en_panne = False
             if en_panne:
                 all_pannes.append({"ride": ride_name, "debut": debut_panne, "fin": None, "statut": "EN_COURS"})
 
-        # --- LOGIQUE RACCOURCIS (POPUP) ---
+        # --- LOGIQUE RACCOURCIS ---
         st.write("---")
         col_sc, col_help = st.columns([0.88, 0.12])
         with col_help:
             with st.popover("❓"):
                 st.markdown("<h2 style='text-align:center; color:white;'>🔍 Raccourcis</h2>", unsafe_allow_html=True)
-                # (Tes raccourcis restent identiques ici...)
                 st.markdown('<div class="shortcut-card"><p class="title-blue">🎡 Parcs</p></div>', unsafe_allow_html=True)
                 st.code("*ALL / *DLP / *DAW")
 
         with col_sc:
             sc = st.text_input("Raccourci :", placeholder="ex: *FANTASY...", label_visibility="collapsed")
         
-        # --- SÉLECTION SÉCURISÉE (Correction bug multiselect) ---
         current_selection = st.query_params.get_all("fav")
         if sc.startswith("*"):
             shortcut_selection = get_rides_by_zone(sc, toutes_attractions)
@@ -160,27 +155,35 @@ if not df_raw.empty:
                     st.subheader(f"{get_emoji(ride)} {ride}")
                     c1, c2 = st.columns(2)
                     
+                    ride_pannes = [p for p in all_pannes if p['ride'] == ride]
+                    panne_actuelle = next((p for p in ride_pannes if p['statut'] == "EN_COURS"), None)
+
                     if last['is_open']:
                         c1.success("🟢 OUVERT")
                         c2.metric("Attente", f"{int(last['wait_time'])} min")
                     else:
-                        # Logique Fermé vs Panne
                         if est_nuit_actuellement:
                             c1.error("🔴 FERMÉ")
                             st.caption("ℹ️ Le parc est fermé pour la nuit.")
                         else:
                             c1.error("🔴 INTERRUPTION / PANNE")
-                            st.caption("⚠️ Attraction indisponible.")
+                            if panne_actuelle:
+                                minutes_ecoulees = int((maintenant - panne_actuelle['debut']).total_seconds() / 60)
+                                st.caption(f"⚠️ En panne depuis **{minutes_ecoulees} min** (début : {panne_actuelle['debut'].strftime('%H:%M')})")
+                            else:
+                                st.caption("⚠️ Attraction indisponible.")
                         c2.metric("Attente", "- - -")
                     
-                    # Historique
-                    ride_pannes = [p for p in all_pannes if p['ride'] == ride]
                     with st.expander("📜 Historique des pannes"):
                         if ride_pannes:
                             for p in reversed(ride_pannes):
-                                f_str = p['fin'].strftime('%H:%M') if p['fin'] else "En cours"
-                                st.write(f"• De {p['debut'].strftime('%H:%M')} à {f_str}")
-                        else: st.write("✅ Pas de panne (hors nuit)")
+                                if p['statut'] == "TERMINEE":
+                                    st.write(f"• De {p['debut'].strftime('%H:%M')} à {p['fin'].strftime('%H:%M')} (**{p['duree']} min**)")
+                                else:
+                                    # Pour la panne en cours, on affiche depuis quand
+                                    min_inc = int((maintenant - p['debut']).total_seconds() / 60)
+                                    st.write(f"• ⚠️ **En cours** depuis {p['debut'].strftime('%H:%M')} ({min_inc} min)")
+                        else: st.write("✅ Pas de panne détectée pour le moment.")
                     st.divider()
 
         # --- FLUX DES PANNES ---
@@ -188,8 +191,10 @@ if not df_raw.empty:
         flux = sorted(all_pannes, key=lambda x: x['debut'], reverse=True)[:5]
         if flux and not est_nuit_actuellement:
             for p in flux:
-                if p['statut'] == "EN_COURS": st.error(f"🔴 {p['ride']} ({p['debut'].strftime('%H:%M')})")
-                else: st.info(f"✅ {p['ride']} rouvert à {p['fin'].strftime('%H:%M')}")
+                if p['statut'] == "EN_COURS": 
+                    st.error(f"🔴 {p['ride']} >> 101 à ({p['debut'].strftime('%H:%M')})")
+                else: 
+                    st.info(f"✅ {p['ride']} >> 102 à {p['fin'].strftime('%H:%M')} ({p['duree']} min)")
         else:
             st.write("✅ Aucune interruption en cours.")
     else: st.warning("😴 Maintenance nocturne.")
