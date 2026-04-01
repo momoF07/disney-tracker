@@ -302,6 +302,7 @@ else: st.warning("📭 Aucune donnée disponible.")
 
 
 # --- NOUVEL ONGLET : MON PLANNING ---
+st.divider()
 with st.expander("📅 Importer mon Planning MyKronos"):
     json_input = st.text_area("Colle le contenu de 'events' ici (JSON)", height=150)
     if st.button("Enregistrer mon planning"):
