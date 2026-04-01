@@ -129,13 +129,101 @@ if not df_raw.empty:
             if en_panne:
                 all_pannes.append({"ride": ride_name, "debut": debut_panne, "fin": None, "statut": "EN_COURS"})
 
-        # --- FILTRES & RECHERCHE ---
+        # --- LOGIQUE RACCOURCIS & POPOVER ---
         st.write("---")
         col_sc, col_help = st.columns([0.85, 0.15])
-        
+
         with col_help:
             with st.popover("❓"):
-                st.markdown("**Raccourcis :** `*ALL`, `*DLP`, `*DAW`, `*FANTASY`, `*DISCO`...")
+                st.markdown("""
+                <style>
+                    .main-title {
+                        text-align: center; 
+                        background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+                        -webkit-background-clip: text;
+                        -webkit-text-fill-color: transparent;
+                        font-weight: 800;
+                        font-size: 28px;
+                        margin-bottom: 25px;
+                    }
+                    .cat-badge {
+                        padding: 5px 15px;
+                        border-radius: 12px;
+                        font-size: 18px;
+                        font-weight: 600;
+                        letter-spacing: 1px;
+                        display: block;
+                        text-align: center;
+                        margin: 20px 0 10px 0;
+                    }
+                    .bg-blue { background: rgba(79, 172, 254, 0.15); color: #4facfe; border: 1px solid rgba(79, 172, 254, 0.3); }
+                    .bg-green { background: rgba(74, 222, 128, 0.15); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.3); }
+                    .bg-orange { background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); }
+                    .shortcut-box {
+                        background: rgba(255, 255, 255, 0.03);
+                        border: 1px solid rgba(255, 255, 255, 0.05);
+                        border-radius: 12px;
+                        padding: 10px;
+                        margin-bottom: 8px;
+                    }
+                    .shortcut-label {
+                        font-size: 15px;
+                        color: #94a3b8;
+                        text-transform: uppercase;
+                        margin-bottom: 5px;
+                        display: block;
+                    }
+                </style>
+                """, unsafe_allow_html=True)
+
+                st.markdown('<p class="main-title">🔍 INDEX DES CODES</p>', unsafe_allow_html=True)
+
+                st.markdown('<span class="cat-badge bg-blue">🎡 PARCS</span>', unsafe_allow_html=True)
+                with st.container():
+                    c1, c2, c3 = st.columns(3)
+                    c1.code("*ALL"); c2.code("*DLP"); c3.code("*DAW")
+
+                st.markdown('<span class="cat-badge bg-green">🏰 DISNEYLAND PARK</span>', unsafe_allow_html=True)
+                lands_dlp_map = {
+                    "Main Street": ["*MS", "*MAINSTREET"],
+                    "Frontierland": ["*FRONTIER", "*FRONTIERLAND"],
+                    "Adventureland": ["*ADVENTURE", "*ADVENTURELAND"],
+                    "Fantasyland": ["*FANTASY", "*FANTASYLAND"],
+                    "Discoveryland": ["*DISCO", "*DISCOVERYLAND"]
+                }
+                for land, codes in lands_dlp_map.items():
+                    st.markdown(f'<div class="shortcut-box"><span class="shortcut-label">{land}</span>', unsafe_allow_html=True)
+                    cl1, cl2 = st.columns(2)
+                    cl1.code(codes[0]); cl2.code(codes[1])
+                    st.markdown('</div>', unsafe_allow_html=True)
+
+                st.markdown('<span class="cat-badge bg-orange">🎬 ADVENTURE WORLD</span>', unsafe_allow_html=True)
+                st.markdown('<div class="shortcut-box"><span class="shortcut-label">Avengers Campus</span>', unsafe_allow_html=True)
+                ca1, ca2, ca3 = st.columns(3)
+                ca1.code("*CAMPUS"); ca2.code("*AVENGERS"); ca3.code("*AVENGERS-CAMPUS")
+                st.markdown('</div>', unsafe_allow_html=True)
+
+                st.markdown('<div class="shortcut-box"><span class="shortcut-label">Production Courtyard / Production 3</span>', unsafe_allow_html=True)
+                pc1, pc2, pc3 = st.columns(3)
+                pc1.code("*COURTYARD"); pc2.code("*PRODUCTION3"); pc3.code("*PROD3")
+                st.markdown('</div>', unsafe_allow_html=True)
+
+                st.markdown('<div class="shortcut-box"><span class="shortcut-label">Worlds of Pixar / Production 4</span>', unsafe_allow_html=True)
+                cpx1, cpx2, cpx3, cpx4 = st.columns(4)
+                cpx1.code("*PIXAR"); cpx2.code("*WORLD-OF-PIXAR"); cpx3.code("*PROD4"); cpx4.code("*PRODUCTION4")
+                st.markdown('</div>', unsafe_allow_html=True)
+
+                st.markdown('<div class="shortcut-box"><span class="shortcut-label">World of Frozen</span>', unsafe_allow_html=True)
+                cfz1, cfz2, cfz3 = st.columns(3)
+                cfz1.code("*WOF"); cfz2.code("*FROZEN"); cfz3.code("*WORLD-OF-FROZEN")
+                st.markdown('</div>', unsafe_allow_html=True)
+
+                st.markdown('<div class="shortcut-box"><span class="shortcut-label">Adventure Way</span>', unsafe_allow_html=True)
+                aw1, aw2 = st.columns(2)
+                aw1.code("*WAY"); aw2.code("*ADVENTURE-WAY")
+                st.markdown('</div>', unsafe_allow_html=True)
+
+                st.caption("✨ Astuce : Tapez le code et appuyez sur Entrée.")
 
         with col_sc:
             sc = st.text_input("Tapez un raccourci...", placeholder="ex: *FANTASY", label_visibility="collapsed")
