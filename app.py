@@ -207,7 +207,7 @@ if not df_raw.empty:
 
                 st.markdown('<div class="shortcut-box"><span class="shortcut-label">Production Courtyard / Production 3</span>', unsafe_allow_html=True)
                 pc1, pc2, pc3 = st.columns(3)
-                pc1.code("*COURTYARD"); pc2.code("*PRODUCTION 3"); pc3.code("*PROD3")
+                pc1.code("*COURTYARD"); pc2.code("*PRODUCTION3"); pc3.code("*PROD3")
                 st.markdown('</div>', unsafe_allow_html=True)
 
                 st.markdown('<div class="shortcut-box"><span class="shortcut-label">Worlds of Pixar / Production 4</span>', unsafe_allow_html=True)
