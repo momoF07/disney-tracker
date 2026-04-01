@@ -113,6 +113,7 @@ if not df_raw.empty:
         all_pannes = []
         toutes_attractions = sorted(df['ride_name'].unique())
         
+        # --- CALCUL DES PANNES ---
         for ride_name in toutes_attractions:
             ride_data = df[df['ride_name'] == ride_name].sort_values('created_at')
             en_panne, debut_panne = False, None
@@ -136,10 +137,8 @@ if not df_raw.empty:
         
         with col_help:
             with st.popover("❓"):
-                # Injection de style local pour un design léché
                 st.markdown("""
                 <style>
-                    /* Style du titre principal */
                     .main-title {
                         text-align: center; 
                         background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
@@ -149,7 +148,6 @@ if not df_raw.empty:
                         font-size: 28px;
                         margin-bottom: 25px;
                     }
-                    /* Badges de catégories */
                     .cat-badge {
                         padding: 5px 15px;
                         border-radius: 12px;
@@ -163,8 +161,6 @@ if not df_raw.empty:
                     .bg-blue { background: rgba(79, 172, 254, 0.15); color: #4facfe; border: 1px solid rgba(79, 172, 254, 0.3); }
                     .bg-green { background: rgba(74, 222, 128, 0.15); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.3); }
                     .bg-orange { background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); }
-                    
-                    /* Micro-cartes pour les raccourcis */
                     .shortcut-box {
                         background: rgba(255, 255, 255, 0.03);
                         border: 1px solid rgba(255, 255, 255, 0.05);
@@ -184,7 +180,6 @@ if not df_raw.empty:
 
                 st.markdown('<p class="main-title">🔍 INDEX DES CODES</p>', unsafe_allow_html=True)
                 
-                # --- SECTION 1 : GÉNÉRAL ---
                 st.markdown('<span class="cat-badge bg-blue">🎡 SYSTÈMES & PARCS</span>', unsafe_allow_html=True)
                 with st.container():
                     c1, c2, c3 = st.columns(3)
@@ -195,27 +190,21 @@ if not df_raw.empty:
                 ct1.code("*101"); ct2.code("*102"); ct3.code("*TEST")
                 st.markdown('</div>', unsafe_allow_html=True)
 
-                # --- SECTION 2 : DISNEYLAND PARK ---
                 st.markdown('<span class="cat-badge bg-green">🏰 DISNEYLAND PARK</span>', unsafe_allow_html=True)
-                
-                lands_dlp = {
+                lands_dlp_map = {
                     "Main Street": ["*MS", "*MAINSTREET"],
                     "Frontierland": ["*FRONTIER", "*FRONTIERLAND"],
                     "Adventureland": ["*ADVENTURE", "*ADVENTURELAND"],
                     "Fantasyland": ["*FANTASY", "*FANTASYLAND"],
                     "Discoveryland": ["*DISCO", "*DISCOVERYLAND"]
                 }
-                
-                for land, codes in lands_dlp.items():
+                for land, codes in lands_dlp_map.items():
                     st.markdown(f'<div class="shortcut-box"><span class="shortcut-label">{land}</span>', unsafe_allow_html=True)
                     cl1, cl2 = st.columns(2)
                     cl1.code(codes[0]); cl2.code(codes[1])
                     st.markdown('</div>', unsafe_allow_html=True)
 
-                # --- SECTION 3 : ADVENTURE WORLD ---
                 st.markdown('<span class="cat-badge bg-orange">🎬 ADVENTURE WORLD</span>', unsafe_allow_html=True)
-                
-                # Avengers & Pixar
                 st.markdown('<div class="shortcut-box"><span class="shortcut-label">Avengers Campus</span>', unsafe_allow_html=True)
                 ca1, ca2, ca3 = st.columns(3)
                 ca1.code("*CAMPUS"); ca2.code("*AVENGERS"); ca3.code("*AVENGERS-CAMPUS")
@@ -226,7 +215,6 @@ if not df_raw.empty:
                 cpx1.code("*PIXAR"); cpx2.code("*PROD4"); cpx3.code("*PRODUCTION4")
                 st.markdown('</div>', unsafe_allow_html=True)
 
-                # Frozen & Extensions
                 st.markdown('<div class="shortcut-box"><span class="shortcut-label">World of Frozen</span>', unsafe_allow_html=True)
                 cfz1, cfz2, cfz3 = st.columns(3)
                 cfz1.code("*WOF"); cfz2.code("*FROZEN"); cfz3.code("*WORLD-OF-FROZEN")
@@ -244,9 +232,11 @@ if not df_raw.empty:
         with col_sc:
             sc = st.text_input("Tapez un raccourci...", placeholder="ex: *FANTASY", label_visibility="collapsed")
         
+        # --- FILTRAGE AVEC ALL_PANNES POUR *101 / *102 ---
         current_selection = st.query_params.get_all("fav")
         if sc.startswith("*"):
-            shortcut_selection = get_rides_by_zone(sc, toutes_attractions)
+            # IMPORTANT: On passe all_pannes ici
+            shortcut_selection = get_rides_by_zone(sc, toutes_attractions, all_pannes)
             if shortcut_selection: current_selection = shortcut_selection
 
         valid_default = [item for item in current_selection if item in toutes_attractions]
