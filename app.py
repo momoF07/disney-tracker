@@ -164,12 +164,12 @@ if not df_raw.empty:
                     .shortcut-box {
                         background: rgba(255, 255, 255, 0.03);
                         border: 1px solid rgba(255, 255, 255, 0.05);
-                        border-radius: 12px;
-                        padding: 10px;
+                        border-radius: 14px;
+                        padding: 12px;
                         margin-bottom: 8px;
                     }
                     .shortcut-label {
-                        font-size: 11px;
+                        font-size: 12px;
                         color: #94a3b8;
                         text-transform: uppercase;
                         margin-bottom: 5px;
