@@ -114,18 +114,40 @@ def get_rides_by_zone(zone_code, all_rides_list, all_pannes=[]):
         return all_rides_list
         
     ALIAS_MAP = {
-        "MS": "MAINSTREET", "MAINSTREET": "MAINSTREET",
-        "FRONTIER": "FRONTIERLAND", "FRONTIERLAND": "FRONTIERLAND",
-        "ADVENTURE": "ADVENTURELAND", "ADVENTURELAND": "ADVENTURELAND",
-        "FANTASY": "FANTASYLAND", "FANTASYLAND": "FANTASYLAND",
-        "DISCO": "DISCOVERYLAND", "DISCOVERYLAND": "DISCOVERYLAND",
-        "AVENGERS": "AVENGERS CAMPUS", "CAMPUS": "AVENGERS CAMPUS",
+        "MS": "MAINSTREET", 
+        "MAINSTREET": "MAINSTREET",
+        
+        "FRONTIER": "FRONTIERLAND", 
+        "FRONTIERLAND": "FRONTIERLAND",
+        
+        "ADVENTURE": "ADVENTURELAND", 
+        "ADVENTURELAND": "ADVENTURELAND",
+        
+        "FANTASY": "FANTASYLAND", 
+        "FANTASYLAND": "FANTASYLAND",
+        
+        "DISCO": "DISCOVERYLAND", 
+        "DISCOVERYLAND": "DISCOVERYLAND",
+        
+        "AVENGERS": "AVENGERS CAMPUS", 
+        "CAMPUS": "AVENGERS CAMPUS",
         "AVENGERS-CAMPUS": "AVENGERS CAMPUS",
-        "PIXAR": "WORLD OF PIXAR", "WORLD-OF-PIXAR": "WORLD OF PIXAR",
-        "PROD4": "WORLD OF PIXAR", "PRODUCTION4": "WORLD OF PIXAR",
-        "PROD3": "PRODUCTION 3", "PRODUCTION 3": "PRODUCTION 3",
-        "WOF": "WORLD OF FROZEN", "FROZEN": "WORLD OF FROZEN", "WORLD-OF-FROZEN": "WORLD OF FROZEN",
-        "WAY": "ADVENTURE WAY", "ADVENTURE-WAY": "ADVENTURE WAY"
+        
+        "PIXAR": "WORLD OF PIXAR", 
+        "WORLD-OF-PIXAR": "WORLD OF PIXAR",
+        "PROD4": "WORLD OF PIXAR", 
+        "PRODUCTION4": "WORLD OF PIXAR",
+        
+        "PROD3": "PRODUCTION 3", 
+        "PRODUCTION3": "PRODUCTION 3",
+        "COURTYARD": "PRODUCTION 3",
+        
+        "WOF": "WORLD OF FROZEN", 
+        "FROZEN": "WORLD OF FROZEN", 
+        "WORLD-OF-FROZEN": "WORLD OF FROZEN",
+        
+        "WAY": "ADVENTURE WAY", 
+        "ADVENTURE-WAY": "ADVENTURE WAY"
     }
 
     targets = []
