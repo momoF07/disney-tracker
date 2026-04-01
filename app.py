@@ -67,6 +67,7 @@ def trigger_github_action():
 st.title("🏰 Disney Wait Time")
 maintenant = datetime.now(paris_tz)
 
+# Logique de Reset (2h du matin Paris)
 heure_reset = maintenant.replace(hour=2, minute=0, second=0, microsecond=0)
 debut_journee = heure_reset - timedelta(days=1) if maintenant < heure_reset else heure_reset
 
@@ -77,11 +78,12 @@ if st.button('🔄 Actualiser & Forcer un Relevé'):
 
 # --- RÉCUPÉRATION DES DONNÉES ---
 try:
-    debut_utc = debut_journee.astimezone(pytz.utc)
+    # CORRECTION 1: On demande les plus récents en premier (desc=True) 
+    # pour éviter d'être bloqué sur les données du matin à cause de la limite.
     response = supabase.table("disney_logs")\
         .select("*")\
-        .gte("created_at", debut_utc.isoformat())\
-        .order("created_at", desc=False)\
+        .order("created_at", desc=True)\
+        .limit(3000)\
         .execute()
     df_raw = pd.DataFrame(response.data)
 except Exception as e:
@@ -94,6 +96,7 @@ if not df_raw.empty:
         df_raw['created_at'] = df_raw['created_at'].dt.tz_localize('UTC')
     df_raw['created_at'] = df_raw['created_at'].dt.tz_convert('Europe/Paris')
     
+    # CORRECTION 2: On filtre sur la journée en cours par rapport à 2h du mat
     df = df_raw[df_raw['created_at'] >= debut_journee].copy()
     
     if not df.empty:
@@ -103,10 +106,12 @@ if not df_raw.empty:
         
         # --- CALCUL DES PANNES ---
         for ride_name in toutes_attractions:
+            # On trie par temps croissant pour le calcul chronologique des pannes
             ride_data = df[df['ride_name'] == ride_name].sort_values('created_at')
             en_panne, debut_panne = False, None
             for i, row in ride_data.iterrows():
-                est_nuit_log = 2 <= row['created_at'].hour < 8
+                # On ignore la maintenance nocturne SAUF pour les tests
+                est_nuit_log = (2 <= row['created_at'].hour < 8) and ("Test" not in row['ride_name'])
                 
                 if not row['is_open'] and not en_panne and not est_nuit_log:
                     en_panne, debut_panne = True, row['created_at']
@@ -162,7 +167,7 @@ if not df_raw.empty:
                         c1.success("🟢 OUVERT")
                         c2.metric("Attente", f"{int(last['wait_time'])} min")
                     else:
-                        if est_nuit_actuellement:
+                        if est_nuit_actuellement and "Test" not in ride:
                             c1.error("🔴 FERMÉ")
                             st.caption("ℹ️ Le parc est fermé pour la nuit.")
                         else:
@@ -180,7 +185,6 @@ if not df_raw.empty:
                                 if p['statut'] == "TERMINEE":
                                     st.write(f"• De {p['debut'].strftime('%H:%M')} à {p['fin'].strftime('%H:%M')} (**{p['duree']} min**)")
                                 else:
-                                    # Pour la panne en cours, on affiche depuis quand
                                     min_inc = int((maintenant - p['debut']).total_seconds() / 60)
                                     st.write(f"• ⚠️ **En cours** depuis {p['debut'].strftime('%H:%M')} ({min_inc} min)")
                         else: st.write("✅ Pas de panne détectée pour le moment.")
@@ -189,7 +193,7 @@ if not df_raw.empty:
         # --- FLUX DES PANNES ---
         st.subheader("🚨 Dernières interruptions")
         flux = sorted(all_pannes, key=lambda x: x['debut'], reverse=True)[:5]
-        if flux and not est_nuit_actuellement:
+        if flux:
             for p in flux:
                 if p['statut'] == "EN_COURS": 
                     st.error(f"🔴 {p['ride']}   >> {p['debut'].strftime('%H:%M')}")
@@ -197,5 +201,5 @@ if not df_raw.empty:
                     st.info(f"✅ {p['ride']}   >> {p['fin'].strftime('%H:%M')} -- ({p['duree']} min)")
         else:
             st.write("✅ Aucune interruption en cours.")
-    else: st.warning("😴 Maintenance nocturne.")
+    else: st.warning("😴 Maintenance nocturne (02:00 - 08:00).")
 else: st.warning("📭 Aucune donnée disponible.")
