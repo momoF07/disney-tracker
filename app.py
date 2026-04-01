@@ -241,7 +241,8 @@ if not df_raw.empty:
         selected_options = st.multiselect("Attractions suivies :", options=toutes_attractions, default=valid_default, format_func=lambda x: f"{get_emoji(x)} {x}")
         st.query_params["fav"] = selected_options
         
-        st.caption(f"🕒 Donnée : {derniere_maj} | Refresh : {st.session_state.last_refresh}")
+        st.caption(f"🕒 Donnée : {derniere_maj} | Auto-Refresh : {st.session_state.last_refresh} (ne fonctionne pas sur mobile)")
+        st.caption("La base de données est vidée tout les soirs à 2h du matin.")
         
         # --- AFFICHAGE DES ATTRACTIONS ---
         est_nuit_actuellement = 2 <= maintenant.hour < 8
