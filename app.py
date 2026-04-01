@@ -136,24 +136,67 @@ if not df_raw.empty:
         
         with col_help:
             with st.popover("❓"):
-                st.markdown("<h2 style='text-align:center; color:white; margin-bottom:20px;'>🔍 Raccourcis</h2>", unsafe_allow_html=True)
+                # Injection de style local pour un design léché
+                st.markdown("""
+                <style>
+                    /* Style du titre principal */
+                    .main-title {
+                        text-align: center; 
+                        background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+                        -webkit-background-clip: text;
+                        -webkit-text-fill-color: transparent;
+                        font-weight: 800;
+                        font-size: 28px;
+                        margin-bottom: 25px;
+                    }
+                    /* Badges de catégories */
+                    .cat-badge {
+                        padding: 5px 15px;
+                        border-radius: 12px;
+                        font-size: 13px;
+                        font-weight: 600;
+                        letter-spacing: 1px;
+                        display: block;
+                        text-align: center;
+                        margin: 20px 0 10px 0;
+                    }
+                    .bg-blue { background: rgba(79, 172, 254, 0.15); color: #4facfe; border: 1px solid rgba(79, 172, 254, 0.3); }
+                    .bg-green { background: rgba(74, 222, 128, 0.15); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.3); }
+                    .bg-orange { background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); }
+                    
+                    /* Micro-cartes pour les raccourcis */
+                    .shortcut-box {
+                        background: rgba(255, 255, 255, 0.03);
+                        border: 1px solid rgba(255, 255, 255, 0.05);
+                        border-radius: 12px;
+                        padding: 10px;
+                        margin-bottom: 8px;
+                    }
+                    .shortcut-label {
+                        font-size: 11px;
+                        color: #94a3b8;
+                        text-transform: uppercase;
+                        margin-bottom: 5px;
+                        display: block;
+                    }
+                </style>
+                """, unsafe_allow_html=True)
+
+                st.markdown('<p class="main-title">🔍 INDEX DES CODES</p>', unsafe_allow_html=True)
                 
                 # --- SECTION 1 : GÉNÉRAL ---
-                st.markdown('<p class="title-blue">🎡 Systèmes & Parcs</p>', unsafe_allow_html=True)
-                cp1, cp2, cp3 = st.columns(3)
-                cp1.code("*ALL")
-                cp2.code("*DLP")
-                cp3.code("*DAW")
+                st.markdown('<span class="cat-badge bg-blue">🎡 SYSTÈMES & PARCS</span>', unsafe_allow_html=True)
+                with st.container():
+                    c1, c2, c3 = st.columns(3)
+                    c1.code("*ALL"); c2.code("*DLP"); c3.code("*DAW")
                 
-                # Ajout des codes tests
-                st.markdown('<div class="shortcut-card"><small>Tests & Debug</small></div>', unsafe_allow_html=True)
+                st.markdown('<div class="shortcut-box"><span class="shortcut-label">Tests & Maintenance</span>', unsafe_allow_html=True)
                 ct1, ct2, ct3 = st.columns(3)
-                ct1.code("*101")
-                ct2.code("*102")
-                ct3.code("*TEST")
+                ct1.code("*101"); ct2.code("*102"); ct3.code("*TEST")
+                st.markdown('</div>', unsafe_allow_html=True)
 
                 # --- SECTION 2 : DISNEYLAND PARK ---
-                st.markdown('<p class="title-green" style="text-align:center; margin-top:20px; background: rgba(0,242,254,0.1); border-radius:10px; padding:5px;">🏰 Disneyland Park</p>', unsafe_allow_html=True)
+                st.markdown('<span class="cat-badge bg-green">🏰 DISNEYLAND PARK</span>', unsafe_allow_html=True)
                 
                 lands_dlp = {
                     "Main Street": ["*MS", "*MAINSTREET"],
@@ -164,40 +207,39 @@ if not df_raw.empty:
                 }
                 
                 for land, codes in lands_dlp.items():
-                    st.markdown(f'<div class="shortcut-card"><small>{land}</small></div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="shortcut-box"><span class="shortcut-label">{land}</span>', unsafe_allow_html=True)
                     cl1, cl2 = st.columns(2)
-                    cl1.code(codes[0])
-                    cl2.code(codes[1])
+                    cl1.code(codes[0]); cl2.code(codes[1])
+                    st.markdown('</div>', unsafe_allow_html=True)
 
                 # --- SECTION 3 : ADVENTURE WORLD ---
-                st.markdown('<p class="title-orange" style="text-align:center; margin-top:20px; background: rgba(249,212,35,0.1); border-radius:10px; padding:5px;">🎬 Adventure World</p>', unsafe_allow_html=True)
+                st.markdown('<span class="cat-badge bg-orange">🎬 ADVENTURE WORLD</span>', unsafe_allow_html=True)
                 
-                # Avengers
-                st.markdown('<div class="shortcut-card"><small>Avengers Campus</small></div>', unsafe_allow_html=True)
+                # Avengers & Pixar
+                st.markdown('<div class="shortcut-box"><span class="shortcut-label">Avengers Campus</span>', unsafe_allow_html=True)
                 ca1, ca2, ca3 = st.columns(3)
                 ca1.code("*CAMPUS"); ca2.code("*AVENGERS"); ca3.code("*AVENGERS-CAMPUS")
+                st.markdown('</div>', unsafe_allow_html=True)
 
-                # Pixar
-                st.markdown('<div class="shortcut-card"><small>Worlds of Pixar</small></div>', unsafe_allow_html=True)
+                st.markdown('<div class="shortcut-box"><span class="shortcut-label">Worlds of Pixar</span>', unsafe_allow_html=True)
                 cpx1, cpx2, cpx3 = st.columns(3)
                 cpx1.code("*PIXAR"); cpx2.code("*PROD4"); cpx3.code("*PRODUCTION4")
+                st.markdown('</div>', unsafe_allow_html=True)
 
-                # Frozen
-                st.markdown('<div class="shortcut-card"><small>World of Frozen</small></div>', unsafe_allow_html=True)
+                # Frozen & Extensions
+                st.markdown('<div class="shortcut-box"><span class="shortcut-label">World of Frozen</span>', unsafe_allow_html=True)
                 cfz1, cfz2, cfz3 = st.columns(3)
                 cfz1.code("*WOF"); cfz2.code("*FROZEN"); cfz3.code("*WORLD-OF-FROZEN")
+                st.markdown('</div>', unsafe_allow_html=True)
 
-                # Production 3 & Way
-                col_btm1, col_btm2 = st.columns(2)
-                with col_btm1:
-                    st.markdown('<div class="shortcut-card"><small>Production 3</small></div>', unsafe_allow_html=True)
-                    st.code("*PROD3")
-                with col_btm2:
-                    st.markdown('<div class="shortcut-card"><small>Adventure Way</small></div>', unsafe_allow_html=True)
-                    st.code("*WAY")
-                
-                st.markdown('<div class="shortcut-card"><small>Alias Adventure Way</small></div>', unsafe_allow_html=True)
+                st.markdown('<div class="shortcut-box"><span class="shortcut-label">Adventure Way & Prod 3</span>', unsafe_allow_html=True)
+                cbt1, cbt2 = st.columns(2)
+                cbt1.code("*WAY"); cbt2.code("*PROD3")
+                st.markdown('<span class="shortcut-label" style="margin-top:8px">Alias Long</span>', unsafe_allow_html=True)
                 st.code("*ADVENTURE-WAY")
+                st.markdown('</div>', unsafe_allow_html=True)
+
+                st.caption("✨ Astuce : Tapez le code et appuyez sur Entrée.")
 
         with col_sc:
             sc = st.text_input("Tapez un raccourci...", placeholder="ex: *FANTASY", label_visibility="collapsed")
