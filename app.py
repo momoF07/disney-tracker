@@ -184,11 +184,6 @@ if not df_raw.empty:
                 with st.container():
                     c1, c2, c3 = st.columns(3)
                     c1.code("*ALL"); c2.code("*DLP"); c3.code("*DAW")
-                
-                st.markdown('<div class="shortcut-box"><span class="shortcut-label">Tests & Maintenance</span>', unsafe_allow_html=True)
-                ct1, ct2, ct3 = st.columns(3)
-                ct1.code("*101"); ct2.code("*102"); ct3.code("*TEST")
-                st.markdown('</div>', unsafe_allow_html=True)
 
                 st.markdown('<span class="cat-badge bg-green">🏰 DISNEYLAND PARK</span>', unsafe_allow_html=True)
                 lands_dlp_map = {
@@ -210,9 +205,14 @@ if not df_raw.empty:
                 ca1.code("*CAMPUS"); ca2.code("*AVENGERS"); ca3.code("*AVENGERS-CAMPUS")
                 st.markdown('</div>', unsafe_allow_html=True)
 
-                st.markdown('<div class="shortcut-box"><span class="shortcut-label">Worlds of Pixar</span>', unsafe_allow_html=True)
-                cpx1, cpx2, cpx3 = st.columns(3)
-                cpx1.code("*PIXAR"); cpx2.code("*PROD4"); cpx3.code("*PRODUCTION4")
+                st.markdown('<div class="shortcut-box"><span class="shortcut-label">Production Courtyard / Production 3</span>', unsafe_allow_html=True)
+                pc1, pc2, pc3 = st.columns(3)
+                pc1.code("*COURTYARD"); pc2.code("*PRODUCTION 3"); pc3.code("*PROD3")
+                st.markdown('</div>', unsafe_allow_html=True)
+
+                st.markdown('<div class="shortcut-box"><span class="shortcut-label">Worlds of Pixar / Production 4</span>', unsafe_allow_html=True)
+                cpx1, cpx2, cpx3, cpx4 = st.columns(4)
+                cpx1.code("*PIXAR"); cpx2.code("*WORLD-OF-PIXAR"); cpx3.code("*PROD4"); cpx4.code("*PRODUCTION4")
                 st.markdown('</div>', unsafe_allow_html=True)
 
                 st.markdown('<div class="shortcut-box"><span class="shortcut-label">World of Frozen</span>', unsafe_allow_html=True)
@@ -220,11 +220,9 @@ if not df_raw.empty:
                 cfz1.code("*WOF"); cfz2.code("*FROZEN"); cfz3.code("*WORLD-OF-FROZEN")
                 st.markdown('</div>', unsafe_allow_html=True)
 
-                st.markdown('<div class="shortcut-box"><span class="shortcut-label">Adventure Way & Prod 3</span>', unsafe_allow_html=True)
-                cbt1, cbt2 = st.columns(2)
-                cbt1.code("*WAY"); cbt2.code("*PROD3")
-                st.markdown('<span class="shortcut-label" style="margin-top:8px">Alias Long</span>', unsafe_allow_html=True)
-                st.code("*ADVENTURE-WAY")
+                st.markdown('<div class="shortcut-box"><span class="shortcut-label">Adventure Way</span>', unsafe_allow_html=True)
+                aw1, aw2 = st.columns(2)
+                aw1.code("*WAY"); aw2.code("*ADVENTURE-WAY")
                 st.markdown('</div>', unsafe_allow_html=True)
 
                 st.caption("✨ Astuce : Tapez le code et appuyez sur Entrée.")
