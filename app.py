@@ -291,9 +291,9 @@ if not df_raw.empty:
         if flux:
             for p in flux:
                 if p['statut'] == "EN_COURS": 
-                    st.error(f"🔴 {p['ride']}\u00A0\u00A0\u00A0>> {p['debut'].strftime('%H:%M')}")
+                    st.error(f"🔴 {p['ride']}\u00A0\u00A0\u00A0>>\u00A0\u00A0\u00A0{p['debut'].strftime('%H:%M')}")
                 else: 
-                    st.info(f"✅ {p['ride']}\u00A0\u00A0\u00A0>> {p['fin'].strftime('%H:%M')} -- ({p['duree']} min)")
+                    st.info(f"✅ {p['ride']}\u00A0\u00A0\u00A0>>\u00A0\u00A0\u00A0{p['fin'].strftime('%H:%M')} -- ({p['duree']} min)")
         else:
             st.write("✅ Aucune interruption en cours.")
     else: st.warning("😴 Maintenance nocturne (02:00 - 08:00).")
