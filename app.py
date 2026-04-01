@@ -111,23 +111,54 @@ if not df_raw.empty:
         etat_actuel = df[df['created_at'] == derniere_maj_time]
         tous_fermes_globalement = not etat_actuel['is_open'].any()
 
-        # --- CALCUL DES PANNES ---
+        # --- CALCUL DES PANNES (CORRIGÉ) ---
         for ride_name in toutes_attractions:
+            # On trie bien par ordre chronologique pour suivre l'état
             ride_data = df[df['ride_name'] == ride_name].sort_values('created_at')
-            en_panne, debut_panne = False, None
+            
+            en_panne = False
+            debut_panne = None
+            
             for i, row in ride_data.iterrows():
-                est_nuit_log = (2 <= row['created_at'].hour < 8)
-                if not row['is_open'] and not en_panne and not est_nuit_log:
-                    en_panne, debut_panne = True, row['created_at']
-                elif row['is_open'] and en_panne:
-                    duree = int((row['created_at'] - debut_panne).total_seconds() / 60)
-                    all_pannes.append({
-                        "ride": ride_name, "debut": debut_panne, "fin": row['created_at'], 
-                        "duree": duree, "statut": "TERMINEE"
-                    })
+                est_ouvert = row['is_open']
+                temps_log = row['created_at']
+                
+                # Ignorer les logs de maintenance de nuit (2h-8h)
+                if 2 <= temps_log.hour < 8:
+                    continue
+
+                # CAS A : L'attraction tombe en panne
+                if not est_ouvert and not en_panne:
+                    en_panne = True
+                    debut_panne = temps_log
+                
+                # CAS B : L'attraction REOUVRE (Fin de la panne)
+                elif est_ouvert and en_panne:
+                    duree = int((temps_log - debut_panne).total_seconds() / 60)
+                    
+                    # On n'enregistre la panne que si elle a duré au moins 1 minute 
+                    # (évite les micro-bugs de capteur)
+                    if duree >= 1:
+                        all_pannes.append({
+                            "ride": ride_name, 
+                            "debut": debut_panne, 
+                            "fin": temps_log, 
+                            "duree": duree, 
+                            "statut": "TERMINEE"
+                        })
+                    
+                    # CRITIQUE : On réinitialise l'état pour la prochaine panne
                     en_panne = False
-            if en_panne:
-                all_pannes.append({"ride": ride_name, "debut": debut_panne, "fin": None, "statut": "EN_COURS"})
+                    debut_panne = None
+
+            # CAS C : La panne est toujours en cours au moment du dernier relevé
+            if en_panne and debut_panne:
+                all_pannes.append({
+                    "ride": ride_name, 
+                    "debut": debut_panne, 
+                    "fin": None, 
+                    "statut": "EN_COURS"
+                })
 
         # --- LOGIQUE RACCOURCIS & POPOVER ---
         st.write("---")
