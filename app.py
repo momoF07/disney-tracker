@@ -151,7 +151,7 @@ if not df_raw.empty:
                     .cat-badge {
                         padding: 5px 15px;
                         border-radius: 12px;
-                        font-size: 13px;
+                        font-size: 18px;
                         font-weight: 600;
                         letter-spacing: 1px;
                         display: block;
@@ -169,7 +169,7 @@ if not df_raw.empty:
                         margin-bottom: 8px;
                     }
                     .shortcut-label {
-                        font-size: 10px;
+                        font-size: 15px;
                         color: #94a3b8;
                         text-transform: uppercase;
                         margin-bottom: 5px;
