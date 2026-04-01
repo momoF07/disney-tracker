@@ -90,13 +90,14 @@ def get_emoji(name):
 def get_rides_by_zone(zone_code, all_rides_list):
     """
     Filtre les attractions selon les raccourcis parcs ou les LANDS (avec alias).
+    Supporte maintenant les codes numériques 101 et 102 pour les tests.
     """
-    zone_code = zone_code.upper().replace("*", "")
+    zone_code = zone_code.upper().replace("*", "").strip()
     targets = []
 
-    # --- LOGIQUE TEST ---
-    if zone_code == "TEST":
-        return [r for r in all_rides_list if "Test" in r]
+    # --- LOGIQUE TEST (Réparée pour 101, 102 et TEST) ---
+    if zone_code in ["101", "102", "TEST"]:
+        return [r for r in all_rides_list if "test" in r.lower()]
 
     # --- LOGIQUE ALL ---
     if zone_code == "ALL":
