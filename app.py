@@ -19,29 +19,42 @@ st.markdown("""
         top: 50% !important;
         left: 50% !important;
         transform: translate(-50%, -50%) !important;
-        width: 85vw !important;
-        max-width: 650px !important;
+        width: 90vw !important;
+        max-width: 500px !important;
         max-height: 80vh !important;
         overflow-y: auto !important;
-        background-color: rgba(17, 20, 28, 0.9) !important;
-        backdrop-filter: blur(15px) !important;
+        background-color: rgba(28, 31, 46, 0.98) !important;
+        backdrop-filter: blur(20px) !important;
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        border-radius: 20px !important;
-        padding: 20px !important;
+        border-radius: 24px !important;
+        padding: 25px !important;
         z-index: 999999 !important;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.5) !important;
     }
     .shortcut-card {
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 10px;
-        padding: 8px;
-        margin-top: 10px;
-        margin-bottom: 5px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 12px;
+        padding: 10px;
+        margin-bottom: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
     }
-    .title-blue { color: #4facfe; font-weight: bold; }
-    .title-green { color: #00f2fe; font-weight: bold; }
-    .title-orange { color: #f9d423; font-weight: bold; }
+    .cat-title {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 8px;
+        font-weight: 700;
+    }
+    .blue-t { color: #4facfe; }
+    .green-t { color: #00f2fe; }
+    .orange-t { color: #f9d423; }
+    
+    code {
+        color: #ff9a9e !important;
+        background: rgba(255,154,158,0.1) !important;
+    }
     [data-testid='stMetricValue'] { font-size: 1.8rem; }
-    .stButton button { width: 100%; border-radius: 10px; }
+    .stButton button { width: 100%; border-radius: 12px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -67,7 +80,6 @@ def trigger_github_action():
 st.title("🏰 Disney Wait Time")
 maintenant = datetime.now(paris_tz)
 
-# Logique de Reset (2h du matin Paris)
 heure_reset = maintenant.replace(hour=2, minute=0, second=0, microsecond=0)
 debut_journee = heure_reset - timedelta(days=1) if maintenant < heure_reset else heure_reset
 
@@ -78,8 +90,6 @@ if st.button('🔄 Actualiser & Forcer un Relevé'):
 
 # --- RÉCUPÉRATION DES DONNÉES ---
 try:
-    # CORRECTION 1: On demande les plus récents en premier (desc=True) 
-    # pour éviter d'être bloqué sur les données du matin à cause de la limite.
     response = supabase.table("disney_logs")\
         .select("*")\
         .order("created_at", desc=True)\
@@ -96,7 +106,6 @@ if not df_raw.empty:
         df_raw['created_at'] = df_raw['created_at'].dt.tz_localize('UTC')
     df_raw['created_at'] = df_raw['created_at'].dt.tz_convert('Europe/Paris')
     
-    # CORRECTION 2: On filtre sur la journée en cours par rapport à 2h du mat
     df = df_raw[df_raw['created_at'] >= debut_journee].copy()
     
     if not df.empty:
@@ -104,15 +113,11 @@ if not df_raw.empty:
         all_pannes = []
         toutes_attractions = sorted(df['ride_name'].unique())
         
-        # --- CALCUL DES PANNES ---
         for ride_name in toutes_attractions:
-            # On trie par temps croissant pour le calcul chronologique des pannes
             ride_data = df[df['ride_name'] == ride_name].sort_values('created_at')
             en_panne, debut_panne = False, None
             for i, row in ride_data.iterrows():
-                # On ignore la maintenance nocturne SAUF pour les tests
                 est_nuit_log = (2 <= row['created_at'].hour < 8) and ("Test" not in row['ride_name'])
-                
                 if not row['is_open'] and not en_panne and not est_nuit_log:
                     en_panne, debut_panne = True, row['created_at']
                 elif row['is_open'] and en_panne:
@@ -125,17 +130,50 @@ if not df_raw.empty:
             if en_panne:
                 all_pannes.append({"ride": ride_name, "debut": debut_panne, "fin": None, "statut": "EN_COURS"})
 
-        # --- LOGIQUE RACCOURCIS ---
+        # --- LOGIQUE RACCOURCIS & POPOVER ---
         st.write("---")
-        col_sc, col_help = st.columns([0.88, 0.12])
+        col_sc, col_help = st.columns([0.85, 0.15])
+        
         with col_help:
-            with st.popover("❓"):
-                st.markdown("<h2 style='text-align:center; color:white;'>🔍 Raccourcis</h2>", unsafe_allow_html=True)
-                st.markdown('<div class="shortcut-card"><p class="title-blue">🎡 Parcs</p></div>', unsafe_allow_html=True)
-                st.code("*ALL / *DLP / *DAW")
+            with st.popover("⌨️", help="Voir les raccourcis"):
+                st.markdown("<h3 style='text-align:center; margin-top:0;'>⌨️ Raccourcis Clavier</h3>", unsafe_allow_html=True)
+                
+                # --- SECTION GÉNÉRAL ---
+                st.markdown('<p class="cat-title blue-t">🌐 Général</p>', unsafe_allow_html=True)
+                with st.container():
+                    st.markdown("""
+                    <div class="shortcut-card">
+                    <code>*ALL</code> : Tout Disney Paris<br>
+                    <code>*DLP</code> : Disneyland Park<br>
+                    <code>*DAW</code> : Adventure World<br>
+                    <code>*101</code> / <code>*102</code> : Tests
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                # --- SECTION DLP ---
+                st.markdown('<p class="cat-title green-t">🏰 Disneyland Park</p>', unsafe_allow_html=True)
+                c1, c2 = st.columns(2)
+                with c1:
+                    st.markdown('<div class="shortcut-card"><b>Main St.</b><br><code>*MS</code></div>', unsafe_allow_html=True)
+                    st.markdown('<div class="shortcut-card"><b>Frontier</b><br><code>*FRONTIER</code></div>', unsafe_allow_html=True)
+                    st.markdown('<div class="shortcut-card"><b>Adventure</b><br><code>*ADVENTURE</code></div>', unsafe_allow_html=True)
+                with c2:
+                    st.markdown('<div class="shortcut-card"><b>Fantasy</b><br><code>*FANTASY</code></div>', unsafe_allow_html=True)
+                    st.markdown('<div class="shortcut-card"><b>Discovery</b><br><code>*DISCO</code></div>', unsafe_allow_html=True)
+
+                # --- SECTION DAW ---
+                st.markdown('<p class="cat-title orange-t">🎬 Adventure World</p>', unsafe_allow_html=True)
+                c3, c4 = st.columns(2)
+                with c3:
+                    st.markdown('<div class="shortcut-card"><b>Campus</b><br><code>*CAMPUS</code></div>', unsafe_allow_html=True)
+                    st.markdown('<div class="shortcut-card"><b>Pixar</b><br><code>*PIXAR</code></div>', unsafe_allow_html=True)
+                    st.markdown('<div class="shortcut-card"><b>Frozen</b><br><code>*WOF</code></div>', unsafe_allow_html=True)
+                with c4:
+                    st.markdown('<div class="shortcut-card"><b>Prod 3</b><br><code>*PROD3</code></div>', unsafe_allow_html=True)
+                    st.markdown('<div class="shortcut-card"><b>Way</b><br><code>*WAY</code></div>', unsafe_allow_html=True)
 
         with col_sc:
-            sc = st.text_input("Raccourci :", placeholder="ex: *FANTASY...", label_visibility="collapsed")
+            sc = st.text_input("Tapez un raccourci...", placeholder="ex: *FANTASY", label_visibility="collapsed")
         
         current_selection = st.query_params.get_all("fav")
         if sc.startswith("*"):
@@ -174,7 +212,7 @@ if not df_raw.empty:
                             c1.error("🔴 INTERRUPTION / PANNE")
                             if panne_actuelle:
                                 minutes_ecoulees = int((maintenant - panne_actuelle['debut']).total_seconds() / 60)
-                                st.caption(f"⚠️ En panne depuis **{minutes_ecoulees} min** (début : {panne_actuelle['debut'].strftime('%H:%M')})")
+                                st.caption(f"⚠️ En panne depuis **{minutes_ecoulees} min**")
                             else:
                                 st.caption("⚠️ Attraction indisponible.")
                         c2.metric("Attente", "- - -")
