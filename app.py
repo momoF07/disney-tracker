@@ -135,43 +135,71 @@ if not df_raw.empty:
         col_sc, col_help = st.columns([0.85, 0.15])
         
         with col_help:
-            with st.popover("⌨️", help="Voir les raccourcis"):
-                st.markdown("<h3 style='text-align:center; margin-top:0;'>⌨️ Raccourcis Clavier</h3>", unsafe_allow_html=True)
+            with st.popover("❓"):
+                st.markdown("<h2 style='text-align:center; color:white; margin-bottom:20px;'>🔍 Raccourcis</h2>", unsafe_allow_html=True)
                 
-                # --- SECTION GÉNÉRAL ---
-                st.markdown('<p class="cat-title blue-t">🌐 Général</p>', unsafe_allow_html=True)
-                with st.container():
-                    st.markdown("""
-                    <div class="shortcut-card">
-                    <code>*ALL</code> : Tout Disney Paris<br>
-                    <code>*DLP</code> : Disneyland Park<br>
-                    <code>*DAW</code> : Adventure World<br>
-                    <code>*101</code> / <code>*102</code> : Tests
-                    </div>
-                    """, unsafe_allow_html=True)
+                # --- SECTION 1 : GÉNÉRAL ---
+                st.markdown('<p class="title-blue">🎡 Systèmes & Parcs</p>', unsafe_allow_html=True)
+                cp1, cp2, cp3 = st.columns(3)
+                cp1.code("*ALL")
+                cp2.code("*DLP")
+                cp3.code("*DAW")
+                
+                # Ajout des codes tests
+                st.markdown('<div class="shortcut-card"><small>Tests & Debug</small></div>', unsafe_allow_html=True)
+                ct1, ct2, ct3 = st.columns(3)
+                ct1.code("*101")
+                ct2.code("*102")
+                ct3.code("*TEST")
 
-                # --- SECTION DLP ---
-                st.markdown('<p class="cat-title green-t">🏰 Disneyland Park</p>', unsafe_allow_html=True)
-                c1, c2 = st.columns(2)
-                with c1:
-                    st.markdown('<div class="shortcut-card"><b>Main St.</b><br><code>*MS</code></div>', unsafe_allow_html=True)
-                    st.markdown('<div class="shortcut-card"><b>Frontier</b><br><code>*FRONTIER</code></div>', unsafe_allow_html=True)
-                    st.markdown('<div class="shortcut-card"><b>Adventure</b><br><code>*ADVENTURE</code></div>', unsafe_allow_html=True)
-                with c2:
-                    st.markdown('<div class="shortcut-card"><b>Fantasy</b><br><code>*FANTASY</code></div>', unsafe_allow_html=True)
-                    st.markdown('<div class="shortcut-card"><b>Discovery</b><br><code>*DISCO</code></div>', unsafe_allow_html=True)
+                # --- SECTION 2 : DISNEYLAND PARK ---
+                st.markdown('<p class="title-green" style="text-align:center; margin-top:20px; background: rgba(0,242,254,0.1); border-radius:10px; padding:5px;">🏰 Disneyland Park</p>', unsafe_allow_html=True)
+                
+                lands_dlp = {
+                    "Main Street": ["*MS", "*MAINSTREET"],
+                    "Frontierland": ["*FRONTIER", "*FRONTIERLAND"],
+                    "Adventureland": ["*ADVENTURE", "*ADVENTURELAND"],
+                    "Fantasyland": ["*FANTASY", "*FANTASYLAND"],
+                    "Discoveryland": ["*DISCO", "*DISCOVERYLAND"]
+                }
+                
+                for land, codes in lands_dlp.items():
+                    st.markdown(f'<div class="shortcut-card"><small>{land}</small></div>', unsafe_allow_html=True)
+                    cl1, cl2 = st.columns(2)
+                    cl1.code(codes[0])
+                    cl2.code(codes[1])
 
-                # --- SECTION DAW ---
-                st.markdown('<p class="cat-title orange-t">🎬 Adventure World</p>', unsafe_allow_html=True)
-                c3, c4 = st.columns(2)
-                with c3:
-                    st.markdown('<div class="shortcut-card"><b>Campus</b><br><code>*CAMPUS</code></div>', unsafe_allow_html=True)
-                    st.markdown('<div class="shortcut-card"><b>Pixar</b><br><code>*PIXAR</code></div>', unsafe_allow_html=True)
-                    st.markdown('<div class="shortcut-card"><b>Frozen</b><br><code>*WOF</code></div>', unsafe_allow_html=True)
-                with c4:
-                    st.markdown('<div class="shortcut-card"><b>Prod 3</b><br><code>*PROD3</code></div>', unsafe_allow_html=True)
-                    st.markdown('<div class="shortcut-card"><b>Way</b><br><code>*WAY</code></div>', unsafe_allow_html=True)
+                # --- SECTION 3 : ADVENTURE WORLD ---
+                st.markdown('<p class="title-orange" style="text-align:center; margin-top:20px; background: rgba(249,212,35,0.1); border-radius:10px; padding:5px;">🎬 Adventure World</p>', unsafe_allow_html=True)
+                
+                # Avengers
+                st.markdown('<div class="shortcut-card"><small>Avengers Campus</small></div>', unsafe_allow_html=True)
+                ca1, ca2, ca3 = st.columns(3)
+                ca1.code("*CAMPUS"); ca2.code("*AVENGERS"); ca3.code("*AVENGERS-CAMPUS")
 
+                # Pixar
+                st.markdown('<div class="shortcut-card"><small>Worlds of Pixar</small></div>', unsafe_allow_html=True)
+                cpx1, cpx2, cpx3 = st.columns(3)
+                cpx1.code("*PIXAR"); cpx2.code("*PROD4"); cpx3.code("*PRODUCTION4")
+
+                # Frozen
+                st.markdown('<div class="shortcut-card"><small>World of Frozen</small></div>', unsafe_allow_html=True)
+                cfz1, cfz2, cfz3 = st.columns(3)
+                cfz1.code("*WOF"); cfz2.code("*FROZEN"); cfz3.code("*WORLD-OF-FROZEN")
+
+                # Production 3 & Way
+                col_btm1, col_btm2 = st.columns(2)
+                with col_btm1:
+                    st.markdown('<div class="shortcut-card"><small>Production 3</small></div>', unsafe_allow_html=True)
+                    st.code("*PROD3")
+                with col_btm2:
+                    st.markdown('<div class="shortcut-card"><small>Adventure Way</small></div>', unsafe_allow_html=True)
+                    st.code("*WAY")
+                
+                st.markdown('<div class="shortcut-card"><small>Alias Adventure Way</small></div>', unsafe_allow_html=True)
+                st.code("*ADVENTURE-WAY")
+                
+                st.info("💡 Tapez le code avec l'étoile (ex: *DLP) puis appuyez sur Entrée pour valider la sélection.")
         with col_sc:
             sc = st.text_input("Tapez un raccourci...", placeholder="ex: *FANTASY", label_visibility="collapsed")
         
