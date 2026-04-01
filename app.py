@@ -301,82 +301,82 @@ if not df_raw.empty:
 else: st.warning("📭 Aucune donnée disponible.")
 
 
-# --- SECTION PLANNING (MODIFIÉE) ---
-st.divider()
-st.subheader("📅 Mon Planning MyKronos")
+## --- SECTION PLANNING (MODIFIÉE) ---
+#st.divider()
+#st.subheader("📅 Mon Planning MyKronos")
 
-# 1. RÉCUPÉRATION DES DONNÉES
-try:
-    # On récupère tous les shifts à partir d'aujourd'hui
-    today_str = maintenant.strftime("%Y-%m-%d")
-    res_schedule = supabase.table("my_schedule")\
-        .select("*")\
-        .gte("date", today_str)\
-        .order("date", desc=False)\
-        .execute()
-    
-    df_schedule = pd.DataFrame(res_schedule.data)
+## 1. RÉCUPÉRATION DES DONNÉES
+#try:
+#    # On récupère tous les shifts à partir d'aujourd'hui
+#    today_str = maintenant.strftime("%Y-%m-%d")
+#    res_schedule = supabase.table("my_schedule")\
+#        .select("*")\
+#        .gte("date", today_str)\
+#        .order("date", desc=False)\
+#        .execute()
+#    
+#    df_schedule = pd.DataFrame(res_schedule.data)
 
-    if not df_schedule.empty:
-        # Affichage du shift du jour en avant-plan (Info Box)
-        shift_today = df_schedule[df_schedule['date'] == today_str]
-        if not shift_today.empty:
-            s = shift_today.iloc[0]
-            st.info(f"✨ **AUJOURD'HUI :** {s['location']} | 🕒 {s['start_time'][11:16]} - {s['end_time'][11:16]}")
-        
-        # Affichage de la liste complète dans un petit conteneur propre
-        with st.container():
-            st.write("**Prochains jours :**")
-            for _, row in df_schedule.iterrows():
-                # On ne réaffiche pas aujourd'tui dans la liste si on veut, ou on le laisse
-                date_obj = datetime.strptime(row['date'], "%Y-%m-%d")
-                jours = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
-                date_fr = f"{jours[date_obj.weekday()]} {date_obj.day}/{date_obj.month}"
-                
-                h_debut = row['start_time'][11:16]
-                h_fin = row['end_time'][11:16]
-                
-                # Style pour différencier Travail et Repos/Congés
-                if row['job_type'] == "PayCode":
-                    label = f"🌴 {row['location']}"
-                    time_display = "Repos / Congé"
-                else:
-                    label = f"🎡 {row['location']}"
-                    time_display = f"{h_debut} - {h_fin}"
+#    if not df_schedule.empty:
+#        # Affichage du shift du jour en avant-plan (Info Box)
+#        shift_today = df_schedule[df_schedule['date'] == today_str]
+#        if not shift_today.empty:
+#            s = shift_today.iloc[0]
+#            st.info(f"✨ **AUJOURD'HUI :** {s['location']} | 🕒 {s['start_time'][11:16]} - {s['end_time'][11:16]}")
+#        
+#        # Affichage de la liste complète dans un petit conteneur propre
+#        with st.container():
+#            st.write("**Prochains jours :**")
+#            for _, row in df_schedule.iterrows():
+#                # On ne réaffiche pas aujourd'hui dans la liste si on veut, ou on le laisse
+#                date_obj = datetime.strptime(row['date'], "%Y-%m-%d")
+#                jours = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
+#                date_fr = f"{jours[date_obj.weekday()]} {date_obj.day}/{date_obj.month}"
+#                
+#                h_debut = row['start_time'][11:16]
+#                h_fin = row['end_time'][11:16]
+#                
+#                # Style pour différencier Travail et Repos/Congés
+#                if row['job_type'] == "PayCode":
+#                    label = f"🌴 {row['location']}"
+#                    time_display = "Repos / Congé"
+#                else:
+#                    label = f"🎡 {row['location']}"
+#                    time_display = f"{h_debut} - {h_fin}"
 
-                # Affichage en ligne
-                col_date, col_job, col_time = st.columns([0.25, 0.45, 0.3])
-                col_date.write(f"**{date_fr}**")
-                col_job.write(label)
-                col_time.write(f"`{time_display}`")
-                
-    else:
-        st.write("Libre comme l'air ! Aucun shift prévu.")
+#                # Affichage en ligne
+#                col_date, col_job, col_time = st.columns([0.25, 0.45, 0.3])
+#                col_date.write(f"**{date_fr}**")
+#                col_job.write(label)
+#                col_time.write(f"`{time_display}`")
+#                
+#    else:
+#        st.write("Libre comme l'air ! Aucun shift prévu.")
 
-except Exception as e:
-    st.caption("Importe ton planning pour voir tes horaires ici.")
+#except Exception as e:
+#    st.caption("Importe ton planning pour voir tes horaires ici.")
 
-# --- EXPANDER POUR L'IMPORTATION ---
-with st.expander("📥 Importer mon Planning"):
-    st.caption("MyKronos > Network > 'events' > Copy Response")
-    json_input = st.text_area("Colle le JSON ici", height=100, label_visibility="collapsed")
-    if st.button("Enregistrer le planning"):
-        if json_input:
-            try:
-                from ukg_parser import parse_kronos_schedule
-                shifts = parse_kronos_schedule(json_input)
-                
-                # Nettoyer les anciens shifts pour éviter les doublons de dates
-                # Ou laisser l'upsert gérer selon ta contrainte Supabase
-                for s in shifts:
-                    supabase.table("my_schedule").upsert(s).execute()
-                
-                st.success(f"✅ {len(shifts)} jours synchronisés !")
-                time.sleep(1)
-                st.rerun()
-            except Exception as e:
-                st.error(f"Erreur : {e}")
+## --- EXPANDER POUR L'IMPORTATION ---
+#with st.expander("📥 Importer mon Planning"):
+#    st.caption("MyKronos > Network > 'events' > Copy Response")
+#    json_input = st.text_area("Colle le JSON ici", height=100, label_visibility="collapsed")
+#    if st.button("Enregistrer le planning"):
+#        if json_input:
+#            try:
+#                from ukg_parser import parse_kronos_schedule
+#                shifts = parse_kronos_schedule(json_input)
+#                
+#                # Nettoyer les anciens shifts pour éviter les doublons de dates
+#                # Ou laisser l'upsert gérer selon ta contrainte Supabase
+#                for s in shifts:
+#                    supabase.table("my_schedule").upsert(s).execute()
+#                
+#                st.success(f"✅ {len(shifts)} jours synchronisés !")
+#                time.sleep(1)
+#                st.rerun()
+#            except Exception as e:
+#                st.error(f"Erreur : {e}")
 
-# --- PIED DE PAGE ---
-st.divider()
-st.caption("Disney Wait Time Tool - Cast Member Edition")
+## --- PIED DE PAGE ---
+#st.divider()
+#st.caption("Disney Wait Time Tool - Cast Member Edition")
