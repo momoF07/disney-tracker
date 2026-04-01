@@ -110,7 +110,6 @@ if not df_raw.empty:
 
         # --- CALCUL DES PANNES (CORRIGÉ) ---
         for ride_name in toutes_attractions:
-            # On trie bien par ordre chronologique pour suivre l'état
             ride_data = df[df['ride_name'] == ride_name].sort_values('created_at')
             
             en_panne = False
@@ -120,21 +119,15 @@ if not df_raw.empty:
                 est_ouvert = row['is_open']
                 temps_log = row['created_at']
                 
-                # Ignorer les logs de maintenance de nuit (2h-8h)
                 if 2 <= temps_log.hour < 8:
                     continue
 
-                # CAS A : L'attraction tombe en panne
                 if not est_ouvert and not en_panne:
                     en_panne = True
                     debut_panne = temps_log
                 
-                # CAS B : L'attraction REOUVRE (Fin de la panne)
                 elif est_ouvert and en_panne:
                     duree = int((temps_log - debut_panne).total_seconds() / 60)
-                    
-                    # On n'enregistre la panne que si elle a duré au moins 1 minute 
-                    # (évite les micro-bugs de capteur)
                     if duree >= 1:
                         all_pannes.append({
                             "ride": ride_name, 
@@ -143,12 +136,9 @@ if not df_raw.empty:
                             "duree": duree, 
                             "statut": "TERMINEE"
                         })
-                    
-                    # CRITIQUE : On réinitialise l'état pour la prochaine panne
                     en_panne = False
                     debut_panne = None
 
-            # CAS C : La panne est toujours en cours au moment du dernier relevé
             if en_panne and debut_panne:
                 all_pannes.append({
                     "ride": ride_name, 
@@ -266,6 +256,10 @@ if not df_raw.empty:
         st.query_params["fav"] = selected_options
         
         st.caption(f"🕒 Donnée : {derniere_maj} | Auto-Refresh : {st.session_state.last_refresh}")
+
+        # --- AJOUT DU ST.INFO SOUS LA LIGNE DE L'HEURE ---
+        if (heure_actuelle > PARK_CLOSING) or (tous_fermes_globalement and maintenant.hour >= 19):
+            st.info("ℹ️ Le parc est actuellement fermé. Les dernières données ont été envoyées.")
         
         # --- AFFICHAGE DES ATTRACTIONS ---
         if selected_options:
