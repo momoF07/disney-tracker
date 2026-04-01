@@ -146,14 +146,21 @@ if not df_raw.empty:
         selected_options = st.multiselect("Attractions suivies :", options=toutes_attractions, default=valid_default, format_func=lambda x: f"{get_emoji(x)} {x}")
         st.query_params["fav"] = selected_options
         
+        # --- LIGNE DE L'HEURE ---
         st.caption(f"🕒 Donnée : {derniere_maj} | Auto-Refresh : {st.session_state.last_refresh}")
 
-        # --- LOGIQUE D'AFFICHAGE DU BANDEAU INFO FERMETURE ---
-        # On définit si le parc est fermé maintenant
-        parc_actuellement_ferme = (heure_actuelle > PARK_CLOSING) or (tous_fermes_globalement and maintenant.hour >= 19)
-
-        if parc_actuellement_ferme:
+        # --- LOGIQUE D'AFFICHAGE DU MESSAGE DE FERMETURE ---
+        # 1. On vérifie l'heure de config
+        is_after_closing = maintenant.time() > PARK_CLOSING
+        
+        # 2. On vérifie si tout est fermé dans les données actuelles (DÉTECTION FORCÉE)
+        # Si le worker a arrêté d'envoyer car tout est fermé, is_open sera False partout
+        if is_after_closing or tous_fermes_globalement:
             st.info("ℹ️ Le parc est actuellement fermé. Les dernières données ont été envoyées.")
+            # On force la variable pour que les vignettes passent aussi en rouge "PARC FERMÉ"
+            parc_actuellement_ferme = True
+        else:
+            parc_actuellement_ferme = False
         
         # --- AFFICHAGE DES ATTRACTIONS ---
         if selected_options:
