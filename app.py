@@ -39,11 +39,11 @@ st.markdown("""
         border: 1px solid rgba(255, 255, 255, 0.05);
     }
     .cat-title {
-        font-size: 0.8rem;
+        font-size: 1rem;
         text-transform: uppercase;
         letter-spacing: 1px;
         margin-bottom: 8px;
-        font-weight: 700;
+        font-weight: 800;
     }
     .blue-t { color: #4facfe; }
     .green-t { color: #00f2fe; }
@@ -164,12 +164,12 @@ if not df_raw.empty:
                     .shortcut-box {
                         background: rgba(255, 255, 255, 0.03);
                         border: 1px solid rgba(255, 255, 255, 0.05);
-                        border-radius: 14px;
-                        padding: 12px;
+                        border-radius: 12px;
+                        padding: 10px;
                         margin-bottom: 8px;
                     }
                     .shortcut-label {
-                        font-size: 12px;
+                        font-size: 10px;
                         color: #94a3b8;
                         text-transform: uppercase;
                         margin-bottom: 5px;
