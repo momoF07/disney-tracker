@@ -113,6 +113,11 @@ if not df_raw.empty:
         all_pannes = []
         toutes_attractions = sorted(df['ride_name'].unique())
         
+        # --- LOGIQUE PARC FERMÉ (SOIR) ---
+        derniere_maj_time = df['created_at'].max()
+        etat_actuel = df[df['created_at'] == derniere_maj_time]
+        tous_fermes_soir = not etat_actuel['is_open'].any()
+
         # --- CALCUL DES PANNES ---
         for ride_name in toutes_attractions:
             ride_data = df[df['ride_name'] == ride_name].sort_values('created_at')
@@ -230,10 +235,8 @@ if not df_raw.empty:
         with col_sc:
             sc = st.text_input("Tapez un raccourci...", placeholder="ex: *FANTASY", label_visibility="collapsed")
         
-        # --- FILTRAGE AVEC ALL_PANNES POUR *101 / *102 ---
         current_selection = st.query_params.get_all("fav")
         if sc.startswith("*"):
-            # IMPORTANT: On passe all_pannes ici
             shortcut_selection = get_rides_by_zone(sc, toutes_attractions, all_pannes)
             if shortcut_selection: current_selection = shortcut_selection
 
@@ -241,41 +244,49 @@ if not df_raw.empty:
         selected_options = st.multiselect("Attractions suivies :", options=toutes_attractions, default=valid_default, format_func=lambda x: f"{get_emoji(x)} {x}")
         st.query_params["fav"] = selected_options
         
-        st.caption(f"🕒 Donnée : {derniere_maj} | Auto-Refresh : {st.session_state.last_refresh} (ne fonctionne pas sur mobile)")
-        st.caption("La base de données est vidée tout les soirs à 2h du matin.")
+        st.caption(f"🕒 Donnée : {derniere_maj} | Auto-Refresh : {st.session_state.last_refresh}")
+        st.caption("La base de données est vidée tous les soirs à 2h du matin.")
         
         # --- AFFICHAGE DES ATTRACTIONS ---
-        est_nuit_actuellement = 2 <= maintenant.hour < 8
-
         if selected_options:
             st.divider()
             for ride in selected_options:
                 ride_df = df[df['ride_name'] == ride].sort_values('created_at', ascending=False)
                 if not ride_df.empty:
                     last = ride_df.iloc[0]
+                    a_deja_ouvert_ce_ride = ride_df['is_open'].any()
+                    
                     st.subheader(f"{get_emoji(ride)} {ride}")
                     c1, c2 = st.columns(2)
                     
-                    ride_pannes = [p for p in all_pannes if p['ride'] == ride]
-                    panne_actuelle = next((p for p in ride_pannes if p['statut'] == "EN_COURS"), None)
-
-                    if last['is_open']:
-                        c1.success("🟢 OUVERT")
-                        c2.metric("Attente", f"{int(last['wait_time'])} min")
-                    else:
-                        if est_nuit_actuellement and "Test" not in ride:
-                            c1.error("🔴 FERMÉ")
-                            st.caption("ℹ️ Le parc est fermé pour la nuit.")
-                        else:
-                            c1.warning("🔴 INTERRUPTION / PANNE")
-                            if panne_actuelle:
-                                minutes_ecoulees = int((maintenant - panne_actuelle['debut']).total_seconds() / 60)
-                                st.caption(f"⚠️ En panne depuis **{minutes_ecoulees} min**")
-                            else:
-                                st.caption("⚠️ Attraction indisponible.")
+                    # 1. CAS DU SOIR : Tout est fermé
+                    if tous_fermes_soir and a_deja_ouvert_ce_ride and maintenant.hour >= 18:
+                        c1.error("🔴 PARC FERMÉ")
                         c2.metric("Attente", "- - -")
                     
+                    # 2. CAS DU MATIN : Pas encore ouvert
+                    elif not a_deja_ouvert_ce_ride:
+                        c1.info("🕒 FERMÉ")
+                        c2.metric("Attente", "- - -")
+                        st.caption("⏳ En attente de l'ouverture (Matin / Décalé).")
+
+                    # 3. CAS PANNE : A déjà ouvert, mais est actuellement fermé
+                    elif not last['is_open']:
+                        c1.warning("🔴 INTERRUPTION / 101")
+                        ride_pannes = [p for p in all_pannes if p['ride'] == ride]
+                        panne_actuelle = next((p for p in ride_pannes if p['statut'] == "EN_COURS"), None)
+                        if panne_actuelle:
+                            min_inc = int((maintenant - panne_actuelle['debut']).total_seconds() / 60)
+                            st.caption(f"⚠️ En panne depuis **{min_inc} min**")
+                        c2.metric("Attente", "101")
+                    
+                    # 4. CAS OUVERT
+                    else:
+                        c1.success("🟢 OUVERT")
+                        c2.metric("Attente", f"{int(last['wait_time'])} min")
+                    
                     with st.expander("📜 Historique des pannes"):
+                        ride_pannes = [p for p in all_pannes if p['ride'] == ride]
                         if ride_pannes:
                             for p in reversed(ride_pannes):
                                 if p['statut'] == "TERMINEE":
@@ -283,7 +294,7 @@ if not df_raw.empty:
                                 else:
                                     min_inc = int((maintenant - p['debut']).total_seconds() / 60)
                                     st.write(f"• ⚠️ **En cours** depuis {p['debut'].strftime('%H:%M')} ({min_inc} min)")
-                        else: st.write("✅ Pas de panne détectée pour le moment.")
+                        else: st.write("✅ Pas de panne détectée.")
                     st.divider()
 
         # --- FLUX DES PANNES ---
@@ -292,91 +303,14 @@ if not df_raw.empty:
         if flux:
             for p in flux:
                 if p['statut'] == "EN_COURS": 
-                    st.error(f"🔴 {p['ride']}\u00A0\u00A0\u00A0>>\u00A0\u00A0\u00A0{p['debut'].strftime('%H:%M')}")
+                    st.error(f"🔴 {p['ride']}   >>   {p['debut'].strftime('%H:%M')}")
                 else: 
-                    st.success(f"✅ {p['ride']}\u00A0\u00A0\u00A0>>\u00A0\u00A0\u00A0{p['fin'].strftime('%H:%M')} -- ({p['duree']} min)")
+                    st.success(f"✅ {p['ride']}   >>   {p['fin'].strftime('%H:%M')} -- ({p['duree']} min)")
         else:
             st.write("✅ Aucune interruption en cours.")
     else: st.warning("😴 Maintenance nocturne (02:00 - 08:00).")
 else: st.warning("📭 Aucune donnée disponible.")
 
 
-## --- SECTION PLANNING (MODIFIÉE) ---
-#st.divider()
-#st.subheader("📅 Mon Planning MyKronos")
-
-## 1. RÉCUPÉRATION DES DONNÉES
-#try:
-#    # On récupère tous les shifts à partir d'aujourd'hui
-#    today_str = maintenant.strftime("%Y-%m-%d")
-#    res_schedule = supabase.table("my_schedule")\
-#        .select("*")\
-#        .gte("date", today_str)\
-#        .order("date", desc=False)\
-#        .execute()
-#    
-#    df_schedule = pd.DataFrame(res_schedule.data)
-
-#    if not df_schedule.empty:
-#        # Affichage du shift du jour en avant-plan (Info Box)
-#        shift_today = df_schedule[df_schedule['date'] == today_str]
-#        if not shift_today.empty:
-#            s = shift_today.iloc[0]
-#            st.info(f"✨ **AUJOURD'HUI :** {s['location']} | 🕒 {s['start_time'][11:16]} - {s['end_time'][11:16]}")
-#        
-#        # Affichage de la liste complète dans un petit conteneur propre
-#        with st.container():
-#            st.write("**Prochains jours :**")
-#            for _, row in df_schedule.iterrows():
-#                # On ne réaffiche pas aujourd'hui dans la liste si on veut, ou on le laisse
-#                date_obj = datetime.strptime(row['date'], "%Y-%m-%d")
-#                jours = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
-#                date_fr = f"{jours[date_obj.weekday()]} {date_obj.day}/{date_obj.month}"
-#                
-#                h_debut = row['start_time'][11:16]
-#                h_fin = row['end_time'][11:16]
-#                
-#                # Style pour différencier Travail et Repos/Congés
-#                if row['job_type'] == "PayCode":
-#                    label = f"🌴 {row['location']}"
-#                    time_display = "Repos / Congé"
-#                else:
-#                    label = f"🎡 {row['location']}"
-#                    time_display = f"{h_debut} - {h_fin}"
-
-#                # Affichage en ligne
-#                col_date, col_job, col_time = st.columns([0.25, 0.45, 0.3])
-#                col_date.write(f"**{date_fr}**")
-#                col_job.write(label)
-#                col_time.write(f"`{time_display}`")
-#                
-#    else:
-#        st.write("Libre comme l'air ! Aucun shift prévu.")
-
-#except Exception as e:
-#    st.caption("Importe ton planning pour voir tes horaires ici.")
-
-## --- EXPANDER POUR L'IMPORTATION ---
-#with st.expander("📥 Importer mon Planning"):
-#    st.caption("MyKronos > Network > 'events' > Copy Response")
-#    json_input = st.text_area("Colle le JSON ici", height=100, label_visibility="collapsed")
-#    if st.button("Enregistrer le planning"):
-#        if json_input:
-#            try:
-#                from ukg_parser import parse_kronos_schedule
-#                shifts = parse_kronos_schedule(json_input)
-#                
-#                # Nettoyer les anciens shifts pour éviter les doublons de dates
-#                # Ou laisser l'upsert gérer selon ta contrainte Supabase
-#                for s in shifts:
-#                    supabase.table("my_schedule").upsert(s).execute()
-#                
-#                st.success(f"✅ {len(shifts)} jours synchronisés !")
-#                time.sleep(1)
-#                st.rerun()
-#            except Exception as e:
-#                st.error(f"Erreur : {e}")
-
-## --- PIED DE PAGE ---
-#st.divider()
-#st.caption("Disney Wait Time Tool - Cast Member Edition")
+st.divider()
+st.caption("Disney Wait Time Tool")
