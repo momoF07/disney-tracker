@@ -266,7 +266,7 @@ if not df_raw.empty:
                             c1.error("🔴 FERMÉ")
                             st.caption("ℹ️ Le parc est fermé pour la nuit.")
                         else:
-                            c1.error("🔴 INTERRUPTION / PANNE")
+                            c1.warning("🔴 INTERRUPTION / PANNE")
                             if panne_actuelle:
                                 minutes_ecoulees = int((maintenant - panne_actuelle['debut']).total_seconds() / 60)
                                 st.caption(f"⚠️ En panne depuis **{minutes_ecoulees} min**")
