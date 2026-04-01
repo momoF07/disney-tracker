@@ -298,7 +298,7 @@ if not df_raw.empty:
                         if panne_actuelle:
                             min_inc = int((maintenant - panne_actuelle['debut']).total_seconds() / 60)
                             st.caption(f"⚠️ En panne depuis **{min_inc} min**")
-                        c2.metric("Attente", "101")
+                        c2.metric("Attente", "- - -")
                     
                     # 4. OUVERT
                     else:
@@ -306,13 +306,13 @@ if not df_raw.empty:
                         c2.metric("Attente", f"{int(last['wait_time'])} min")
                     
                     # HISTORIQUE DES PANNES TERMINÉES UNIQUEMENT
-                    with st.expander("📜 Historique des pannes terminées"):
+                    with st.expander("📜 Historique des pannes"):
                         hist_pannes = [p for p in all_pannes if p['ride'] == ride and p['statut'] == "TERMINEE"]
                         if hist_pannes:
                             for p in reversed(hist_pannes):
                                 st.write(f"• De {p['debut'].strftime('%H:%M')} à {p['fin'].strftime('%H:%M')} ({p['duree']} min)")
                         else:
-                            st.write("✅ Aucune panne terminée aujourd'hui.")
+                            st.write("✅ Aucune panne détectée.")
                     st.divider()
 
         # --- FLUX DES DERNIÈRES PANNES ---
@@ -331,4 +331,4 @@ if not df_raw.empty:
 else: st.warning("📭 Aucune donnée disponible.")
 
 st.divider()
-st.caption("Disney Wait Time Tool - Cast Member Edition")
+st.caption("Disney Wait Time Tool")
