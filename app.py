@@ -39,7 +39,7 @@ st.markdown("""
         border: 1px solid rgba(255, 255, 255, 0.05);
     }
     .cat-title {
-        font-size: 1rem;
+        font-size: 14;
         text-transform: uppercase;
         letter-spacing: 1px;
         margin-bottom: 8px;
