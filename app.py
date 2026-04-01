@@ -72,9 +72,6 @@ heure_actuelle = maintenant.time()
 heure_reset = maintenant.replace(hour=2, minute=0, second=0, microsecond=0)
 debut_journee = heure_reset - timedelta(days=1) if maintenant < heure_reset else heure_reset
 
-# Affichage de l'amplitude du jour
-st.info(f"🕒 Horaires prévus : **{PARK_OPENING.strftime('%H:%M')} - {PARK_CLOSING.strftime('%H:%M')}**")
-
 if st.button('🔄 Actualiser & Forcer un Relevé'):
     with st.spinner("Signal envoyé..."):
         if trigger_github_action() == 204:
