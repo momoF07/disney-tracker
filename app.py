@@ -20,7 +20,7 @@ st.markdown("""
         left: 50% !important;
         transform: translate(-50%, -50%) !important;
         width: 90vw !important;
-        max-width: 500px !important;
+        max-width: 800px !important;
         max-height: 80vh !important;
         overflow-y: auto !important;
         background-color: rgba(28, 31, 46, 0.98) !important;
