@@ -20,7 +20,7 @@ PARKS_DATA = {
             "Indiana Jones™ and the Temple of Peril": "🤠",
             "La Cabane des Robinson": "🌳",
             "Adventure Isle": "🏝️",
-            "Pirate Galleon": "🏴‍C️",
+            "Pirate Galleon": "🏴‍☠️",
             "Pirates' Beach": "🏖️",
             "Le Passage Enchanté d'Aladdin": "🧞",
         },
@@ -87,50 +87,48 @@ def get_emoji(name):
                     return emoji
     return "🎡"
 
-def get_rides_by_zone(zone_code, all_rides_list):
+def get_rides_by_zone(zone_code, all_rides_list, all_pannes=[]):
     """
-    Filtre les attractions selon les raccourcis parcs ou les LANDS (avec alias).
-    Supporte maintenant les codes numériques 101 et 102 pour les tests.
+    Filtre les attractions selon les raccourcis parcs, les LANDS ou l'état des pannes.
     """
     zone_code = zone_code.upper().replace("*", "").strip()
-    targets = []
-
-    # --- LOGIQUE TEST (Réparée pour 101, 102 et TEST) ---
-    if zone_code in ["101", "102", "TEST"]:
+    
+    # --- 1. LOGIQUE SPÉCIFIQUE (TEST / 101 / 102) ---
+    
+    # *TEST : Uniquement les attractions de test
+    if zone_code == "TEST":
         return [r for r in all_rides_list if "test" in r.lower()]
 
-    # --- LOGIQUE ALL ---
+    # *101 : Attractions ACTUELLEMENT en panne
+    if zone_code == "101":
+        en_panne_now = [p['ride'] for p in all_pannes if p['statut'] == "EN_COURS"]
+        return [r for r in all_rides_list if r in en_panne_now]
+
+    # *102 : Attractions qui ONT EU au moins une panne aujourd'hui
+    if zone_code == "102":
+        ont_eu_panne = list(set([p['ride'] for p in all_pannes]))
+        return [r for r in all_rides_list if r in ont_eu_panne]
+
+    # --- 2. LOGIQUE GLOBALE & ALIAS ---
     if zone_code == "ALL":
         return all_rides_list
         
-    # --- DICTIONNAIRE D'ALIAS ---
     ALIAS_MAP = {
-        "MS": "MAINSTREET",
-        "MAINSTREET": "MAINSTREET",
-        "FRONTIER": "FRONTIERLAND",
-        "FRONTIERLAND": "FRONTIERLAND",
-        "ADVENTURE": "ADVENTURELAND",
-        "ADVENTURELAND": "ADVENTURELAND",
-        "FANTASY": "FANTASYLAND",
-        "FANTASYLAND": "FANTASYLAND",
-        "DISCO": "DISCOVERYLAND",
-        "DISCOVERYLAND": "DISCOVERYLAND",
-        "AVENGERS": "AVENGERS CAMPUS",
-        "CAMPUS": "AVENGERS CAMPUS",
+        "MS": "MAINSTREET", "MAINSTREET": "MAINSTREET",
+        "FRONTIER": "FRONTIERLAND", "FRONTIERLAND": "FRONTIERLAND",
+        "ADVENTURE": "ADVENTURELAND", "ADVENTURELAND": "ADVENTURELAND",
+        "FANTASY": "FANTASYLAND", "FANTASYLAND": "FANTASYLAND",
+        "DISCO": "DISCOVERYLAND", "DISCOVERYLAND": "DISCOVERYLAND",
+        "AVENGERS": "AVENGERS CAMPUS", "CAMPUS": "AVENGERS CAMPUS",
         "AVENGERS-CAMPUS": "AVENGERS CAMPUS",
-        "PIXAR": "WORLD OF PIXAR",
-        "WORLD-OF-PIXAR": "WORLD OF PIXAR",
-        "PROD4": "WORLD OF PIXAR",
-        "PRODUCTION4": "WORLD OF PIXAR",
-        "PROD3": "PRODUCTION 3",
-        "PRODUCTION 3": "PRODUCTION 3",
-        "WOF": "WORLD OF FROZEN",
-        "FROZEN": "WORLD OF FROZEN",
-        "WORLD-OF-FROZEN": "WORLD OF FROZEN",
-        "WAY": "ADVENTURE WAY",
-        "ADVENTURE-WAY": "ADVENTURE WAY"
+        "PIXAR": "WORLD OF PIXAR", "WORLD-OF-PIXAR": "WORLD OF PIXAR",
+        "PROD4": "WORLD OF PIXAR", "PRODUCTION4": "WORLD OF PIXAR",
+        "PROD3": "PRODUCTION 3", "PRODUCTION 3": "PRODUCTION 3",
+        "WOF": "WORLD OF FROZEN", "FROZEN": "WORLD OF FROZEN", "WORLD-OF-FROZEN": "WORLD OF FROZEN",
+        "WAY": "ADVENTURE WAY", "ADVENTURE-WAY": "ADVENTURE WAY"
     }
 
+    targets = []
     # --- GESTION PARCS ---
     if zone_code == "DLP":
         for land in PARKS_DATA["Disneyland Park"].values():
