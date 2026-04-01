@@ -180,7 +180,7 @@ if not df_raw.empty:
 
                 st.markdown('<p class="main-title">🔍 INDEX DES CODES</p>', unsafe_allow_html=True)
                 
-                st.markdown('<span class="cat-badge bg-blue">🎡 SYSTÈMES & PARCS</span>', unsafe_allow_html=True)
+                st.markdown('<span class="cat-badge bg-blue">🎡 PARCS</span>', unsafe_allow_html=True)
                 with st.container():
                     c1, c2, c3 = st.columns(3)
                     c1.code("*ALL"); c2.code("*DLP"); c3.code("*DAW")
