@@ -1,34 +1,44 @@
 import json
 from datetime import datetime
 
-def parse_kronos_schedule(json_data):
-    if isinstance(json_data, str):
-        data = json.loads(json_data)
-    else:
-        data = json_data
-        
+def parse_kronos_schedule(json_str):
+    data = json.loads(json_str)
     extracted_shifts = []
     
-    # On parcourt les transferShifts (tes journées de travail)
+    # On traite les transferShifts
     for shift in data.get('transferShifts', []):
-        day_info = {
-            "date": shift['startDateTime'].split('T')[0],
-            "start_time": shift['startDateTime'],
-            "end_time": shift['endDateTime'],
-            "location": "Inconnu",
-            "job_type": "Work",
-            "raw_label": shift.get('label', '')
-        }
+        start_dt = shift['startDateTime']
+        end_dt = shift['endDateTime']
         
-        # On cherche le segment principal pour avoir le lieu exact (OrgJob)
-        # On ignore souvent le premier segment si c'est du "trajet"
+        # Extraction du lieu propre
+        location = "Disney"
         for segment in shift.get('segments', []):
             if segment.get('type') == "REGULAR_SEGMENT":
-                job_qualifier = segment.get('orgJobRef', {}).get('qualifier', '')
-                # On nettoie le nom du lieu (ex: DLP BTM/404202/Accueil -> BTM Accueil)
-                day_info['location'] = job_qualifier.replace('DLP ', '').replace('./DRP/DRP ThemeParks/DLP/DLP ParkOps/DLP ParkOps Attrctn/', '')
+                qualifier = segment.get('orgJobRef', {}).get('qualifier', '')
+                # On garde juste la fin après le dernier slash (ex: Accueil)
+                parts = qualifier.split('/')
+                if len(parts) > 1:
+                    # On essaie de choper le nom de l'attraction (BTM) + la position (Accueil)
+                    location = f"{parts[-2]} {parts[-1]}"
                 break
-        
-        extracted_shifts.append(day_info)
+
+        extracted_shifts.append({
+            "date": start_dt.split('T')[0],
+            "start_time": start_dt,
+            "end_time": end_dt,
+            "location": location.replace('DLP ', ''),
+            "job_type": "Shift"
+        })
     
+    # On ajoute aussi les PayCodeEdits (Congés, Maladie, Repos payé)
+    for pc in data.get('payCodeEdits', []):
+        label = pc.get('payCodeRef', {}).get('qualifier', 'Repos')
+        extracted_shifts.append({
+            "date": pc['startDate'],
+            "start_time": f"{pc['startDate']}T00:00:00",
+            "end_time": f"{pc['endDate']}T23:59:59",
+            "location": label,
+            "job_type": "PayCode"
+        })
+        
     return extracted_shifts
