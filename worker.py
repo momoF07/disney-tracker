@@ -40,7 +40,8 @@ def run_worker():
             # On vérifie si au moins UNE attraction est ouverte dans le parc
             any_ride_open = any(ride.get('status') == "OPERATING" for ride in live_data if ride.get('entityType') == "ATTRACTION")
             
-            # Si on est le soir (ex: après 19h) et que tout est fermé, on stoppe
+            # Si tout est fermé ET qu'il est tard (ex: après 19h), on arrête d'écrire.
+            # Cela permet à l'App Streamlit de détecter que 'tous_fermes_globalement' est vrai.
             if not any_ride_open and current_hour >= 19:
                 print(f"🌙 Toutes les attractions sont fermées ({p_id}). Fin des relevés pour aujourd'hui.")
                 continue
@@ -54,34 +55,38 @@ def run_worker():
                     standby = queue.get('STANDBY', {}) if queue else {}
                     wait = standby.get('waitTime', 0) if standby else 0
 
-                    # --- 4. CONDITION DE GARDE : Pas de wait détecté (Matin) ---
-                    # Si l'attraction est fermée ET n'a pas de temps d'attente, 
-                    # et qu'elle n'est pas déjà en base, on n'écrit rien.
+                    # --- 4. RÉCUPÉRATION DU DERNIER ÉTAT ---
                     last_record = supabase.table("disney_logs")\
                         .select("wait_time, is_open")\
                         .eq("ride_name", name)\
                         .order("created_at", desc=True)\
                         .limit(1).execute()
 
-                    # Si jamais ouvert aujourd'hui et actuellement fermé : on ignore
+                    # --- 5. LOGIQUE DÉCISIONNELLE ---
+                    should_write = True
+                    
+                    # Garde Matinale : Si fermé et n'a jamais ouvert aujourd'hui -> On ignore
                     if not last_record.data and not is_open:
                         continue
 
-                    # --- LOGIQUE D'ÉCRITURE ---
-                    should_write = True
                     if last_record.data:
                         last_wait = last_record.data[0]['wait_time']
                         last_open = last_record.data[0]['is_open']
                         
-                        # On écrit si l'état change, ou si c'est une panne (pour le heartbeat)
-                        if last_open == is_open and last_wait == wait and is_open:
+                        # Si ouvert et rien n'a changé : On n'écrit pas (économie de lignes)
+                        if is_open and last_open == is_open and last_wait == wait:
                             should_write = False
+                        
+                        # Si l'attraction est fermée (panne) : On écrit (Heartbeat pour éviter l'addition des pannes)
+                        elif not is_open:
+                            should_write = True
 
                     if should_write:
-                        # Nettoyage des doublons "Ouvert" pour gagner de la place
+                        # Nettoyage des records "Ouvert" pour ne garder que le dernier
                         if is_open:
                             supabase.table("disney_logs").delete().eq("ride_name", name).eq("is_open", True).execute()
                         
+                        # Insertion du nouvel état
                         supabase.table("disney_logs").insert({
                             "ride_name": name,
                             "wait_time": wait,
