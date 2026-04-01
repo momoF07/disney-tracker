@@ -299,3 +299,32 @@ if not df_raw.empty:
             st.write("✅ Aucune interruption en cours.")
     else: st.warning("😴 Maintenance nocturne (02:00 - 08:00).")
 else: st.warning("📭 Aucune donnée disponible.")
+
+
+# --- NOUVEL ONGLET : MON PLANNING ---
+with st.expander("📅 Importer mon Planning MyKronos"):
+    json_input = st.text_area("Colle le contenu de 'events' ici (JSON)", height=150)
+    if st.button("Enregistrer mon planning"):
+        if json_input:
+            try:
+                from ukg_parser import parse_kronos_schedule
+                shifts = parse_kronos_schedule(json_input)
+                
+                # Envoi vers Supabase
+                for s in shifts:
+                    supabase.table("my_schedule").upsert(s).execute()
+                
+                st.success(f"✅ {len(shifts)} shifts enregistrés ou mis à jour !")
+                time.sleep(2)
+                st.rerun()
+            except Exception as e:
+                st.error(f"Erreur de lecture : {e}")
+
+# --- AFFICHAGE DU PLANNING DU JOUR ---
+# On récupère le shift d'aujourd'hui
+today_str = maintenant.strftime("%Y-%m-%d")
+my_shift = supabase.table("my_schedule").select("*").eq("date", today_str).execute()
+
+if my_shift.data:
+    shift = my_shift.data[0]
+    st.info(f"📅 **Aujourd'hui :** {shift['location']} | 🕒 {shift['start_time'][11:16]} - {shift['end_time'][11:16]}")
