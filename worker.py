@@ -3,6 +3,7 @@ import os
 from supabase import create_client
 from datetime import datetime
 import pytz
+from config import PARK_CLOSING # On importe l'heure de fermeture
 
 # Configuration Supabase
 url = os.environ.get("SUPABASE_URL")
@@ -15,64 +16,63 @@ def run_worker():
     # --- 1. GESTION DU TEMPS (Paris) ---
     paris_tz = pytz.timezone('Europe/Paris')
     now_paris = datetime.now(paris_tz)
+    current_time = now_paris.time()
     current_hour = now_paris.hour
 
-    # --- 2. CONDITION DE GARDE : Silence de nuit (02h - 08h) ---
+    # --- 2. CONDITION DE GARDE : Silence de nuit (02h - 08h Paris) ---
     if 2 <= current_hour < 8:
-        print(f"😴 Mode nuit activé ({current_hour}h).")
+        print(f"😴 Mode nuit (Paris). Le worker ne travaille pas entre 02:00 et 08:00.")
         return
 
-    # --- LOGIQUE DE RESET (02h00 Paris) ---
+    # --- 3. CONDITION DE GARDE : Fermeture du parc (config.py) ---
+    # Si l'heure actuelle dépasse l'heure de fermeture du fichier config
+    if current_time > PARK_CLOSING:
+        print(f"🌙 Parc fermé (Heure de fermeture {PARK_CLOSING} dépassée). Fin des relevés.")
+        return
+
+    # --- 4. LOGIQUE DE RESET (02h00 Paris / 00h00 UTC) ---
     if current_hour == 2 and now_paris.minute < 15:
         try:
             supabase.table("disney_logs").delete().gt("id", 0).execute()
-            print("🌙 Database nettoyée.")
-        except Exception as e: print(f"Erreur Reset : {e}")
+            print("🌙 Reset quotidien : Database nettoyée à 02:00.")
+        except Exception as e: 
+            print(f"⚠️ Erreur Reset : {e}")
 
-    # --- COLLECTE DES DONNÉES ---
+    # --- 5. COLLECTE ET ÉCRITURE FORCÉE ---
     for p_id in PARKS:
         try:
             response = requests.get(f"https://api.themeparks.wiki/v1/entity/{p_id}/live", timeout=15)
             data = response.json()
             live_data = data.get('liveData', [])
 
-            # --- 3. ARRÊT SI TOUT EST FERMÉ (Fin de journée) ---
-            any_ride_open = any(ride.get('status') == "OPERATING" for ride in live_data if ride.get('entityType') == "ATTRACTION")
-            
-            if not any_ride_open and current_hour >= 19:
-                print(f"🌙 Toutes les attractions sont fermées ({p_id}). Fin des relevés.")
+            if not live_data:
                 continue
 
+            to_insert = []
             for ride in live_data:
                 if ride.get('entityType') == "ATTRACTION":
-                    name = ride['name']
+                    name = ride.get('name')
                     is_open = (ride.get('status') == "OPERATING")
-                    wait = ride.get('queue', {}).get('STANDBY', {}).get('waitTime', 0)
+                    
+                    queue = ride.get('queue', {})
+                    standby = queue.get('STANDBY', {}) if queue else {}
+                    wait = standby.get('waitTime', 0) if standby else 0
 
-                    # Récupération du dernier état
-                    last_record = supabase.table("disney_logs").select("wait_time, is_open").eq("ride_name", name).order("created_at", desc=True).limit(1).execute()
+                    # On prépare l'entrée sans vérifier si c'est un doublon
+                    to_insert.append({
+                        "ride_name": name,
+                        "wait_time": wait,
+                        "is_open": is_open,
+                        "created_at": datetime.now(pytz.utc).isoformat()
+                    })
 
-                    should_write = True
-                    if not last_record.data and not is_open: continue
+            # Insertion massive pour garantir la cohérence temporelle
+            if to_insert:
+                supabase.table("disney_logs").insert(to_insert).execute()
+                print(f"✅ Synchro forcée : {len(to_insert)} attractions enregistrées pour {p_id}")
 
-                    if last_record.data:
-                        l_wait, l_open = last_record.data[0]['wait_time'], last_record.data[0]['is_open']
-                        # Si ouvert et stable : on n'écrit pas
-                        if is_open and l_open == is_open and l_wait == wait: should_write = False
-                        # Si fermé (panne) : on écrit (Heartbeat)
-                        elif not is_open: should_write = True
-
-                    if should_write:
-                        if is_open:
-                            supabase.table("disney_logs").delete().eq("ride_name", name).eq("is_open", True).execute()
-                        
-                        supabase.table("disney_logs").insert({
-                            "ride_name": name, "wait_time": wait, "is_open": is_open,
-                            "created_at": datetime.now(pytz.utc).isoformat()
-                        }).execute()
-                        
-            print(f"✅ Synchro OK pour {p_id}")
-        except Exception as e: print(f"❌ Erreur : {e}")
+        except Exception as e:
+            print(f"❌ Erreur pour le parc {p_id} : {e}")
 
 if __name__ == "__main__":
     run_worker()
