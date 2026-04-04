@@ -47,11 +47,19 @@ st.markdown("""
 
 # --- INITIALISATION ---
 paris_tz = pytz.timezone('Europe/Paris')
+
+# Correction Bug Refresh : On initialise last_refresh s'il n'existe pas
 if "last_refresh" not in st.session_state:
     st.session_state.last_refresh = datetime.now(paris_tz).strftime("%H:%M:%S")
 
+# On récupère le compteur de l'auto-refresh
+refresh_count = st_autorefresh(interval=60000, key="datarefresh")
+
+# Si le compteur a augmenté, on met à jour l'heure de dernier refresh en session
+if refresh_count > 0:
+    st.session_state.last_refresh = datetime.now(paris_tz).strftime("%H:%M:%S")
+
 supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
-st_autorefresh(interval=60000, key="datarefresh")
 
 def trigger_github_action():
     REPO, WORKFLOW_ID, TOKEN = "momoF07/disney-tracker", "check.yml", st.secrets["GITHUB_TOKEN"]
@@ -111,7 +119,7 @@ if not df_raw.empty:
         etat_actuel = df[df['created_at'] == derniere_maj_time]
         tous_fermes_globalement = not etat_actuel['is_open'].any()
 
-        # --- CALCUL DES PANNES (CORRIGÉ) ---
+        # --- CALCUL DES PANNES ---
         for ride_name in toutes_attractions:
             ride_data = df[df['ride_name'] == ride_name].sort_values('created_at')
             en_panne, debut_panne = False, None
@@ -238,14 +246,10 @@ if not df_raw.empty:
         st.caption(f"🕒 Donnée : {derniere_maj} | Auto-Refresh : {st.session_state.last_refresh}")
 
         # --- LOGIQUE D'AFFICHAGE DU MESSAGE DE FERMETURE ---
-        # 1. On vérifie l'heure de config
         is_after_closing = maintenant.time() > PARK_CLOSING
         
-        # 2. On vérifie si tout est fermé dans les données actuelles (DÉTECTION FORCÉE)
-        # Si le worker a arrêté d'envoyer car tout est fermé, is_open sera False partout
         if is_after_closing or tous_fermes_globalement:
             st.info("ℹ️ Le parc est actuellement fermé. Les dernières données ont été envoyées.")
-            # On force la variable pour que les vignettes passent aussi en rouge "PARC FERMÉ"
             parc_actuellement_ferme = True
         else:
             parc_actuellement_ferme = False
@@ -262,16 +266,13 @@ if not df_raw.empty:
                     st.subheader(f"{get_emoji(ride)} {ride}")
                     c1, c2 = st.columns(2)
                     
-                    # 1. SI LE PARC EST FERMÉ
                     if parc_actuellement_ferme:
                         c1.error("🔴 PARC FERMÉ")
                         c2.metric("Attente", "- - -")
-                    # 2. SI L'ATTRACTION N'A PAS ENCORE OUVERT (MATIN)
                     elif (heure_actuelle < PARK_OPENING) or (not a_deja_ouvert_ce_ride):
                         c1.info("🕒 FERMÉ")
                         c2.metric("Attente", "- - -")
                         st.caption("⏳ En attente de l'ouverture.")
-                    # 3. PANNE (101)
                     elif not last['is_open']:
                         c1.warning("🔴 INTERRUPTION / 101")
                         ride_pannes = [p for p in all_pannes if p['ride'] == ride]
@@ -280,7 +281,6 @@ if not df_raw.empty:
                             min_inc = int((maintenant - panne_actuelle['debut']).total_seconds() / 60)
                             st.caption(f"⚠️ En panne depuis **{min_inc} min**")
                         c2.metric("Attente", "- - -")
-                    # 4. OUVERT
                     else:
                         c1.success("🟢 OUVERT")
                         c2.metric("Attente", f"{int(last['wait_time'])} min")
