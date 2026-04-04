@@ -61,6 +61,12 @@ if refresh_count > 0:
 
 supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 
+# --- AJOUT : FONCTION POUR GÉRER MINUIT ---
+def is_park_theoretically_open(current, opening, closing):
+    if opening <= closing:
+        return opening <= current <= closing
+    return current >= opening or current <= closing
+
 def trigger_github_action():
     REPO, WORKFLOW_ID, TOKEN = "momoF07/disney-tracker", "check.yml", st.secrets["GITHUB_TOKEN"]
     url = f"https://api.github.com/repos/{REPO}/actions/workflows/{WORKFLOW_ID}/dispatches"
@@ -75,8 +81,8 @@ st.title("🏰 Disney Wait Time")
 maintenant = datetime.now(paris_tz)
 heure_actuelle = maintenant.time()
 
-# Calcul de la fenêtre de données (Depuis le reset de 2h du matin)
-heure_reset = maintenant.replace(hour=2, minute=0, second=0, microsecond=0)
+# AJOUT : Changement de l'heure de reset à 4h pour s'aligner sur le worker
+heure_reset = maintenant.replace(hour=4, minute=0, second=0, microsecond=0)
 debut_journee = heure_reset if maintenant >= heure_reset else heure_reset - timedelta(days=1)
 
 if st.button('🔄 Actualiser & Forcer un Relevé'):
@@ -125,7 +131,7 @@ if not df_raw.empty:
             en_panne, debut_panne = False, None
             for i, row in ride_data.iterrows():
                 est_ouvert, temps_log = row['is_open'], row['created_at']
-                if 2 <= temps_log.hour < 8: continue
+                if 2 <= temps_log.hour < 4: continue # On ignore la période de reset
                 if not est_ouvert and not en_panne:
                     en_panne, debut_panne = True, temps_log
                 elif est_ouvert and en_panne:
@@ -245,10 +251,10 @@ if not df_raw.empty:
         # --- LIGNE DE L'HEURE ---
         st.caption(f"🕒 Donnée : {derniere_maj} | Auto-Refresh : {st.session_state.last_refresh}")
 
-        # --- LOGIQUE D'AFFICHAGE DU MESSAGE DE FERMETURE ---
-        is_after_closing = maintenant.time() > PARK_CLOSING
+        # --- AJOUT : LOGIQUE D'AFFICHAGE DU MESSAGE DE FERMETURE DYNAMIQUE ---
+        parc_theoriquement_ouvert = is_park_theoretically_open(heure_actuelle, PARK_OPENING, PARK_CLOSING)
         
-        if is_after_closing or tous_fermes_globalement:
+        if not parc_theoriquement_ouvert or tous_fermes_globalement:
             st.info("ℹ️ Le parc est actuellement fermé. Les dernières données ont été envoyées.")
             parc_actuellement_ferme = True
         else:
@@ -302,7 +308,7 @@ if not df_raw.empty:
                 else: st.success(f"✅ {p['ride']} >> {p['fin'].strftime('%H:%M')} ({p['duree']} min)")
         else: st.write("✅ Aucune interruption détectée.")
 
-    else: st.warning("😴 Maintenance nocturne.")
+    else: st.warning("⏳ En attente des premières données de la journée.")
 else: st.warning("📭 Aucune donnée disponible.")
 
 st.divider()
