@@ -187,7 +187,7 @@ if not df_live.empty:
     if parc_actuellement_ferme:
         st.info(f"ℹ️ Le parc est fermé ({PARK_OPENING} -> {PARK_CLOSING}).")
 
-    # --- AFFICHAGE DES ATTRACTIONS ---
+        # --- AFFICHAGE DES ATTRACTIONS ---
     if selected_options:
         st.divider()
         for ride in selected_options:
@@ -199,20 +199,32 @@ if not df_live.empty:
                 
                 st.subheader(f"{get_emoji(ride)} {ride}")
                 c1, c2 = st.columns(2)
+                
                 if parc_actuellement_ferme:
                     c1.error("🔴 PARC FERMÉ"); c2.metric("Attente", "- - -")
                 elif not a_deja_ouvert:
                     c1.info("🕒 FERMÉ"); c2.metric("Attente", "- - -")
                     st.caption("⏳ En attente de l'ouverture officielle.")
+                
+                # --- CAS INTERRUPTION AVEC EFFET DE CHARGEMENT ---
                 elif panne_actuelle or not current['is_open']:
-                    c1.warning("🔴 INTERRUPTION")
+                    with c1:
+                        # On crée deux colonnes internes pour aligner texte et chargement
+                        sub_text, sub_load = st.columns([0.8, 0.2])
+                        sub_text.warning("🔴 INTERRUPTION DE SERVICE")
+                        with sub_load:
+                            st.write("") # Petit décalage pour l'alignement
+                            st.spinner("") # Le cercle qui tourne sans texte
+                    
                     if panne_actuelle:
                         delta_p = maintenant - panne_actuelle['debut']
                         st.caption(f"⚠️ En panne depuis **{max(0, int(delta_p.total_seconds() / 60))} min** ({panne_actuelle['debut'].strftime('%H:%M')})")
                     c2.metric("Attente", "- - -")
+                
                 else:
                     c1.success("🟢 OUVERT"); c2.metric("Attente", f"{int(current['wait_time'])} min")
     
+                # --- HISTORIQUE D'ÉTAT ---
                 with st.expander("📜 Historique d'état"):
                     h_pannes = [p for p in all_pannes if p['ride'] == ride]
                     if h_pannes:
@@ -220,18 +232,22 @@ if not df_live.empty:
                         for idx, p in enumerate(pannes_triees):
                             h_debut = p['debut'].strftime('%H:%M')
                             if idx == 0:
-                                if p['statut'] == "EN_COURS": st.write(f"• 🟠 :orange[**En cours** depuis {h_debut}]")
+                                if p['statut'] == "EN_COURS": 
+                                    st.write(f"• 🟠 :orange[**En cours** depuis {h_debut}]")
                                 else:
                                     st.write(f"• 🟢 :green[**Opérationnel** à {p['fin'].strftime('%H:%M')} ({p['duree']} min)]")
                                     st.caption(f"• 🔴 :red[Panne à {h_debut}]")
-                                if len(pannes_triees) > 1: st.markdown("<hr style='margin: -10px 0px 10px 0px; opacity: 0.8;'>", unsafe_allow_html=True)
+                                if len(pannes_triees) > 1: 
+                                    st.markdown("<hr style='margin: -10px 0px 10px 0px; opacity: 0.8;'>", unsafe_allow_html=True)
                             else:
                                 with st.container(border=True):
                                     if p['statut'] == "TERMINEE":
                                         st.caption(f"• 🟢 :green[Opérationnel à {p['fin'].strftime('%H:%M')} ({p['duree']} min)]")
                                         st.caption(f"• 🔴 :red[Panne à {h_debut}]")
-                    else: st.write("✅ Aucun incident signalé.")
+                    else: 
+                        st.write("✅ Aucun incident signalé.")
                 st.divider()
+
 
     st.subheader("🚨 Dernières interruptions")
     if not df_pannes.empty:
