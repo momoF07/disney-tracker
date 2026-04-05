@@ -215,11 +215,9 @@ if not df_live.empty:
                 is_currently_open = current['is_open']
                 est_apres_heure_limite = heure_actuelle >= heure_fermeture_theorique
                 
-                # RÈGLE : Fermé déf. si après l'heure ET is_open=False. Interruption si avant l'heure ET is_open=False.
                 est_definitivement_ferme = est_apres_heure_limite and not is_currently_open
                 est_en_interruption = not est_apres_heure_limite and not is_currently_open
                 
-                # Sécurité globale Parc
                 if heure_actuelle < PARK_OPENING or heure_actuelle >= DLP_CLOSING:
                     est_definitivement_ferme = True
 
@@ -227,26 +225,19 @@ if not df_live.empty:
                 c1, c2 = st.columns(2)
                 
                 with c1:
-                    # ÉTAT : FERMÉ DÉFINITIF
                     if est_definitivement_ferme:
                         st.markdown(f'<div style="display: flex; align-items: center; background-color: rgba(255, 75, 75, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 75, 75, 0.5); margin-bottom: 8px;"><span style="color: #ff4b4b; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">🔴 FERMÉ POUR LA JOURNÉE ({heure_fermeture_theorique.strftime("%H:%M")})</span></div>', unsafe_allow_html=True)
                         c2.metric("Attente", "- - -")
-
-                    # ÉTAT : NON OUVERT (MATIN)
                     elif not a_deja_ouvert:
                         st.markdown('<div style="display: flex; align-items: center; background-color: rgba(0, 123, 255, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(0, 123, 255, 0.5); margin-bottom: 8px;"><span style="color: #007bff; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">🕒 FERMÉ (PAS ENCORE OUVERT)</span></div>', unsafe_allow_html=True)
                         st.caption("⏳ En attente de l'ouverture officielle.")
                         c2.metric("Attente", "- - -")
-                    
-                    # ÉTAT : INTERRUPTION
                     elif est_en_interruption:
                         st.markdown('<div style="display: flex; align-items: center; background-color: rgba(255, 165, 0, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 165, 0, 0.5); margin-bottom: 8px;"><div class="mini-loader" style="border: 2px solid rgba(255, 165, 0, 0.2); border-top: 2px solid #FF8C00; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; margin-right: 12px; flex-shrink: 0;"></div><span style="color: #FF8C00; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">🟠 INTERRUPTION DE SERVICE</span></div><style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>', unsafe_allow_html=True)
                         if panne_actuelle:
                             delta_p = maintenant - panne_actuelle['debut']
                             st.caption(f"⚠️ En panne depuis **{max(0, int(delta_p.total_seconds() / 60))} min**")
                         c2.metric("Attente", "- - -")
-                    
-                    # ÉTAT : OUVERT
                     else:
                         st.markdown('<div style="display: flex; align-items: center; background-color: rgba(46, 204, 113, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(46, 204, 113, 0.5); margin-bottom: 8px;"><span style="color: #2ecc71; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">🟢 OUVERT</span></div>', unsafe_allow_html=True)
                         c2.metric("Attente", f"{int(current['wait_time'])} min")
@@ -257,17 +248,17 @@ if not df_live.empty:
                         pannes_triees = sorted(h_pannes, key=lambda x: x['debut'], reverse=True)
                         for idx, p in enumerate(pannes_triees):
                             h_debut = p['debut'].strftime('%H:%M')
-                            if idx == 0:
-                                if p['statut'] == "EN_COURS": st.write(f"• 🟠 :orange[**En cours** depuis {h_debut}]")
-                                else:
+                            # LOGIQUE : Si l'attraction est en panne lors du passage à l'heure limite
+                            if idx == 0 and est_definitivement_ferme and p['statut'] == "EN_COURS":
+                                st.write(f"• 🔴 :red[**Fermeture à {heure_fermeture_theorique.strftime('%H:%M')}**]")
+                                st.caption(f"• 🟠 Panne débutée à {h_debut}")
+                            elif idx == 0 and p['statut'] == "EN_COURS":
+                                st.write(f"• 🟠 :orange[**En cours** depuis {h_debut}]")
+                            else:
+                                if p['statut'] == "TERMINEE":
                                     st.write(f"• 🟢 :green[**Opérationnel** à {p['fin'].strftime('%H:%M')} ({p['duree']} min)]")
                                     st.caption(f"• 🔴 :red[Panne à {h_debut}]")
-                                if len(pannes_triees) > 1: st.markdown("<hr style='margin: -10px 0px 10px 0px; opacity: 0.8;'>", unsafe_allow_html=True)
-                            else:
-                                with st.container(border=True):
-                                    if p['statut'] == "TERMINEE":
-                                        st.caption(f"• 🟢 :green[Opérationnel à {p['fin'].strftime('%H:%M')} ({p['duree']} min)]")
-                                        st.caption(f"• 🔴 :red[Panne à {h_debut}]")
+                            if len(pannes_triees) > 1: st.markdown("<hr style='margin: -10px 0px 10px 0px; opacity: 0.8;'>", unsafe_allow_html=True)
                     else: st.write("✅ Aucun incident signalé.")
                 st.divider()
 
