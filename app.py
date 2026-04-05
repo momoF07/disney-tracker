@@ -112,7 +112,7 @@ with col_btn2:
         else:
             st.error("Échec de connexion")
 
-# Bandeau de données élégant (Gardé comme demandé)
+# Bandeau de données élégant
 st.markdown(
     f"""
     <div style="background-color: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 10px; border-left: 5px solid #4facfe; margin-bottom: 20px;">
@@ -153,7 +153,6 @@ if not df_live.empty:
             """, unsafe_allow_html=True)
             
             st.markdown('<p class="main-title">🔍 INDEX DES CODES</p>', unsafe_allow_html=True)
-            
             st.markdown('<span class="cat-badge bg-blue">🎡 PARCS</span>', unsafe_allow_html=True)
             
             with st.container():
@@ -161,13 +160,12 @@ if not df_live.empty:
                 c1.code("*ALL"); c2.code("*DLP"); c3.code("*DAW")
                 
             st.markdown('<span class="cat-badge bg-green">🏰 DISNEYLAND PARK</span>', unsafe_allow_html=True)
-            lands_dlp_map = 
-            {
-            "Main Street": ["*MS", "*MAINSTREET"], 
-            "Frontierland": ["*FRONTIER", "*FRONTIERLAND"], 
-            "Adventureland": ["*ADVENTURE", "*ADVENTURELAND"], 
-            "Fantasyland": ["*FANTASY", "*FANTASYLAND"], 
-            "Discoveryland": ["*DISCO", "*DISCOVERYLAND"]
+            lands_dlp_map = {
+                "Main Street": ["*MS", "*MAINSTREET"], 
+                "Frontierland": ["*FRONTIER", "*FRONTIERLAND"], 
+                "Adventureland": ["*ADVENTURE", "*ADVENTURELAND"], 
+                "Fantasyland": ["*FANTASY", "*FANTASYLAND"], 
+                "Discoveryland": ["*DISCO", "*DISCOVERYLAND"]
             }
             
             for land, codes in lands_dlp_map.items():
@@ -176,13 +174,13 @@ if not df_live.empty:
                 st.markdown('</div>', unsafe_allow_html=True)
                 
             st.markdown('<span class="cat-badge bg-orange">🎬 ADVENTURE WORLD</span>', unsafe_allow_html=True)
-            shortcut_zones_daw = 
-            {
-            "Avengers Campus": ["*CAMPUS", "*AVENGERS", "*AVENGERS-CAMPUS"], 
-            "Production Courtyard": ["*COURTYARD", "PRODUCTION3", "*PROD3"], 
-            "Worlds of Pixar": ["*WORLD-OF-PIXAR", "*PIXAR", "PRODUCTION4", "*PROD4"], 
-            "World of Frozen": ["*WORLD-OF-FROZEN", "*FROZEN", "*WOF"], 
-            "Adventure Way": ["*WAY", "*ADVENTURE-WAY"]}
+            shortcut_zones_daw = {
+                "Avengers Campus": ["*CAMPUS", "*AVENGERS", "*AVENGERS-CAMPUS"], 
+                "Production Courtyard": ["*COURTYARD", "PRODUCTION3", "*PROD3"], 
+                "Worlds of Pixar": ["*WORLD-OF-PIXAR", "*PIXAR", "PRODUCTION4", "*PROD4"], 
+                "World of Frozen": ["*WORLD-OF-FROZEN", "*FROZEN", "*WOF"], 
+                "Adventure Way": ["*WAY", "*ADVENTURE-WAY"]
+            }
             
             for zone, codes in shortcut_zones_daw.items():
                 st.markdown(f'<div class="shortcut-box"><span class="shortcut-label">{zone}</span>', unsafe_allow_html=True)
@@ -220,18 +218,11 @@ if not df_live.empty:
                 st.subheader(f"{get_emoji(ride)} {ride}")
                 c1, c2 = st.columns(2)
                 
-                # --- ÉTAT 1 : PARC FERMÉ ---
                 if parc_actuellement_ferme:
-                    c1.error("🔴 PARC FERMÉ")
-                    c2.metric("Attente", "- - -")
-    
-                # --- ÉTAT 2 : FERMÉ (MATIN) ---
+                    c1.error("🔴 PARC FERMÉ"); c2.metric("Attente", "- - -")
                 elif not a_deja_ouvert:
-                    c1.info("🕒 FERMÉ")
-                    c2.metric("Attente", "- - -")
+                    c1.info("🕒 FERMÉ"); c2.metric("Attente", "- - -")
                     st.caption("⏳ En attente de l'ouverture officielle.")
-                
-                # --- ÉTAT 3 : INTERRUPTION (AVEC LOADER CSS ORANGE) ---
                 elif panne_actuelle or not current['is_open']:
                     with c1:
                         st.markdown("""
@@ -259,13 +250,10 @@ if not df_live.empty:
                         delta_p = maintenant - panne_actuelle['debut']
                         st.caption(f"⚠️ En panne depuis **{max(0, int(delta_p.total_seconds() / 60))} min** ({panne_actuelle['debut'].strftime('%H:%M')})")
                     c2.metric("Attente", "- - -")
-                
-                # --- ÉTAT 4 : OUVERT ---
                 else:
                     c1.success("🟢 OUVERT")
                     c2.metric("Attente", f"{int(current['wait_time'])} min")
     
-                # --- HISTORIQUE D'ÉTAT ---
                 with st.expander("📜 Historique d'état"):
                     h_pannes = [p for p in all_pannes if p['ride'] == ride]
                     if h_pannes:
@@ -289,9 +277,6 @@ if not df_live.empty:
                         st.write("✅ Aucun incident signalé.")
                 st.divider()
 
-
-
-
     st.subheader("🚨 Dernières interruptions")
     if not df_pannes.empty:
         df_pannes['start_time_dt'] = pd.to_datetime(df_pannes['start_time'])
@@ -302,7 +287,6 @@ if not df_live.empty:
             else:
                 f = pd.to_datetime(p['end_time']).astimezone(paris_tz)
                 st.success(f"✅ {p['ride_name']} >> fini à {f.strftime('%H:%M')}")
-
 else: 
     st.warning("📭 Aucune donnée live disponible.")
     if "popup_shown" not in st.session_state:
