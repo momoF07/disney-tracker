@@ -68,7 +68,6 @@ def trigger_github_action():
 st.title("🏰 Disney Wait Time")
 maintenant = datetime.now(paris_tz)
 heure_actuelle = maintenant.time()
-prochain_refresh = (maintenant + timedelta(seconds=60)).strftime("%H:%M:%S")
 
 heure_reset = maintenant.replace(hour=2, minute=30, second=0, microsecond=0)
 debut_journee = heure_reset if maintenant >= heure_reset else heure_reset - timedelta(days=1)
@@ -82,16 +81,19 @@ closing_map = {}
 all_pannes = []
 
 try:
+    # Données Live
     resp_live = supabase.table("disney_live").select("*").execute()
     df_live = pd.DataFrame(resp_live.data)
     
+    # Données Pannes
     resp_101 = supabase.table("logs_101").select("*").gte("start_time", debut_journee.isoformat()).execute()
     df_pannes = pd.DataFrame(resp_101.data)
 
+    # Statut d'ouverture quotidienne
     resp_status = supabase.table("daily_status").select("*").execute()
     status_map = {item['ride_name']: item['has_opened_today'] for item in resp_status.data} if resp_status.data else {}
 
-    # Récupération des horaires (Scheduler)
+    # Récupération des horaires (Table ride_schedules)
     resp_sched = supabase.table("ride_schedules").select("ride_name, closing_time").execute()
     closing_map = {item['ride_name']: item['closing_time'] for item in resp_sched.data} if resp_sched.data else {}
 
@@ -101,7 +103,7 @@ try:
 except Exception as e:
     st.error(f"Erreur Supabase : {e}")
 
-# --- SECTION ACTIONS (Version Classique avec Bandeau) ---
+# --- SECTION ACTIONS ---
 col_btn1, col_btn2 = st.columns(2)
 with col_btn1:
     if st.button('🔄 Rafraîchir l\'Affichage'):
@@ -117,15 +119,11 @@ with col_btn2:
         else:
             st.error("Échec de connexion")
 
-# Bandeau de données élégant
-st.markdown(
-    f"""
+st.markdown(f"""
     <div style="background-color: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 10px; border-left: 5px solid #4facfe; margin-bottom: 20px;">
         <span style="font-size: 14px; color: #94a3b8;">🕒 Donnée API : <b>{derniere_maj}</b> | Synchro Refresh : <b>{st.session_state.last_refresh}</b></span>
     </div>
-    """, 
-    unsafe_allow_html=True
-)
+""", unsafe_allow_html=True)
 
 # --- TRAITEMENT DES PANNES ---
 if not df_live.empty:
@@ -232,81 +230,36 @@ if not df_live.empty:
                 c1, c2 = st.columns(2)
                 
                 with c1:
-                    # --- ÉTAT 1 : PARC FERMÉ ---
+                    # ÉTAT 1 : PARC FERMÉ
                     if parc_actuellement_ferme:
-                        st.markdown("""
-                            <div style="display: flex; align-items: center; background-color: rgba(255, 75, 75, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 75, 75, 0.5); margin-bottom: 8px;">
-                                <span style="color: #ff4b4b; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">
-                                    🔴 PARC FERMÉ
-                                </span>
-                            </div>
-                        """, unsafe_allow_html=True)
+                        st.markdown('<div style="display: flex; align-items: center; background-color: rgba(255, 75, 75, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 75, 75, 0.5); margin-bottom: 8px;"><span style="color: #ff4b4b; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">🔴 PARC FERMÉ</span></div>', unsafe_allow_html=True)
                         c2.metric("Attente", "- - -")
 
-                    # --- ÉTAT : FERMETURE ANTICIPÉE (ZONE SPECTACLE) ---
+                    # ÉTAT : FERMETURE ANTICIPÉE (ZONE SPECTACLE)
                     elif est_en_fermeture_anticipee:
-                        st.markdown("""
-                            <div style="display: flex; align-items: center; background-color: rgba(108, 117, 125, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(108, 117, 125, 0.5); margin-bottom: 8px;">
-                                <span style="color: #6c757d; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">
-                                    🌙 FERMÉ (ZONE SPECTACLE)
-                                </span>
-                            </div>
-                        """, unsafe_allow_html=True)
+                        st.markdown('<div style="display: flex; align-items: center; background-color: rgba(108, 117, 125, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(108, 117, 125, 0.5); margin-bottom: 8px;"><span style="color: #6c757d; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">🌙 FERMÉ (ZONE SPECTACLE)</span></div>', unsafe_allow_html=True)
                         st.caption(f"ℹ️ Fin des admissions à {h_fermeture_str[:5]} pour le show nocturne.")
                         c2.metric("Attente", "- - -")
         
-                    # --- ÉTAT 2 : FERMÉ (MATIN / PAS ENCORE OUVERT) ---
+                    # ÉTAT 2 : FERMÉ (MATIN / PAS ENCORE OUVERT)
                     elif not a_deja_ouvert:
-                        st.markdown("""
-                            <div style="display: flex; align-items: center; background-color: rgba(0, 123, 255, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(0, 123, 255, 0.5); margin-bottom: 8px;">
-                                <span style="color: #007bff; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">
-                                    🕒 FERMÉ (PAS ENCORE OUVERT)
-                                </span>
-                            </div>
-                        """, unsafe_allow_html=True)
+                        st.markdown('<div style="display: flex; align-items: center; background-color: rgba(0, 123, 255, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(0, 123, 255, 0.5); margin-bottom: 8px;"><span style="color: #007bff; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">🕒 FERMÉ (PAS ENCORE OUVERT)</span></div>', unsafe_allow_html=True)
                         st.caption("⏳ En attente de l'ouverture officielle.")
                         c2.metric("Attente", "- - -")
                     
-                    # --- ÉTAT 3 : INTERRUPTION (ORANGE AVEC LOADER) ---
+                    # ÉTAT 3 : INTERRUPTION (ORANGE AVEC LOADER)
                     elif panne_actuelle or not current['is_open']:
-                        st.markdown("""
-                            <div style="display: flex; align-items: center; background-color: rgba(255, 165, 0, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 165, 0, 0.5); margin-bottom: 8px;">
-                                <div class="mini-loader" style="
-                                    border: 2px solid rgba(255, 165, 0, 0.2);
-                                    border-top: 2px solid #FF8C00;
-                                    border-radius: 50%;
-                                    width: 16px;
-                                    height: 16px;
-                                    animation: spin 1s linear infinite;
-                                    margin-right: 12px;
-                                    flex-shrink: 0;
-                                "></div>
-                                <span style="color: #FF8C00; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">
-                                    🟠 INTERRUPTION DE SERVICE
-                                </span>
-                            </div>
-                            <style>
-                                @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-                            </style>
-                        """, unsafe_allow_html=True)
-                        
+                        st.markdown('<div style="display: flex; align-items: center; background-color: rgba(255, 165, 0, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 165, 0, 0.5); margin-bottom: 8px;"><div class="mini-loader" style="border: 2px solid rgba(255, 165, 0, 0.2); border-top: 2px solid #FF8C00; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; margin-right: 12px; flex-shrink: 0;"></div><span style="color: #FF8C00; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">🟠 INTERRUPTION DE SERVICE</span></div><style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>', unsafe_allow_html=True)
                         if panne_actuelle:
                             delta_p = maintenant - panne_actuelle['debut']
                             st.caption(f"⚠️ En panne depuis **{max(0, int(delta_p.total_seconds() / 60))} min** ({panne_actuelle['debut'].strftime('%H:%M')})")
                         c2.metric("Attente", "- - -")
                     
-                    # --- ÉTAT 4 : OUVERT (VERT) ---
+                    # ÉTAT 4 : OUVERT (VERT)
                     else:
-                        st.markdown("""
-                            <div style="display: flex; align-items: center; background-color: rgba(46, 204, 113, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(46, 204, 113, 0.5); margin-bottom: 8px;">
-                                <span style="color: #2ecc71; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">
-                                    🟢 OUVERT
-                                </span>
-                            </div>
-                        """, unsafe_allow_html=True)
+                        st.markdown('<div style="display: flex; align-items: center; background-color: rgba(46, 204, 113, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(46, 204, 113, 0.5); margin-bottom: 8px;"><span style="color: #2ecc71; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">🟢 OUVERT</span></div>', unsafe_allow_html=True)
                         c2.metric("Attente", f"{int(current['wait_time'])} min")
     
-                # --- HISTORIQUE D'ÉTAT ---
                 with st.expander("📜 Historique d'état"):
                     h_pannes = [p for p in all_pannes if p['ride'] == ride]
                     if h_pannes:
@@ -314,20 +267,17 @@ if not df_live.empty:
                         for idx, p in enumerate(pannes_triees):
                             h_debut = p['debut'].strftime('%H:%M')
                             if idx == 0:
-                                if p['statut'] == "EN_COURS": 
-                                    st.write(f"• 🟠 :orange[**En cours** depuis {h_debut}]")
+                                if p['statut'] == "EN_COURS": st.write(f"• 🟠 :orange[**En cours** depuis {h_debut}]")
                                 else:
                                     st.write(f"• 🟢 :green[**Opérationnel** à {p['fin'].strftime('%H:%M')} ({p['duree']} min)]")
                                     st.caption(f"• 🔴 :red[Panne à {h_debut}]")
-                                if len(pannes_triees) > 1: 
-                                    st.markdown("<hr style='margin: -10px 0px 10px 0px; opacity: 0.8;'>", unsafe_allow_html=True)
+                                if len(pannes_triees) > 1: st.markdown("<hr style='margin: -10px 0px 10px 0px; opacity: 0.8;'>", unsafe_allow_html=True)
                             else:
                                 with st.container(border=True):
                                     if p['statut'] == "TERMINEE":
                                         st.caption(f"• 🟢 :green[Opérationnel à {p['fin'].strftime('%H:%M')} ({p['duree']} min)]")
                                         st.caption(f"• 🔴 :red[Panne à {h_debut}]")
-                    else: 
-                        st.write("✅ Aucun incident signalé.")
+                    else: st.write("✅ Aucun incident signalé.")
                 st.divider()
 
     st.subheader("🚨 Dernières interruptions")
@@ -342,8 +292,6 @@ if not df_live.empty:
                 st.success(f"✅ {p['ride_name']} >> fini à {f.strftime('%H:%M')}")
 else: 
     st.warning("📭 Aucune donnée live disponible.")
-    if "popup_shown" not in st.session_state:
-        st.session_state.popup_shown = True
 
 st.divider()
 st.caption("Disney Wait Time Tool | Real-time Dashboard")
