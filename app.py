@@ -326,7 +326,6 @@ if df_raw.empty:
     if "popup_shown" not in st.session_state:
         st.session_state.popup_shown = True
         popup_alerte_donnees()
-    st.warning("📭 Aucune donnée disponible dans la base de données.")
 else:
     # Si des données reviennent, on réinitialise pour la prochaine fois
     if "popup_shown" in st.session_state:
