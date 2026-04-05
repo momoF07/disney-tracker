@@ -215,9 +215,9 @@ if not df_live.empty:
                 elif panne_actuelle or not current['is_open']:
                     with c1:
                         st.markdown("""
-                            <div style="display: flex; align-items: center; background-color: rgba(255, 165, 0, 0.1); padding: 10px; border-radius: 12px; border: 1px solid rgba(255, 165, 0, 0.2); margin-bottom: 8px;">
+                            <div style="display: flex; align-items: center; background-color: rgba(255, 165, 0, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 165, 0, 0.5); margin-bottom: 8px;">
                                 <div class="mini-loader" style="
-                                    border: 4px solid rgba(255, 165, 0, 0.5);
+                                    border: 2px solid rgba(255, 165, 0, 0.5);
                                     border-top: 2px solid #FF8C00;
                                     border-radius: 50%;
                                     width: 16px;
