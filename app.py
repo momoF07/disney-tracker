@@ -95,10 +95,18 @@ def popup_alerte_donnees():
 heure_reset = maintenant.replace(hour=2, minute=30, second=0, microsecond=0)
 debut_journee = heure_reset if maintenant >= heure_reset else heure_reset - timedelta(days=1)
 
-if st.button('🔄 Actualiser & Forcer un Relevé'):
-    with st.spinner("Signal envoyé..."):
-        if trigger_github_action() == 204:
-            st.toast("🚀 Robot lancé !"); time.sleep(45); st.rerun()
+# --- SECTION BOUTONS (MANUEL + ROBOT) ---
+col_btn1, col_btn2 = st.columns(2)
+
+with col_btn1:
+    if st.button('🔄 Rafraîchir l\'Affichage'):
+        st.rerun()
+
+with col_btn2:
+    if st.button('🚀 Forcer un Relevé Robot'):
+        with st.spinner("Signal envoyé..."):
+            if trigger_github_action() == 204:
+                st.toast("🚀 Robot lancé !"); time.sleep(45); st.rerun()
 
 # --- RÉCUPÉRATION DES DONNÉES ---
 try:
