@@ -221,8 +221,8 @@ if not df_live.empty:
                 else:
                     c1.success("🟢 OUVERT"); c2.metric("Attente", f"{int(current['wait_time'])} min")
 
-                with st.expander("📜 Historique des pannes"):
-                    # On récupère TOUTES les pannes du ride (en cours + terminées)
+                with st.expander("📜 Historique d'état"):
+                    # On récupère toutes les pannes (logs_101)
                     h_pannes = [p for p in all_pannes if p['ride'] == ride]
                     
                     if h_pannes:
@@ -230,19 +230,22 @@ if not df_live.empty:
                         for p in sorted(h_pannes, key=lambda x: x['debut'], reverse=True):
                             heure_debut = p['debut'].strftime('%H:%M')
                             
+                            # 1. État Actuel (si en cours)
                             if p['statut'] == "EN_COURS":
-                                # Affichage distinct pour la panne actuelle
-                                st.write(f"• 🟠 :orange[**En cours** : Depuis {heure_debut}]")
+                                st.write(f"• 🟠 **En cours** depuis {heure_debut}")
+                            
+                            # 2. Cycle d'une panne terminée (Affichage en deux points)
                             else:
-                                # Affichage classique pour les pannes passées
                                 heure_fin = p['fin'].strftime('%H:%M')
-                                st.caption(f"• 🟢 :green[De {p['debut'].strftime('%H:%M')} à {p['fin'].strftime('%H:%M')} ({p['duree']} min)]")
-
-
-
+                                # On affiche la fin (Opérationnel) en premier car c'est le plus récent
+                                st.write(f"• 🟢 **Opérationnel** à {heure_fin} ({p['duree']} min)")
+                                # On affiche le début de cette panne juste en dessous (plus petit)
+                                st.caption(f"• 🔴 Panne à {heure_debut}")
+                                
                     else: 
-                        st.write("✅ Aucune panne enregistrée aujourd'hui.")
-                st.divider()
+                        st.write("✅ Aucun incident signalé aujourd'hui.")
+                
+
 
 
     # --- FLUX DES DERNIÈRES PANNES ---
