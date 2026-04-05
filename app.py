@@ -255,7 +255,8 @@ if not df_raw.empty:
         parc_theoriquement_ouvert = is_park_theoretically_open(heure_actuelle, PARK_OPENING, PARK_CLOSING)
         
         if not parc_theoriquement_ouvert or tous_fermes_globalement:
-            st.info("ℹ️ Le parc est actuellement fermé. Les dernières données ont été envoyées.")
+            st.info(f"ℹ️ Le parc est actuellement fermé. Les horaires de prises de données sont {PARK_OPENING} -> {PARK_CLOSING}
+            /nLes dernières données ont été envoyées à {derniere_maj}.")
             parc_actuellement_ferme = True
         else:
             parc_actuellement_ferme = False
