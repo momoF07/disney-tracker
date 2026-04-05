@@ -142,7 +142,7 @@ st.markdown(f"""
 st.write("---")
 col_sc, col_help = st.columns([0.85, 0.15])
 
-with col_help:
+    with col_help:
         with st.popover("❓"):
             st.markdown("""
             <style>
