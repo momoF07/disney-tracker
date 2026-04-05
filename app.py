@@ -73,7 +73,7 @@ prochain_refresh = (maintenant + timedelta(seconds=60)).strftime("%H:%M:%S")
 heure_reset = maintenant.replace(hour=2, minute=30, second=0, microsecond=0)
 debut_journee = heure_reset if maintenant >= heure_reset else heure_reset - timedelta(days=1)
 
-# Initialisation par défaut
+# Initialisation par défaut pour éviter NameError
 derniere_maj = "--:--:--"
 df_live = pd.DataFrame()
 df_pannes = pd.DataFrame()
@@ -96,45 +96,28 @@ try:
 except Exception as e:
     st.error(f"Erreur Supabase : {e}")
 
-# --- SECTION ACTIONS & STATUS (PREMIUM) ---
-with st.container(border=True):
-    col_header, col_status = st.columns([0.7, 0.3])
-    with col_header:
-        st.markdown("### ⚙️ Centre de Contrôle")
-    with col_status:
-        st.markdown(f"<p style='text-align:right; color:#4ade80; font-weight:bold; margin-top:10px;'>🟢 Live</p>", unsafe_allow_html=True)
+# --- SECTION ACTIONS (Version Classique avec Bandeau) ---
+col_btn1, col_btn2 = st.columns(2)
+with col_btn1:
+    if st.button('🔄 Rafraîchir l\'Affichage'):
+        st.rerun()
+with col_btn2:
+    if st.button('🚀 Lancer un Relevé Robot', type="primary"):
+        status_code = trigger_github_action()
+        if status_code == 204:
+            with st.status("Le robot Disney est en route...", expanded=False) as status:
+                st.toast("✅ Requête acceptée par GitHub !")
+                time.sleep(25)
+                st.rerun()
+        else:
+            st.error("Échec de connexion")
 
-    c1, c2 = st.columns(2, gap="small")
-    
-    with c1:
-        if st.button('🔄 Mettre à jour l\'affichage', use_container_width=True):
-            st.rerun()
-        st.caption(f"✨ Interface synchro : **{st.session_state.last_refresh}**")
-            
-    with c2:
-        btn_robot = st.button('Lancer un relevé 🚀', use_container_width=True, type="primary")
-        if btn_robot:
-            status_code = trigger_github_action()
-            if status_code == 204:
-                with st.status("Activation du robot distant...", expanded=True) as status_indicator:
-                    st.write("Connexion à GitHub Actions...")
-                    time.sleep(2)
-                    st.write("Injection de la requête de scan...")
-                    time.sleep(2)
-                    status_indicator.update(label="✅ Scan en cours ! Rechargement...", state="complete", expanded=False)
-                    st.toast("Le robot parcourt les files d'attente ! 🎢")
-                    time.sleep(20)
-                    st.rerun()
-            else:
-                st.error("Échec de connexion")
-        st.caption(f"🤖 Prochain scan auto : **{prochain_refresh}**")
-
-# Bandeau de données élégant
+# Bandeau de données élégant (Gardé comme demandé)
 st.markdown(
     f"""
-    <div style="background-color: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 10px; border-left: 5px solid #4facfe; margin-top: -10px; margin-bottom: 20px;">
-        <span style="font-size: 14px; color: #94a3b8;">🕒 Donnée API : <b>{derniere_maj}</b></span>
-        <span style="float: right; font-size: 14px; color: #94a3b8;">Rafraîchissement automatique dans <b>60s</b></span>
+    <div style="background-color: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 10px; border-left: 5px solid #4facfe; margin-bottom: 20px;">
+        <span style="font-size: 14px; color: #94a3b8;">🕒 Donnée API : <b>{derniere_maj}</b> | Sync : <b>{st.session_state.last_refresh}</b></span>
+        <span style="float: right; font-size: 14px; color: #94a3b8;">Prochain auto-refresh : <b>{prochain_refresh}</b></span>
     </div>
     """, 
     unsafe_allow_html=True
