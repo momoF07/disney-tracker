@@ -117,9 +117,14 @@ try:
     # On récupère les pannes depuis la nouvelle table dédiée
     resp_101 = supabase.table("logs_101").select("*").gte("start_time", debut_journee.isoformat()).execute()
     df_pannes = pd.DataFrame(resp_101.data)
+
+    # AJOUT : On récupère les statuts d'ouverture quotidienne
+    resp_status = supabase.table("daily_status").select("*").execute()
+    status_map = {item['ride_name']: item['has_opened_today'] for item in resp_status.data} if resp_status.data else {}
+
 except Exception as e:
     st.error(f"Erreur Supabase : {e}")
-    df_raw, df_pannes = pd.DataFrame(), pd.DataFrame()
+    df_raw, df_pannes, status_map = pd.DataFrame(), pd.DataFrame(), {}
 
 
 if not df_raw.empty:
@@ -286,7 +291,9 @@ if not df_raw.empty:
                 ride_df = df[df['ride_name'] == ride].sort_values('created_at', ascending=False)
                 if not ride_df.empty:
                     last = ride_df.iloc[0]
-                    a_deja_ouvert_ce_ride = ride_df['is_open'].any()
+                    
+                    # NOUVELLE LOGIQUE : On utilise la table daily_status
+                    a_deja_ouvert_ce_ride = status_map.get(ride, False)
                     
                     # On cherche si une panne est déclarée "EN_COURS" dans logs_101
                     panne_actuelle = next((p for p in all_pannes if p['ride'] == ride and p['statut'] == "EN_COURS"), None)
@@ -300,19 +307,21 @@ if not df_raw.empty:
                         c2.metric("Attente", "- - -")
                     
                     # 2. PRIORITÉ SECONDAIRE : L'ATTRACTION EST EN PANNE (101)
-                    # Si une panne est ouverte dans logs_101, on affiche INTERRUPTION même si elle n'a pas encore ouvert officiellement
-                    elif panne_actuelle or not last['is_open']:
+                    # Si une panne est ouverte dans logs_101, on affiche INTERRUPTION
+                    elif panne_actuelle or (a_deja_ouvert_ce_ride and not last['is_open']):
                         c1.warning("🔴 INTERRUPTION / 101")
                         if panne_actuelle:
                             min_inc = int((maintenant - panne_actuelle['debut']).total_seconds() / 60)
                             st.caption(f"⚠️ En panne depuis **{max(0, min_inc)} min**")
+                        else:
+                            st.caption("⚠️ Attraction momentanément indisponible")
                         c2.metric("Attente", "- - -")
 
-                    # 3. CAS CLASSIQUE : EN ATTENTE D'OUVERTURE (PAS DE 101)
+                    # 3. CAS CLASSIQUE : EN ATTENTE D'OUVERTURE (PAS DE 101 DÉTECTÉ)
                     elif (heure_actuelle < PARK_OPENING) or (not a_deja_ouvert_ce_ride):
                         c1.info("🕒 FERMÉ")
                         c2.metric("Attente", "- - -")
-                        st.caption("⏳ En attente de l'ouverture.")
+                        st.caption("⏳ En attente de l'ouverture officielle.")
                     
                     # 4. L'ATTRACTION EST OUVERTE
                     else:
@@ -327,16 +336,11 @@ if not df_raw.empty:
                         else: st.write("✅ Aucune panne terminée aujourd'hui.")
                     st.divider()
 
-               # --- FLUX DES DERNIÈRES PANNES ---
+        # --- FLUX DES DERNIÈRES PANNES ---
         st.subheader("🚨 Dernières interruptions")
         
-        # On ne garde que les pannes qui ont réellement commencé APRES le reset de 2h30
-        # et on s'assure que la table n'est pas vide
         if not df_pannes.empty:
-            # Conversion de la colonne start_time en datetime pour le filtre
             df_pannes['start_time_dt'] = pd.to_datetime(df_pannes['start_time'])
-            
-            # FILTRE CRUCIAL : On ignore les pannes fantômes créées juste après un clear de DB
             flux_clean = df_pannes[df_pannes['start_time_dt'] >= debut_journee].sort_values('start_time', ascending=False).head(5)
             
             if not flux_clean.empty:
@@ -357,12 +361,10 @@ if not df_raw.empty:
 else: st.warning(f"📭 Aucune donnée disponible.\nMerci de patienter jusqu'à {PARK_OPENING}.")
     # --- À LA TOUTE FIN DU CODE ---
 if df_raw.empty:
-    # On vérifie si on a déjà montré la popup pour ne pas boucler à l'infini
     if "popup_shown" not in st.session_state:
         st.session_state.popup_shown = True
         popup_alerte_donnees()
 else:
-    # Si des données reviennent, on réinitialise pour la prochaine fois
     if "popup_shown" in st.session_state:
         del st.session_state.popup_shown
 
