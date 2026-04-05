@@ -1,14 +1,14 @@
 import streamlit as st
 import pandas as pd
 from supabase import create_client
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 import pytz
 import requests
-import time
+import time as time_sleep
 from streamlit_autorefresh import st_autorefresh 
 from emojis import get_emoji, get_rides_by_zone, RIDES_DLP, RIDES_DAW
 from config import PARK_OPENING, DLP_CLOSING, DAW_CLOSING
-
+from special_hours import ANTICIPATED_CLOSINGS, FANTASYLAND_EARLY_CLOSE
 
 # --- CONFIGURATION DE LA PAGE ---
 st.set_page_config(page_title="Disney Wait Time", page_icon="🏰", layout="centered")
@@ -69,7 +69,6 @@ heure_actuelle = maintenant.time()
 heure_reset = maintenant.replace(hour=2, minute=30, second=0, microsecond=0)
 debut_journee = heure_reset if maintenant >= heure_reset else heure_reset - timedelta(days=1)
 
-# Initialisation par défaut
 derniere_maj = "--:--:--"
 df_live = pd.DataFrame()
 df_pannes = pd.DataFrame()
@@ -77,15 +76,12 @@ status_map = {}
 all_pannes = []
 
 try:
-    # Données Live
     resp_live = supabase.table("disney_live").select("*").execute()
     df_live = pd.DataFrame(resp_live.data)
     
-    # Données Pannes
     resp_101 = supabase.table("logs_101").select("*").gte("start_time", debut_journee.isoformat()).execute()
     df_pannes = pd.DataFrame(resp_101.data)
 
-    # Statut d'ouverture quotidienne
     resp_status = supabase.table("daily_status").select("*").execute()
     status_map = {item['ride_name']: item['has_opened_today'] for item in resp_status.data} if resp_status.data else {}
 
@@ -106,7 +102,7 @@ with col_btn2:
         if status_code == 204:
             with st.status("Le robot Disney récupère les temps d'attente...", expanded=False):
                 st.toast("✅ Requête acceptée par GitHub !")
-                time.sleep(40)
+                time_sleep.sleep(40)
                 st.rerun()
         else:
             st.error("Échec de connexion")
@@ -195,10 +191,6 @@ if not df_live.empty:
     selected_options = st.multiselect("Attractions suivies :", options=sorted(df_live['ride_name'].unique()), default=valid_default, format_func=lambda x: f"{get_emoji(x)} {x}")
     st.query_params["fav"] = selected_options
     
-    # Info globale (DLP par défaut)
-    if heure_actuelle < PARK_OPENING or heure_actuelle >= DLP_CLOSING:
-        st.info(f"ℹ️ Les parcs sont fermés ({PARK_OPENING.strftime('%H:%M')} -> {DLP_CLOSING.strftime('%H:%M')}).")
-
     # --- AFFICHAGE DES ATTRACTIONS ---
     if selected_options:
         st.divider()
@@ -209,35 +201,52 @@ if not df_live.empty:
                 a_deja_ouvert = status_map.get(ride, False)
                 panne_actuelle = next((p for p in all_pannes if p['ride'] == ride and p['statut'] == "EN_COURS"), None)
                 
-                # --- LOGIQUE DE FERMETURE SIMPLIFIÉE ---
-                # Si l'attraction est dans la liste DAW, on prend DAW_CLOSING, sinon DLP_CLOSING
-                heure_fermeture_ride = DAW_CLOSING if ride in RIDES_DAW else DLP_CLOSING
-                est_ferme_par_horaire = heure_actuelle < PARK_OPENING or heure_actuelle >= heure_fermeture_ride
+                # --- 1. CALCUL DE L'HEURE DE FERMETURE THÉORIQUE ---
+                is_daw_ride = any(attr.lower() in ride.lower() for attr in RIDES_DAW)
+                heure_fermeture_theorique = DAW_CLOSING if is_daw_ride else DLP_CLOSING
                 
+                if ride in ANTICIPATED_CLOSINGS:
+                    heure_fermeture_theorique = ANTICIPATED_CLOSINGS[ride]
+                elif ride in FANTASYLAND_EARLY_CLOSE:
+                    full_dt = datetime.combine(datetime.today(), DLP_CLOSING)
+                    heure_fermeture_theorique = (full_dt - timedelta(minutes=65)).time()
+
+                # --- 2. DÉTERMINATION DE L'ÉTAT ---
+                is_currently_open = current['is_open']
+                est_apres_heure_limite = heure_actuelle >= heure_fermeture_theorique
+                
+                # RÈGLE : Fermé déf. si après l'heure ET is_open=False. Interruption si avant l'heure ET is_open=False.
+                est_definitivement_ferme = est_apres_heure_limite and not is_currently_open
+                est_en_interruption = not est_apres_heure_limite and not is_currently_open
+                
+                # Sécurité globale Parc
+                if heure_actuelle < PARK_OPENING or heure_actuelle >= DLP_CLOSING:
+                    est_definitivement_ferme = True
+
                 st.subheader(f"{get_emoji(ride)} {ride}")
                 c1, c2 = st.columns(2)
                 
                 with c1:
-                    # ÉTAT 1 : PARC FERMÉ (DYNAMIQUE)
-                    if est_ferme_par_horaire:
-                        st.markdown(f'<div style="display: flex; align-items: center; background-color: rgba(255, 75, 75, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 75, 75, 0.5); margin-bottom: 8px;"><span style="color: #ff4b4b; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">🔴 PARC FERMÉ ({heure_fermeture_ride.strftime("%H:%M")})</span></div>', unsafe_allow_html=True)
+                    # ÉTAT : FERMÉ DÉFINITIF
+                    if est_definitivement_ferme:
+                        st.markdown(f'<div style="display: flex; align-items: center; background-color: rgba(255, 75, 75, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 75, 75, 0.5); margin-bottom: 8px;"><span style="color: #ff4b4b; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">🔴 FERMÉ POUR LA JOURNÉE ({heure_fermeture_theorique.strftime("%H:%M")})</span></div>', unsafe_allow_html=True)
                         c2.metric("Attente", "- - -")
 
-                    # ÉTAT 2 : FERMÉ (MATIN / PAS ENCORE OUVERT)
+                    # ÉTAT : NON OUVERT (MATIN)
                     elif not a_deja_ouvert:
                         st.markdown('<div style="display: flex; align-items: center; background-color: rgba(0, 123, 255, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(0, 123, 255, 0.5); margin-bottom: 8px;"><span style="color: #007bff; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">🕒 FERMÉ (PAS ENCORE OUVERT)</span></div>', unsafe_allow_html=True)
                         st.caption("⏳ En attente de l'ouverture officielle.")
                         c2.metric("Attente", "- - -")
                     
-                    # ÉTAT 3 : INTERRUPTION
-                    elif panne_actuelle or not current['is_open']:
+                    # ÉTAT : INTERRUPTION
+                    elif est_en_interruption:
                         st.markdown('<div style="display: flex; align-items: center; background-color: rgba(255, 165, 0, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 165, 0, 0.5); margin-bottom: 8px;"><div class="mini-loader" style="border: 2px solid rgba(255, 165, 0, 0.2); border-top: 2px solid #FF8C00; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; margin-right: 12px; flex-shrink: 0;"></div><span style="color: #FF8C00; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">🟠 INTERRUPTION DE SERVICE</span></div><style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>', unsafe_allow_html=True)
                         if panne_actuelle:
                             delta_p = maintenant - panne_actuelle['debut']
-                            st.caption(f"⚠️ En panne depuis **{max(0, int(delta_p.total_seconds() / 60))} min** ({panne_actuelle['debut'].strftime('%H:%M')})")
+                            st.caption(f"⚠️ En panne depuis **{max(0, int(delta_p.total_seconds() / 60))} min**")
                         c2.metric("Attente", "- - -")
                     
-                    # ÉTAT 4 : OUVERT
+                    # ÉTAT : OUVERT
                     else:
                         st.markdown('<div style="display: flex; align-items: center; background-color: rgba(46, 204, 113, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(46, 204, 113, 0.5); margin-bottom: 8px;"><span style="color: #2ecc71; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">🟢 OUVERT</span></div>', unsafe_allow_html=True)
                         c2.metric("Attente", f"{int(current['wait_time'])} min")
