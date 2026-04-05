@@ -319,8 +319,7 @@ if not df_raw.empty:
         else: st.write("✅ Aucune interruption détectée.")
 
     else: st.warning("⏳ En attente des premières données de la journée.")
-else: st.warning(f"📭 Aucune donnée disponible.\n
-Merci de patienter jusqu'à {PARK_OPENING}.")
+else: st.warning(f"📭 Aucune donnée disponible.\nMerci de patienter jusqu'à {PARK_OPENING}.")
 
 st.divider()
 st.caption("Disney Wait Time Tool")
