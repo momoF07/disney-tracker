@@ -189,7 +189,7 @@ if not df_live.empty:
     selected_options = st.multiselect("Attractions suivies :", options=toutes_attractions, default=valid_default, format_func=lambda x: f"{get_emoji(x)} {x}")
     st.query_params["fav"] = selected_options
     
-    st.caption(f"🕒 Donnée : {derniere_maj} | Refresh : {st.session_state.last_refresh}")
+    st.caption(f"🕒 Donnée : {derniere_maj} | Auto-Refresh : {st.session_state.last_refresh}")
 
     if parc_actuellement_ferme:
         st.info(f"ℹ️ Le parc est fermé ({PARK_OPENING} -> {PARK_CLOSING}).")
@@ -216,7 +216,7 @@ if not df_live.empty:
                     c1.warning("🔴 INTERRUPTION DE SERVICE")
                     if panne_actuelle:
                         min_inc = int((maintenant - panne_actuelle['debut']).total_seconds() / 60)
-                        st.caption(f"⚠️ En panne depuis **{max(0, min_inc)} min** ({panne_actuelle['debut']})")
+                        st.caption(f"⚠️ En panne depuis **{max(0, min_inc)} min** ({panne_actuelle['debut'].total_seconds()/60})")
                     c2.metric("Attente", "- - -")
                 else:
                     c1.success("🟢 OUVERT"); c2.metric("Attente", f"{int(current['wait_time'])} min")
