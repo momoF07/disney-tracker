@@ -216,7 +216,7 @@ if not df_live.empty:
     selected_options = st.multiselect("Attractions suivies :", options=options_list, default=valid_default, format_func=lambda x: f"{get_emoji(x)} {x}")
     st.query_params["fav"] = selected_options
 
-    if selected_options:
+        if selected_options:
         st.divider()
         for ride in selected_options:
             ride_data = df_live[df_live['ride_name'] == ride]
@@ -224,6 +224,9 @@ if not df_live.empty:
                 current = ride_data.iloc[0]
                 a_deja_ouvert = status_map.get(ride, False)
                 panne_actuelle = next((p for p in all_pannes if p['ride'] == ride and p['statut'] == "EN_COURS"), None)
+                
+                # --- RÉCUPÉRATION DE L'HEURE DE FERMETURE RÉELLE (via updated_at) ---
+                heure_fermeture_constatee = current['updated_at'].strftime("%H:%M")
                 
                 is_daw_ride = any(attr.lower() in ride.lower() for attr in RIDES_DAW)
                 h_f_theorique = DAW_CLOSING if is_daw_ride else DLP_CLOSING
@@ -246,7 +249,8 @@ if not df_live.empty:
                 
                 with c1:
                     if est_definitivement_ferme:
-                        st.markdown(f'<div style="background-color: rgba(255, 75, 75, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 75, 75, 0.5); margin-bottom: 8px;"><span style="color: #ff4b4b; font-weight: 600; font-size: 15px;">🔴 FERMÉ POUR LA JOURNÉE</span></div>', unsafe_allow_html=True)
+                        # Affichage de l'heure du passage en is_open=False
+                        st.markdown(f'<div style="background-color: rgba(255, 75, 75, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 75, 75, 0.5); margin-bottom: 8px;"><span style="color: #ff4b4b; font-weight: 600; font-size: 15px;">🔴 FERMÉ DEPUIS {heure_fermeture_constatee}</span></div>', unsafe_allow_html=True)
                         c2.metric("Attente", "- - -")
                     elif not a_deja_ouvert:
                         st.markdown('<div style="background-color: rgba(0, 123, 255, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(0, 123, 255, 0.5); margin-bottom: 8px;"><span style="color: #007bff; font-weight: 600; font-size: 15px;">🕒 FERMÉ (PAS ENCORE OUVERT)</span></div>', unsafe_allow_html=True)
@@ -266,10 +270,10 @@ if not df_live.empty:
                         if est_definitivement_ferme:
                             last = p_triees[0]
                             if last['statut'] == "EN_COURS":
-                                st.write("• 🔴 :red[**Fermé**]")
+                                st.write(f"• 🔴 :red[**Fermé à {heure_fermeture_constatee}**]")
                                 st.caption(f"• 🟠 Panne non résolue (débutée à {last['debut'].strftime('%H:%M')})")
                             else:
-                                st.write("• 🟢 :green[**Opérationnel jusqu'à la fermeture**]")
+                                st.write(f"• 🟢 :green[**Opérationnel jusqu'à la fermeture ({heure_fermeture_constatee})**]")
                         else:
                             for idx, p in enumerate(p_triees):
                                 if idx == 0 and p['statut'] == "EN_COURS":
@@ -277,7 +281,7 @@ if not df_live.empty:
                                 elif p['statut'] == "TERMINEE":
                                     st.write(f"• 🟢 :green[**Opérationnel** à {p['fin'].strftime('%H:%M')}]")
                     else:
-                        st.write("• 🔴 :red[**Fermé**]" if est_definitivement_ferme else "✅ Aucun incident signalé.")
+                        st.write(f"• 🔴 :red[**Fermé à {heure_fermeture_constatee}**]" if est_definitivement_ferme else "✅ Aucun incident signalé.")
             st.divider()
 
 st.subheader("🚨 Dernières interruptions")
