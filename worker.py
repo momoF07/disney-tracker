@@ -20,7 +20,7 @@ def run_worker():
     now_paris = datetime.now(paris_tz)
     current_time = now_paris.time()
     
-    # Reset quotidien (uniquement pour daily_status et logs_101 si besoin)
+    # Reset quotidien
     if now_paris.hour == 2 and now_paris.minute < 30:
         supabase.table("daily_status").update({"has_opened_today": False}).neq("ride_name", "").execute()
         print("🌙 Reset daily_status effectué.")
@@ -57,13 +57,33 @@ def run_worker():
                         supabase.table("daily_status").upsert({"ride_name": name, "has_opened_today": True}).execute()
                         has_already_opened = True
 
-                    # C. LOGIQUE PANNES (logs_101)
+                    # C. LOGIQUE PANNES (logs_101) - CORRECTIF MULTI-PANNES
                     if has_already_opened:
-                        last_panne = supabase.table("logs_101").select("*").eq("ride_name", name).is_("end_time", "null").execute()
-                        if not is_open and not last_panne.data:
-                            supabase.table("logs_101").insert({"ride_name": name, "start_time": datetime.now(pytz.utc).isoformat()}).execute()
-                        elif is_open and last_panne.data:
-                            supabase.table("logs_101").update({"end_time": datetime.now(pytz.utc).isoformat()}).eq("id", last_panne.data[0]['id']).execute()
+                        # On cherche uniquement s'il y a une panne EN COURS (end_time est NULL)
+                        active_panne_query = supabase.table("logs_101")\
+                            .select("*")\
+                            .eq("ride_name", name)\
+                            .is_("end_time", "null")\
+                            .execute()
+                        
+                        panne_data = active_panne_query.data
+
+                        if not is_open:
+                            # Si fermé et pas de panne active en base -> on CREE une nouvelle ligne
+                            if not panne_data:
+                                supabase.table("logs_101").insert({
+                                    "ride_name": name, 
+                                    "start_time": datetime.now(pytz.utc).isoformat()
+                                }).execute()
+                                print(f"🚨 Nouvelle panne détectée : {name}")
+                        else:
+                            # Si ouvert et une panne était restée active -> on FERME cette ligne précise
+                            if panne_data:
+                                incident_id = panne_data[0]['id']
+                                supabase.table("logs_101").update({
+                                    "end_time": datetime.now(pytz.utc).isoformat()
+                                }).eq("id", incident_id).execute()
+                                print(f"✅ Panne terminée pour {name}")
 
             print(f"✅ Mise à jour Live terminée pour {p_id}")
         except Exception as e:
