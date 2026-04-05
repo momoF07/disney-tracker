@@ -216,7 +216,7 @@ if not df_live.empty:
     selected_options = st.multiselect("Attractions suivies :", options=options_list, default=valid_default, format_func=lambda x: f"{get_emoji(x)} {x}")
     st.query_params["fav"] = selected_options
 
-        if selected_options:
+    if selected_options:
         st.divider()
         for ride in selected_options:
             ride_data = df_live[df_live['ride_name'] == ride]
