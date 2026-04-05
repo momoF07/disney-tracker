@@ -102,12 +102,12 @@ with col_btn1:
     if st.button('🔄 Rafraîchir l\'Affichage'):
         st.rerun()
 with col_btn2:
-    if st.button('🚀 Lancer un Relevé Robot', type="primary"):
+    if st.button('🚀 Forcer un Relevé Manuel', type="primary"):
         status_code = trigger_github_action()
         if status_code == 204:
-            with st.status("Le robot Disney est en route...", expanded=False) as status:
+            with st.status("Le robot Disney récupère les temps d'attente...", expanded=False) as status:
                 st.toast("✅ Requête acceptée par GitHub !")
-                time.sleep(25)
+                time.sleep(40)
                 st.rerun()
         else:
             st.error("Échec de connexion")
@@ -117,7 +117,6 @@ st.markdown(
     f"""
     <div style="background-color: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 10px; border-left: 5px solid #4facfe; margin-bottom: 20px;">
         <span style="font-size: 14px; color: #94a3b8;">🕒 Donnée API : <b>{derniere_maj}</b> | Sync : <b>{st.session_state.last_refresh}</b></span>
-        <span style="float: right; font-size: 14px; color: #94a3b8;">Prochain auto-refresh : <b>{prochain_refresh}</b></span>
     </div>
     """, 
     unsafe_allow_html=True
