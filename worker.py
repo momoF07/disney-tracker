@@ -14,14 +14,10 @@ supabase = create_client(url, key)
 PARKS = ["dae968d5-630d-4719-8b06-3d107e944401", "ca888437-ebb4-4d50-aed2-d227f7096968"]
 
 def is_park_theoretically_open(current, opening, closing):
-    """
-    Vérifie si l'heure actuelle est dans la plage d'ouverture.
-    Gère le cas où la fermeture est après minuit (ex: 02:00).
-    """
+    """Gère l'amplitude horaire, même après minuit."""
     if opening <= closing:
         return opening <= current <= closing
-    else:
-        return current >= opening or current <= closing
+    return current >= opening or current <= closing
 
 def run_worker():
     # --- 1. GESTION DU TEMPS (Paris) ---
@@ -29,35 +25,37 @@ def run_worker():
     now_paris = datetime.now(paris_tz)
     current_time = now_paris.time()
     current_hour = now_paris.hour
-    
-    # Seuil de reset pour vérifier si l'attraction a ouvert aujourd'hui
-    reset_time_today = now_paris.replace(hour=2, minute=30, second=0, microsecond=0).isoformat()
 
     # --- 2. LOGIQUE DE RESET (02h30) ---
     if current_hour == 2 and now_paris.minute < 30:
         try:
+            # On vide les logs live
             supabase.table("disney_logs").delete().gt("id", 0).execute()
-            print("🌙 Reset quotidien : Database disney_logs nettoyée.")
+            # On réinitialise les statuts d'ouverture quotidienne
+            supabase.table("daily_status").update({"has_opened_today": False}).neq("ride_name", "").execute()
+            print("🌙 Reset quotidien : disney_logs et daily_status nettoyés.")
         except Exception as e: 
             print(f"⚠️ Erreur Reset : {e}")
 
     # --- 3. SILENCE NOCTURNE DYNAMIQUE ---
     if not is_park_theoretically_open(current_time, PARK_OPENING, PARK_CLOSING):
-        print(f"😴 Silence nocturne : {current_time} est hors créneau ({PARK_OPENING} - {PARK_CLOSING}).")
+        print(f"😴 Silence nocturne : {current_time} est hors créneau.")
         return
 
     # --- 4. COLLECTE ET ÉCRITURE ---
-    print(f"🚀 Lancement du relevé (Heure Paris : {now_paris.strftime('%H:%M')})")
+    print(f"🚀 Lancement du relevé ({now_paris.strftime('%H:%M')})")
     
+    # Récupération de tous les statuts d'ouverture en une fois pour gagner du temps
+    status_db = supabase.table("daily_status").select("*").execute()
+    status_map = {item['ride_name']: item['has_opened_today'] for item in status_db.data}
+
     for p_id in PARKS:
         try:
             response = requests.get(f"https://api.themeparks.wiki/v1/entity/{p_id}/live", timeout=15)
             data = response.json()
             live_data = data.get('liveData', [])
 
-            if not live_data:
-                print(f"⚠️ Aucune donnée reçue pour le parc {p_id}")
-                continue
+            if not live_data: continue
 
             to_insert_live = []
             
@@ -68,10 +66,9 @@ def run_worker():
                     is_open = (status == "OPERATING")
                     
                     queue = ride.get('queue', {})
-                    standby = queue.get('STANDBY', {}) if queue else {}
-                    wait = standby.get('waitTime', 0) if standby else 0
+                    wait = queue.get('STANDBY', {}).get('waitTime', 0) if queue else 0
 
-                    # A. Préparation pour disney_logs (Live)
+                    # A. Préparation Live Data
                     to_insert_live.append({
                         "ride_name": name,
                         "wait_time": wait,
@@ -79,26 +76,22 @@ def run_worker():
                         "created_at": datetime.now(pytz.utc).isoformat()
                     })
 
-                    # B. LOGIQUE GESTION DES PANNES (logs_101)
-                    
-                    # 1. Vérification robuste de l'ouverture précédente
-                    has_opened_today = False
-                    if is_open:
-                        has_opened_today = True
-                    else:
-                        # On utilise count="exact" pour une réponse fiable de la DB
-                        check_db = supabase.table("disney_logs")\
-                            .select("id", count="exact")\
-                            .eq("ride_name", name)\
-                            .eq("is_open", True)\
-                            .gte("created_at", reset_time_today)\
-                            .limit(1)\
-                            .execute()
-                        has_opened_today = (check_db.count is not None and check_db.count > 0)
+                    # B. Gestion du Statut d'Ouverture (daily_status)
+                    has_already_opened = status_map.get(name, False)
 
-                    # 2. Gestion de la table logs_101
-                    if has_opened_today:
-                        # On cherche une panne non terminée (end_time is NULL)
+                    if is_open and not has_already_opened:
+                        # Première ouverture détectée !
+                        supabase.table("daily_status").upsert({
+                            "ride_name": name,
+                            "has_opened_today": True,
+                            "last_opening_time": datetime.now(pytz.utc).isoformat()
+                        }).execute()
+                        has_already_opened = True
+                        print(f"✨ {name} a ouvert pour la première fois aujourd'hui.")
+
+                    # C. Gestion des Pannes (logs_101)
+                    # On ne logue un incident QUE si l'attraction a déjà ouvert au moins une fois
+                    if has_already_opened:
                         last_incident = supabase.table("logs_101")\
                             .select("*")\
                             .eq("ride_name", name)\
@@ -106,29 +99,28 @@ def run_worker():
                             .execute()
 
                         if not is_open:
-                            # Début de panne : pas d'incident ouvert trouvé
+                            # Début de panne
                             if not last_incident.data:
                                 supabase.table("logs_101").insert({
                                     "ride_name": name,
                                     "start_time": datetime.now(pytz.utc).isoformat()
                                 }).execute()
-                                print(f"🚨 LOG_101 : Début d'interruption pour {name}")
+                                print(f"🚨 LOG_101 : Panne sur {name}")
                         else:
-                            # Fin de panne : on ferme l'incident avec end_time
+                            # Fin de panne
                             if last_incident.data:
                                 incident_id = last_incident.data[0]['id']
                                 supabase.table("logs_101").update({
                                     "end_time": datetime.now(pytz.utc).isoformat()
                                 }).eq("id", incident_id).execute()
-                                print(f"✅ LOG_101 : Réouverture de {name}")
+                                print(f"✅ LOG_101 : {name} a rouvert")
 
-            # Insertion Bulk dans disney_logs (pour le graph et le live)
+            # Bulk Insert Live
             if to_insert_live:
                 supabase.table("disney_logs").insert(to_insert_live).execute()
-                print(f"✅ Relevé live inséré pour {p_id}")
 
         except Exception as e:
-            print(f"❌ Erreur critique pour le parc {p_id} : {e}")
+            print(f"❌ Erreur parc {p_id} : {e}")
 
 if __name__ == "__main__":
     run_worker()
