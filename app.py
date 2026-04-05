@@ -293,7 +293,6 @@ if not df_live.empty:
                 
                 with c1:
                     if est_definitivement_ferme:
-                        # Affichage de l'heure du passage en is_open=False
                         st.markdown(f'<div style="background-color: rgba(255, 75, 75, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 75, 75, 0.5); margin-bottom: 8px;"><span style="color: #ff4b4b; font-weight: 600; font-size: 15px;">🔴 FERMÉ DEPUIS {heure_fermeture_constatee}</span></div>', unsafe_allow_html=True)
                         c2.metric("Attente", "- - -")
                     elif not a_deja_ouvert:
@@ -306,6 +305,7 @@ if not df_live.empty:
                     else:
                         st.markdown('<div style="background-color: rgba(46, 204, 113, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(46, 204, 113, 0.5); margin-bottom: 8px;"><span style="color: #2ecc71; font-weight: 600; font-size: 15px;">🟢 OUVERT</span></div>', unsafe_allow_html=True)
                         c2.metric("Attente", f"{int(current['wait_time'])} min")
+
                 with st.expander("📜 Historique d'état"):
                     h_pannes = [p for p in all_pannes if p['ride'] == ride]
                     if h_pannes:
@@ -313,19 +313,20 @@ if not df_live.empty:
                         for idx, p in enumerate(pannes_triees):
                             h_debut = p['debut'].strftime('%H:%M')
                             
-                            # --- 1. LOGIQUE DE FERMETURE DÉFINITIVE (Dernier état connu) ---
+                            # --- 1. LOGIQUE DE FERMETURE DÉFINITIVE ---
                             if idx == 0 and est_definitivement_ferme:
                                 if p['statut'] == "EN_COURS":
                                     st.write(f"• 🔴 :red[**Fermé à {heure_fermeture_constatee}**]")
                                     st.caption(f"• 🟠 :orange[**En panne** depuis {h_debut}]")
                                 else:
-                                    st.write(f"• 🟢 :green[**Opérationnel jusqu'à la fermeture**]")
+                                    st.write(f"• 🟢 :green[**Opérationnel** jusqu'à la fermeture]")
                                     st.caption(f"• 🔴 :red[**Fermé à {heure_fermeture_constatee}**]")
                                     st.caption(f"• 🕒 Dernier incident à {h_debut}")
                             
                             # --- 2. LOGIQUE PANNE EN COURS (Parc ouvert) ---
                             elif idx == 0 and p['statut'] == "EN_COURS":
                                 st.write(f"• 🟠 :orange[**En cours** depuis {h_debut}]")
+                                st.caption("• ⚠️ Incident technique signalé")
                             
                             # --- 3. LOGIQUE PANNES PASSÉES & RÉSOLUES ---
                             elif p['statut'] == "TERMINEE":
@@ -344,8 +345,7 @@ if not df_live.empty:
                             st.caption("• ✅ Aucun incident signalé aujourd'hui")
                         else:
                             st.write("✅ **Aucun incident signalé**")
-
-                    st.divider()
+            st.divider()
 
 st.subheader("🚨 Dernières interruptions")
 if not df_pannes_brutes.empty:
