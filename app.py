@@ -187,7 +187,7 @@ if not df_live.empty:
     if parc_actuellement_ferme:
         st.info(f"ℹ️ Le parc est fermé ({PARK_OPENING} -> {PARK_CLOSING}).")
 
-        # --- AFFICHAGE DES ATTRACTIONS ---
+    # --- AFFICHAGE DES ATTRACTIONS ---
     if selected_options:
         st.divider()
         for ride in selected_options:
@@ -211,14 +211,14 @@ if not df_live.empty:
                     c2.metric("Attente", "- - -")
                     st.caption("⏳ En attente de l'ouverture officielle.")
                 
-                # --- ÉTAT 3 : INTERRUPTION (AVEC LOADER CSS) ---
+                # --- ÉTAT 3 : INTERRUPTION (AVEC LOADER CSS ORANGE) ---
                 elif panne_actuelle or not current['is_open']:
                     with c1:
                         st.markdown("""
-                            <div style="display: flex; align-items: center; background-color: rgba(255, 75, 75, 0.1); padding: 10px; border-radius: 12px; border: 1px solid rgba(255, 75, 75, 0.2); margin-bottom: 8px;">
+                            <div style="display: flex; align-items: center; background-color: rgba(255, 165, 0, 0.1); padding: 10px; border-radius: 12px; border: 1px solid rgba(255, 165, 0, 0.2); margin-bottom: 8px;">
                                 <div class="mini-loader" style="
-                                    border: 2px solid rgba(255, 75, 75, 0.2);
-                                    border-top: 2px solid #ff4b4b;
+                                    border: 2px solid rgba(255, 165, 0, 0.2);
+                                    border-top: 2px solid #FF8C00;
                                     border-radius: 50%;
                                     width: 16px;
                                     height: 16px;
@@ -226,8 +226,8 @@ if not df_live.empty:
                                     margin-right: 12px;
                                     flex-shrink: 0;
                                 "></div>
-                                <span style="color: #ff4b4b; font-weight: 600; font-size: 14px; letter-spacing: 0.3px;">
-                                    -- 🔴 INTERRUPTION DE SERVICE
+                                <span style="color: #FF8C00; font-weight: 600; font-size: 14px; letter-spacing: 0.3px;">
+                                    🟠 INTERRUPTION DE SERVICE
                                 </span>
                             </div>
                             <style>
@@ -268,6 +268,7 @@ if not df_live.empty:
                     else: 
                         st.write("✅ Aucun incident signalé.")
                 st.divider()
+
 
 
 
