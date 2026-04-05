@@ -120,7 +120,7 @@ if not df_live.empty:
                 "statut": "EN_COURS" if f is None else "TERMINEE"
             })
 
-    # --- FILTRES ET POPOVER ---
+        # --- FILTRES ET POPOVER ---
     st.write("---")
     col_sc, col_help = st.columns([0.85, 0.15])
     
@@ -161,7 +161,6 @@ if not df_live.empty:
 
             st.markdown('<span class="cat-badge bg-orange">🎬 ADVENTURE WORLD</span>', unsafe_allow_html=True)
             
-            # Grille Walt Disney Studios / Adventure World
             shortcut_zones_daw = {
                 "Avengers Campus": ["*CAMPUS", "*AVENGERS", "*AVENGERS-CAMPUS"],
                 "Production Courtyard / 3": ["*COURTYARD", "*PRODUCTION3", "*PROD3"],
