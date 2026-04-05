@@ -127,49 +127,51 @@ with st.sidebar.expander("🔐 Admin Panel"):
         sim_mode = st.toggle("Activer Mode Simulation")
         
         if sim_mode and not df_live.empty:
-            st.warning("⚠️ MODE TEST ALÉATOIRE ACTIF")
+            st.warning("⚠️ MODE TEST COHÉRENT ACTIF")
             
-            # 1. TEMPS D'ATTENTE (Multiples de 5 : 0, 5, 10... jusqu'à 90)
-            df_live['wait_time'] = [random.randint(0, 18) * 5 for _ in range(len(df_live))]
+            # 1. TEMPS D'ATTENTE (Multiples de 5)
+            df_live['wait_time'] = [random.randint(0, 12) * 5 for _ in range(len(df_live))]
             
-            # 2. GÉNÉRATEUR D'ÉTATS ALÉATOIRES POUR TOUTES LES ATTRACTIONS
+            # 2. GÉNÉRATEUR DE SCÉNARIOS LOGIQUES
             for idx, row in df_live.iterrows():
                 ride_n = row['ride_name']
-                # On choisit un scénario au hasard pour chaque attraction
-                scenario = random.choice(["OUVERT", "PANNE_EN_COURS", "PANNE_FINIE", "JAMAIS_OUVERT"])
+                # On choisit UN SEUL état logique par attraction
+                etat_test = random.choice(["OUVERT", "INTERRUPTION", "FERME_DEPUIS_PANNE", "JAMAIS_OUVERT"])
                 
-                if scenario == "OUVERT":
+                if etat_test == "OUVERT":
                     df_live.at[idx, 'is_open'] = True
                     status_map[ride_n] = True
+                    # Pas de panne en cours dans all_pannes pour celle-ci
                     
-                elif scenario == "PANNE_EN_COURS":
+                elif etat_test == "INTERRUPTION":
                     df_live.at[idx, 'is_open'] = False
-                    status_map[ride_n] = True
-                    # On injecte une panne en cours (débutée il y a entre 5 et 40 min)
+                    status_map[ride_n] = True 
+                    # L'attraction a déjà ouvert mais est tombée en panne
                     all_pannes.append({
                         "ride": ride_n, 
-                        "debut": maintenant - timedelta(minutes=random.randint(5, 40)), 
+                        "debut": maintenant - timedelta(minutes=random.randint(10, 30)), 
                         "fin": None, 
                         "statut": "EN_COURS"
                     })
                     
-                elif scenario == "PANNE_FINIE":
+                elif etat_test == "FERME_DEPUIS_PANNE":
                     df_live.at[idx, 'is_open'] = False
                     status_map[ride_n] = True
-                    # On simule une panne terminée pour voir l'historique "Opérationnel jusqu'à..."
+                    # Simulation : Fermée pour la soirée après une panne non résolue
+                    # (Apparaîtra en ROUGE si l'heure actuelle > heure de tolérance)
                     all_pannes.append({
                         "ride": ride_n, 
-                        "debut": maintenant - timedelta(hours=2), 
-                        "fin": maintenant - timedelta(hours=1), 
-                        "statut": "TERMINEE",
-                        "duree": 60
+                        "debut": maintenant - timedelta(hours=1), 
+                        "fin": None, 
+                        "statut": "EN_COURS"
                     })
                     
-                elif scenario == "JAMAIS_OUVERT":
+                elif etat_test == "JAMAIS_OUVERT":
                     df_live.at[idx, 'is_open'] = False
-                    status_map[ride_n] = False # Badge bleu "Pas encore ouvert"
-
-            st.info("🎲 Toutes les attractions ont reçu un état et un historique aléatoire.")
+                    status_map[ride_n] = False 
+                    # Badge BLEU : N'a jamais envoyé de is_open=True aujourd'hui
+            
+            st.info("✅ Données de test injectées proprement.")
 
 # --- SECTION ACTIONS ---
 col_btn1, col_btn2 = st.columns(2)
