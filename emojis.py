@@ -76,6 +76,9 @@ PARKS_DATA = {
 
 # --- FONCTIONS UTILITAIRES ---
 
+RIDES_DLP = [attr for land in PARKS_DATA["Disneyland Park"].values() for attr in land.keys()]
+RIDES_DAW = [attr for land in PARKS_DATA["Disney Adventure World"].values() for attr in land.keys()]
+
 def get_emoji(name):
     """Parcourt la structure pour trouver l'émoji correspondant au nom"""
     if "Test" in name:
