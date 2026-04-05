@@ -7,7 +7,7 @@ import requests
 import time
 from streamlit_autorefresh import st_autorefresh 
 from emojis import get_emoji, get_rides_by_zone
-from config import PARK_OPENING, PARK_CLOSING
+from config import PARK_OPENING, DLP_CLOSING, DAW_CLOSING
 
 # --- CONFIGURATION DE LA PAGE ---
 st.set_page_config(page_title="Disney Wait Time", page_icon="🏰", layout="centered")
@@ -51,10 +51,6 @@ if refresh_count > 0:
 
 supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 
-def is_park_theoretically_open(current, opening, closing):
-    if opening <= closing: return opening <= current <= closing
-    return current >= opening or current <= closing
-
 def trigger_github_action():
     REPO, WORKFLOW_ID, TOKEN = "momoF07/disney-tracker", "check.yml", st.secrets["GITHUB_TOKEN"]
     url = f"https://api.github.com/repos/{REPO}/actions/workflows/{WORKFLOW_ID}/dispatches"
@@ -84,7 +80,7 @@ try:
     resp_live = supabase.table("disney_live").select("*").execute()
     df_live = pd.DataFrame(resp_live.data)
     
-    # Données Pannes (Depuis le reset de 2h30)
+    # Données Pannes
     resp_101 = supabase.table("logs_101").select("*").gte("start_time", debut_journee.isoformat()).execute()
     df_pannes = pd.DataFrame(resp_101.data)
 
@@ -198,9 +194,9 @@ if not df_live.empty:
     selected_options = st.multiselect("Attractions suivies :", options=sorted(df_live['ride_name'].unique()), default=valid_default, format_func=lambda x: f"{get_emoji(x)} {x}")
     st.query_params["fav"] = selected_options
     
-    parc_theoriquement_ouvert = is_park_theoretically_open(heure_actuelle, PARK_OPENING, PARK_CLOSING)
-    if not parc_theoriquement_ouvert:
-        st.info(f"ℹ️ Le parc est théoriquement fermé ({PARK_OPENING} -> {PARK_CLOSING}).")
+    # Info globale (DLP par défaut)
+    if heure_actuelle < PARK_OPENING or heure_actuelle >= DLP_CLOSING:
+        st.info(f"ℹ️ Le parc principal est fermé ({PARK_OPENING.strftime('%H:%M')} -> {DLP_CLOSING.strftime('%H:%M')}).")
 
     # --- AFFICHAGE DES ATTRACTIONS ---
     if selected_options:
@@ -212,13 +208,19 @@ if not df_live.empty:
                 a_deja_ouvert = status_map.get(ride, False)
                 panne_actuelle = next((p for p in all_pannes if p['ride'] == ride and p['statut'] == "EN_COURS"), None)
                 
+                # --- LOGIQUE DE FERMETURE PAR PARC ---
+                daw_keywords = ["Avengers", "Spider-Man", "Tower of Terror", "Ratatouille", "Cars ROAD TRIP", "Crush", "RC Racer", "Slinky", "Toy Soldiers", "Flying Carpets"]
+                is_daw_ride = any(key in ride for key in daw_keywords)
+                heure_fermeture_ride = DAW_CLOSING if is_daw_ride else DLP_CLOSING
+                est_ferme_par_horaire = heure_actuelle < PARK_OPENING or heure_actuelle >= heure_fermeture_ride
+                
                 st.subheader(f"{get_emoji(ride)} {ride}")
                 c1, c2 = st.columns(2)
                 
                 with c1:
-                    # ÉTAT 1 : PARC FERMÉ
-                    if not parc_theoriquement_ouvert:
-                        st.markdown('<div style="display: flex; align-items: center; background-color: rgba(255, 75, 75, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 75, 75, 0.5); margin-bottom: 8px;"><span style="color: #ff4b4b; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">🔴 PARC FERMÉ</span></div>', unsafe_allow_html=True)
+                    # ÉTAT 1 : PARC FERMÉ (DYNAMIQUE)
+                    if est_ferme_par_horaire:
+                        st.markdown(f'<div style="display: flex; align-items: center; background-color: rgba(255, 75, 75, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 75, 75, 0.5); margin-bottom: 8px;"><span style="color: #ff4b4b; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">🔴 PARC FERMÉ ({heure_fermeture_ride.strftime("%H:%M")})</span></div>', unsafe_allow_html=True)
                         c2.metric("Attente", "- - -")
 
                     # ÉTAT 2 : FERMÉ (MATIN / PAS ENCORE OUVERT)
@@ -227,7 +229,7 @@ if not df_live.empty:
                         st.caption("⏳ En attente de l'ouverture officielle.")
                         c2.metric("Attente", "- - -")
                     
-                    # ÉTAT 3 : INTERRUPTION (ORANGE AVEC LOADER)
+                    # ÉTAT 3 : INTERRUPTION
                     elif panne_actuelle or not current['is_open']:
                         st.markdown('<div style="display: flex; align-items: center; background-color: rgba(255, 165, 0, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 165, 0, 0.5); margin-bottom: 8px;"><div class="mini-loader" style="border: 2px solid rgba(255, 165, 0, 0.2); border-top: 2px solid #FF8C00; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; margin-right: 12px; flex-shrink: 0;"></div><span style="color: #FF8C00; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">🟠 INTERRUPTION DE SERVICE</span></div><style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>', unsafe_allow_html=True)
                         if panne_actuelle:
@@ -235,7 +237,7 @@ if not df_live.empty:
                             st.caption(f"⚠️ En panne depuis **{max(0, int(delta_p.total_seconds() / 60))} min** ({panne_actuelle['debut'].strftime('%H:%M')})")
                         c2.metric("Attente", "- - -")
                     
-                    # ÉTAT 4 : OUVERT (VERT)
+                    # ÉTAT 4 : OUVERT
                     else:
                         st.markdown('<div style="display: flex; align-items: center; background-color: rgba(46, 204, 113, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(46, 204, 113, 0.5); margin-bottom: 8px;"><span style="color: #2ecc71; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">🟢 OUVERT</span></div>', unsafe_allow_html=True)
                         c2.metric("Attente", f"{int(current['wait_time'])} min")
