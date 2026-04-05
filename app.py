@@ -256,7 +256,7 @@ if not df_live.empty:
                                     st.caption(f"• 🔴 Panne à {heure_debut}")
                                 
                                 if len(pannes_triees) > 1:
-                                    st.markdown("---")
+                                    st.divider()
                             
                             # --- LES ANCIENS (Index > 0) : AFFICHAGE EN PETIT ---
                             else:
