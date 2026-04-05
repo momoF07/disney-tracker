@@ -247,33 +247,50 @@ if not df_live.empty:
                     else:
                         st.markdown('<div style="display: flex; align-items: center; background-color: rgba(46, 204, 113, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(46, 204, 113, 0.5); margin-bottom: 8px;"><span style="color: #2ecc71; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">🟢 OUVERT</span></div>', unsafe_allow_html=True)
                         c2.metric("Attente", f"{int(current['wait_time'])} min")
-    
+
                 with st.expander("📜 Historique d'état"):
                     h_pannes = [p for p in all_pannes if p['ride'] == ride]
+                    
                     if h_pannes:
                         pannes_triees = sorted(h_pannes, key=lambda x: x['debut'], reverse=True)
-                        for idx, p in enumerate(pannes_triees):
-                            h_debut = p['debut'].strftime('%H:%M')
-                            
-                            if idx == 0 and est_definitivement_ferme:
-                                if p['statut'] == "EN_COURS":
-                                    st.write(f"• 🔴 :red[**Fermeture à {heure_fermeture_theorique.strftime('%H:%M')}**]")
-                                    st.caption(f"• 🟠 Panne débutée à {h_debut}")
-                                else:
-                                    st.write(f"• 🟢 :green[**Opérationnel** jusqu'à la fermeture]")
-                                    st.caption(f"• ✅ Dernier cycle terminé à {p['fin'].strftime('%H:%M')}")
-                            elif idx == 0 and p['statut'] == "EN_COURS":
-                                st.write(f"• 🟠 :orange[**En cours** depuis {h_debut}]")
+                        
+                        # --- CAS A : L'ATTRACTION EST FERMÉE ---
+                        if est_definitivement_ferme:
+                            last_p = pannes_triees[0]
+                            if last_p['statut'] == "EN_COURS":
+                                # Elle a fermé alors qu'elle était en panne
+                                st.write(f"• 🔴 :red[**Fermeture à {heure_fermeture_theorique.strftime('%H:%M')}**]")
+                                st.caption(f"• 🟠 Panne non résolue (débutée à {last_p['debut'].strftime('%H:%M')})")
                             else:
-                                if p['statut'] == "TERMINEE":
+                                # Elle a fermé normalement (historique propre)
+                                st.write(f"• 🟢 :green[**Opérationnel** jusqu'à la fermeture]")
+                                st.caption(f"• ✅ Dernier cycle terminé à {last_p['fin'].strftime('%H:%M')}")
+                            
+                            # On affiche quand même le reste de l'historique en dessous si nécessaire
+                            if len(pannes_triees) > 0:
+                                st.markdown("<hr style='margin: 10px 0px 10px 0px; opacity: 0.5;'>", unsafe_allow_html=True)
+                                for p in pannes_triees:
+                                    if p['statut'] == "TERMINEE":
+                                        st.caption(f"• 🟢 Opérationnel à {p['fin'].strftime('%H:%M')} | 🔴 Panne à {p['debut'].strftime('%H:%M')}")
+
+                        # --- CAS B : L'ATTRACTION EST ENCORE EN SERVICE (OUVERTE OU EN PANNE) ---
+                        else:
+                            for idx, p in enumerate(pannes_triees):
+                                h_debut = p['debut'].strftime('%H:%M')
+                                if idx == 0 and p['statut'] == "EN_COURS":
+                                    st.write(f"• 🟠 :orange[**En cours** depuis {h_debut}]")
+                                elif p['statut'] == "TERMINEE":
                                     st.write(f"• 🟢 :green[**Opérationnel** à {p['fin'].strftime('%H:%M')} ({p['duree']} min)]")
                                     st.caption(f"• 🔴 :red[Panne à {h_debut}]")
-                                    
-                            if len(pannes_triees) > 1 and idx < len(pannes_triees) - 1: 
-                                st.markdown("<hr style='margin: -10px 0px 10px 0px; opacity: 0.8;'>", unsafe_allow_html=True)
-                    else: 
+                                
+                                if len(pannes_triees) > 1 and idx < len(pannes_triees) - 1:
+                                    st.markdown("<hr style='margin: -5px 0px 10px 0px; opacity: 0.8;'>", unsafe_allow_html=True)
+                    
+                    else:
+                        # --- CAS C : AUCUNE PANNE AUJOURD'HUI ---
                         if est_definitivement_ferme:
                             st.write(f"• 🔴 :red[**Fermeture à {heure_fermeture_theorique.strftime('%H:%M')}**]")
+                            st.caption("✅ Aucun incident signalé aujourd'hui.")
                         else:
                             st.write("✅ Aucun incident signalé.")
                 st.divider()
