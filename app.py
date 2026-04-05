@@ -330,7 +330,6 @@ if not df_live.empty:
                                 if idx == 0 and p['statut'] == "EN_COURS":
                                     # Panne actuelle
                                     st.write(f"• 🟠 :orange[**En cours** depuis {h_debut}]")
-                                    st.caption("• ⚠️ Incident technique signalé")
                                 
                                 elif p['statut'] == "TERMINEE":
                                     # Panne passée et résolue
