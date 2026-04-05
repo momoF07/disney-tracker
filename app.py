@@ -256,7 +256,7 @@ if not df_live.empty:
                                     st.caption(f"• 🔴 Panne à {heure_debut}")
                                 
                                 if len(pannes_triees) > 1:
-                                    st.markdown("<hr style='margin: -10px 0px 10px 0px; opacity: 0.2;'>", unsafe_allow_html=True)
+                                    st.markdown("<hr style='margin: -10px 0px 10px 0px; opacity: 0.8;'>", unsafe_allow_html=True)
 
                             
                             # --- LES ANCIENS (Index > 0) : AFFICHAGE EN PETIT ---
