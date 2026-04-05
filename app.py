@@ -205,7 +205,7 @@ if not df_live.empty:
     if parc_actuellement_ferme:
         st.info(f"ℹ️ Le parc est fermé ({PARK_OPENING} -> {PARK_CLOSING}).")
 
-    # --- AFFICHAGE DES ATTRACTIONS ---
+        # --- AFFICHAGE DES ATTRACTIONS ---
     if selected_options:
         st.divider()
         for ride in selected_options:
@@ -218,13 +218,32 @@ if not df_live.empty:
                 st.subheader(f"{get_emoji(ride)} {ride}")
                 c1, c2 = st.columns(2)
                 
-                if parc_actuellement_ferme:
-                    c1.error("🔴 PARC FERMÉ"); c2.metric("Attente", "- - -")
-                elif not a_deja_ouvert:
-                    c1.info("🕒 FERMÉ"); c2.metric("Attente", "- - -")
-                    st.caption("⏳ En attente de l'ouverture officielle.")
-                elif panne_actuelle or not current['is_open']:
-                    with c1:
+                with c1:
+                    # --- ÉTAT 1 : PARC FERMÉ ---
+                    if parc_actuellement_ferme:
+                        st.markdown("""
+                            <div style="display: flex; align-items: center; background-color: rgba(255, 75, 75, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 75, 75, 0.5); margin-bottom: 8px;">
+                                <span style="color: #ff4b4b; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">
+                                    🔴 PARC FERMÉ
+                                </span>
+                            </div>
+                        """, unsafe_allow_html=True)
+                        c2.metric("Attente", "- - -")
+        
+                    # --- ÉTAT 2 : FERMÉ (MATIN / PAS ENCORE OUVERT) ---
+                    elif not a_deja_ouvert:
+                        st.markdown("""
+                            <div style="display: flex; align-items: center; background-color: rgba(0, 123, 255, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(0, 123, 255, 0.5); margin-bottom: 8px;">
+                                <span style="color: #007bff; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">
+                                    🕒 FERMÉ (PAS ENCORE OUVERT)
+                                </span>
+                            </div>
+                        """, unsafe_allow_html=True)
+                        st.caption("⏳ En attente de l'ouverture officielle.")
+                        c2.metric("Attente", "- - -")
+                    
+                    # --- ÉTAT 3 : INTERRUPTION (ORANGE AVEC LOADER) ---
+                    elif panne_actuelle or not current['is_open']:
                         st.markdown("""
                             <div style="display: flex; align-items: center; background-color: rgba(255, 165, 0, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 165, 0, 0.5); margin-bottom: 8px;">
                                 <div class="mini-loader" style="
@@ -245,15 +264,24 @@ if not df_live.empty:
                                 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
                             </style>
                         """, unsafe_allow_html=True)
+                        
+                        if panne_actuelle:
+                            delta_p = maintenant - panne_actuelle['debut']
+                            st.caption(f"⚠️ En panne depuis **{max(0, int(delta_p.total_seconds() / 60))} min** ({panne_actuelle['debut'].strftime('%H:%M')})")
+                        c2.metric("Attente", "- - -")
                     
-                    if panne_actuelle:
-                        delta_p = maintenant - panne_actuelle['debut']
-                        st.caption(f"⚠️ En panne depuis **{max(0, int(delta_p.total_seconds() / 60))} min** ({panne_actuelle['debut'].strftime('%H:%M')})")
-                    c2.metric("Attente", "- - -")
-                else:
-                    c1.success("🟢 OUVERT")
-                    c2.metric("Attente", f"{int(current['wait_time'])} min")
+                    # --- ÉTAT 4 : OUVERT (VERT) ---
+                    else:
+                        st.markdown("""
+                            <div style="display: flex; align-items: center; background-color: rgba(46, 204, 113, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(46, 204, 113, 0.5); margin-bottom: 8px;">
+                                <span style="color: #2ecc71; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">
+                                    🟢 OUVERT
+                                </span>
+                            </div>
+                        """, unsafe_allow_html=True)
+                        c2.metric("Attente", f"{int(current['wait_time'])} min")
     
+                # --- HISTORIQUE D'ÉTAT ---
                 with st.expander("📜 Historique d'état"):
                     h_pannes = [p for p in all_pannes if p['ride'] == ride]
                     if h_pannes:
