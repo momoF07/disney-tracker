@@ -64,48 +64,21 @@ def trigger_github_action():
         return res.status_code
     except: return 500
 
-# --- INTERFACE ---
+# --- LOGIQUE DE TEMPS & RÉCUPÉRATION (Déplacé ici pour éviter NameError) ---
 st.title("🏰 Disney Wait Time")
 maintenant = datetime.now(paris_tz)
 heure_actuelle = maintenant.time()
 
-@st.dialog("⚠️ Système en pause")
-def popup_alerte_donnees():
-    st.write("Aucune donnée disponible pour le moment.")
-    if st.button("Tenter de forcer un relevé maintenant"):
-        if trigger_github_action() == 204:
-            st.toast("🚀 Signal envoyé au robot !"); time.sleep(45); st.rerun()
-
 heure_reset = maintenant.replace(hour=2, minute=30, second=0, microsecond=0)
 debut_journee = heure_reset if maintenant >= heure_reset else heure_reset - timedelta(days=1)
 
-# --- SECTION ACTIONS & STATUS ---
-# On crée un container avec bordure pour isoler les contrôles
-with st.container(border=True):
-    c1, c2 = st.columns([1, 1], gap="medium")
-    
-    with c1:
-        st.markdown("**🔄 Interface**")
-        if st.button('Rafraîchir la page', use_container_width=True, help="Relancer le script Streamlit"):
-            st.rerun()
-            
-    with c2:
-        st.markdown("**🤖 Pilotage Robot**")
-        btn_robot = st.button('Lancer un relevé 🚀', use_container_width=True, type="primary")
-        if btn_robot:
-            status_code = trigger_github_action()
-            if status_code == 204:
-                with st.spinner("Le robot Disney est en route..."):
-                    st.toast("✅ Requête acceptée par GitHub !")
-                    time.sleep(30) # Un peu moins que 45 pour la réactivité
-                    st.rerun()
-            else:
-                st.error("Échec de connexion")
+# Initialisation par défaut
+derniere_maj = "--:--:--"
+df_live = pd.DataFrame()
+df_pannes = pd.DataFrame()
+status_map = {}
+all_pannes = []
 
-# Petite info-bulle discrète sous les boutons
-st.caption(f"🕒 Dernière donnée : **{derniere_maj}** | Prochain relevé auto dans ~60s")
-
-# --- RÉCUPÉRATION DES DONNÉES ---
 try:
     resp_live = supabase.table("disney_live").select("*").execute()
     df_live = pd.DataFrame(resp_live.data)
@@ -115,19 +88,37 @@ try:
 
     resp_status = supabase.table("daily_status").select("*").execute()
     status_map = {item['ride_name']: item['has_opened_today'] for item in resp_status.data} if resp_status.data else {}
+
+    if not df_live.empty:
+        df_live['updated_at'] = pd.to_datetime(df_live['updated_at']).dt.tz_convert('Europe/Paris')
+        derniere_maj = df_live['updated_at'].max().strftime("%H:%M:%S")
 except Exception as e:
     st.error(f"Erreur Supabase : {e}")
-    df_live, df_pannes, status_map = pd.DataFrame(), pd.DataFrame(), {}
 
+# --- SECTION ACTIONS & STATUS ---
+with st.container(border=True):
+    c1, c2 = st.columns([1, 1], gap="medium")
+    with c1:
+        st.markdown("**🔄 Interface**")
+        if st.button('Rafraîchir la page', use_container_width=True):
+            st.rerun()
+    with c2:
+        st.markdown("**🤖 Pilotage Robot**")
+        btn_robot = st.button('Lancer un relevé 🚀', use_container_width=True, type="primary")
+        if btn_robot:
+            status_code = trigger_github_action()
+            if status_code == 204:
+                with st.spinner("Le robot Disney est en route..."):
+                    st.toast("✅ Requête acceptée par GitHub !")
+                    time.sleep(30)
+                    st.rerun()
+            else:
+                st.error("Échec de connexion")
+
+st.caption(f"🕒 Dernière donnée : **{derniere_maj}** | Prochain relevé auto dans ~60s")
+
+# --- TRAITEMENT DES PANNES ---
 if not df_live.empty:
-    parc_theoriquement_ouvert = is_park_theoretically_open(heure_actuelle, PARK_OPENING, PARK_CLOSING)
-    parc_actuellement_ferme = not parc_theoriquement_ouvert
-    
-    df_live['updated_at'] = pd.to_datetime(df_live['updated_at']).dt.tz_convert('Europe/Paris')
-    derniere_maj = df_live['updated_at'].max().strftime("%H:%M:%S")
-    toutes_attractions = sorted(df_live['ride_name'].unique())
-
-    all_pannes = []
     if not df_pannes.empty:
         for _, row in df_pannes.iterrows():
             d = pd.to_datetime(row['start_time']).astimezone(paris_tz)
@@ -155,60 +146,39 @@ if not df_live.empty:
                 .shortcut-label { font-size: 15px; color: #94a3b8; text-transform: uppercase; margin-bottom: 5px; display: block; }
             </style>
             """, unsafe_allow_html=True)
-
             st.markdown('<p class="main-title">🔍 INDEX DES CODES</p>', unsafe_allow_html=True)
-
             st.markdown('<span class="cat-badge bg-blue">🎡 PARCS</span>', unsafe_allow_html=True)
             with st.container():
                 c1, c2, c3 = st.columns(3)
                 c1.code("*ALL"); c2.code("*DLP"); c3.code("*DAW")
-
             st.markdown('<span class="cat-badge bg-green">🏰 DISNEYLAND PARK</span>', unsafe_allow_html=True)
-            lands_dlp_map = {
-                "Main Street": ["*MS", "*MAINSTREET"],
-                "Frontierland": ["*FRONTIER", "*FRONTIERLAND"],
-                "Adventureland": ["*ADVENTURE", "*ADVENTURELAND"],
-                "Fantasyland": ["*FANTASY", "*FANTASYLAND"],
-                "Discoveryland": ["*DISCO", "*DISCOVERYLAND"]
-            }
+            lands_dlp_map = {"Main Street": ["*MS", "*MAINSTREET"], "Frontierland": ["*FRONTIER", "*FRONTIERLAND"], "Adventureland": ["*ADVENTURE", "*ADVENTURELAND"], "Fantasyland": ["*FANTASY", "*FANTASYLAND"], "Discoveryland": ["*DISCO", "*DISCOVERYLAND"]}
             for land, codes in lands_dlp_map.items():
                 st.markdown(f'<div class="shortcut-box"><span class="shortcut-label">{land}</span>', unsafe_allow_html=True)
-                cl1, cl2 = st.columns(2)
-                cl1.code(codes[0]); cl2.code(codes[1])
+                cl1, cl2 = st.columns(2); cl1.code(codes[0]); cl2.code(codes[1])
                 st.markdown('</div>', unsafe_allow_html=True)
-
             st.markdown('<span class="cat-badge bg-orange">🎬 ADVENTURE WORLD</span>', unsafe_allow_html=True)
-            
-            shortcut_zones_daw = {
-                "Avengers Campus": ["*CAMPUS", "*AVENGERS", "*AVENGERS-CAMPUS"],
-                "Production Courtyard / 3": ["*COURTYARD", "*PRODUCTION3", "*PROD3"],
-                "Worlds of Pixar / 4": ["*PIXAR", "*WORLD-OF-PIXAR", "*PROD4"],
-                "World of Frozen": ["*WOF", "*FROZEN", "*WORLD-OF-FROZEN"],
-                "Adventure Way": ["*WAY", "*ADVENTURE-WAY"]
-            }
+            shortcut_zones_daw = {"Avengers Campus": ["*CAMPUS", "*AVENGERS"], "Production Courtyard": ["*COURTYARD", "*PROD3"], "Worlds of Pixar": ["*PIXAR", "*PROD4"], "World of Frozen": ["*FROZEN", "*WOF"], "Adventure Way": ["*WAY", "*ADVENTURE-WAY"]}
             for zone, codes in shortcut_zones_daw.items():
                 st.markdown(f'<div class="shortcut-box"><span class="shortcut-label">{zone}</span>', unsafe_allow_html=True)
                 cols_z = st.columns(len(codes))
-                for i, code in enumerate(codes):
-                    cols_z[i].code(code)
+                for idx, code in enumerate(codes): cols_z[idx].code(code)
                 st.markdown('</div>', unsafe_allow_html=True)
-
-            st.caption("✨ Astuce : Tapez le code et appuyez sur Entrée.")
 
     with col_sc:
         sc = st.text_input("Raccourci...", placeholder="ex: *FANTASY", label_visibility="collapsed")
     
     current_selection = st.query_params.get_all("fav")
     if sc.startswith("*"):
-        shortcut_selection = get_rides_by_zone(sc, toutes_attractions, all_pannes)
+        shortcut_selection = get_rides_by_zone(sc, sorted(df_live['ride_name'].unique()), all_pannes)
         if shortcut_selection: current_selection = shortcut_selection
 
-    valid_default = [item for item in current_selection if item in toutes_attractions]
-    selected_options = st.multiselect("Attractions suivies :", options=toutes_attractions, default=valid_default, format_func=lambda x: f"{get_emoji(x)} {x}")
+    valid_default = [item for item in current_selection if item in sorted(df_live['ride_name'].unique())]
+    selected_options = st.multiselect("Attractions suivies :", options=sorted(df_live['ride_name'].unique()), default=valid_default, format_func=lambda x: f"{get_emoji(x)} {x}")
     st.query_params["fav"] = selected_options
     
-    st.caption(f"🕒 Donnée : {derniere_maj} | Auto-Refresh : {st.session_state.last_refresh}")
-
+    parc_theoriquement_ouvert = is_park_theoretically_open(heure_actuelle, PARK_OPENING, PARK_CLOSING)
+    parc_actuellement_ferme = not parc_theoriquement_ouvert
     if parc_actuellement_ferme:
         st.info(f"ℹ️ Le parc est fermé ({PARK_OPENING} -> {PARK_CLOSING}).")
 
@@ -224,97 +194,55 @@ if not df_live.empty:
                 
                 st.subheader(f"{get_emoji(ride)} {ride}")
                 c1, c2 = st.columns(2)
-        
-                # ÉTAT 1 : PARC FERMÉ
                 if parc_actuellement_ferme:
-                    c1.error("🔴 PARC FERMÉ")
-                    c2.metric("Attente", "- - -")
-                
-                # ÉTAT 2 : PAS ENCORE OUVERT
+                    c1.error("🔴 PARC FERMÉ"); c2.metric("Attente", "- - -")
                 elif not a_deja_ouvert:
-                    c1.info("🕒 FERMÉ")
-                    c2.metric("Attente", "- - -")
+                    c1.info("🕒 FERMÉ"); c2.metric("Attente", "- - -")
                     st.caption("⏳ En attente de l'ouverture officielle.")
-                
-                # ÉTAT 3 : INTERRUPTION DE SERVICE
                 elif panne_actuelle or not current['is_open']:
-                    c1.warning("🔴 INTERRUPTION DE SERVICE")
+                    c1.warning("🔴 INTERRUPTION")
                     if panne_actuelle:
                         delta = maintenant - panne_actuelle['debut']
-                        min_inc = int(delta.total_seconds() / 60)
-                        heure_debut = panne_actuelle['debut'].strftime('%H:%M')
-                        st.caption(f"⚠️ En panne depuis **{max(0, min_inc)} min** ({heure_debut})")
-                    else:
-                        st.caption("⚠️ Indisponible (Détection en cours...)")
+                        st.caption(f"⚠️ En panne depuis **{max(0, int(delta.total_seconds() / 60))} min** ({panne_actuelle['debut'].strftime('%H:%M')})")
                     c2.metric("Attente", "- - -")
-                
-                # ÉTAT 4 : OUVERT
                 else:
-                    c1.success("🟢 OUVERT")
-                    c2.metric("Attente", f"{int(current['wait_time'])} min")
+                    c1.success("🟢 OUVERT"); c2.metric("Attente", f"{int(current['wait_time'])} min")
     
-                # --- HISTORIQUE D'ÉTAT (CHRONOLOGIE) ---
                 with st.expander("📜 Historique d'état"):
                     h_pannes = [p for p in all_pannes if p['ride'] == ride]
-                    
                     if h_pannes:
-                        # Tri du plus récent au plus ancien
                         pannes_triees = sorted(h_pannes, key=lambda x: x['debut'], reverse=True)
-                        
-                        for i, p in enumerate(pannes_triees):
-                            heure_debut = p['debut'].strftime('%H:%M')
-                            
-                            # --- LE PLUS RÉCENT (Index 0) : AFFICHAGE EN GRAND ---
-                            if i == 0:
-                                if p['statut'] == "EN_COURS":
-                                    st.write(f"• 🟠 :orange[**En cours** depuis {heure_debut}]")
+                        for idx, p in enumerate(pannes_triees):
+                            h_debut = p['debut'].strftime('%H:%M')
+                            if idx == 0:
+                                if p['statut'] == "EN_COURS": st.write(f"• 🟠 :orange[**En cours** depuis {h_debut}]")
                                 else:
-                                    heure_fin = p['fin'].strftime('%H:%M')
-                                    st.write(f"• 🟢 :green[**Opérationnel** à {heure_fin} ({p['duree']} min)]")
-                                    st.caption(f"• 🔴 :red[Panne à {heure_debut}]")
-                                
-                                if len(pannes_triees) > 1:
-                                    st.markdown("<hr style='margin: -10px 0px 10px 0px; opacity: 0.8;'>", unsafe_allow_html=True)
-
-                            # --- LES ANCIENS (Index > 0) : AFFICHAGE DANS UNE BOÎTE ---
+                                    st.write(f"• 🟢 :green[**Opérationnel** à {p['fin'].strftime('%H:%M')} ({p['duree']} min)]")
+                                    st.caption(f"• 🔴 :red[Panne à {h_debut}]")
+                                if len(pannes_triees) > 1: st.markdown("<hr style='margin: -10px 0px 10px 0px; opacity: 0.8;'>", unsafe_allow_html=True)
                             else:
                                 with st.container(border=True):
-                                    if p['statut'] == "EN_COURS":
-                                        st.caption(f"• 🟠 :orange[**En cours** depuis {heure_debut}]")
-                                    else:
-                                        heure_fin = p['fin'].strftime('%H:%M')
-                                        st.caption(f"• 🟢 :green[**Opérationnel** à {heure_fin} ({p['duree']} min)]")
-                                        st.caption(f"• 🔴 :red[Panne à {heure_debut}]")
-                            
-                    else: 
-                        st.write("✅ Aucun incident signalé aujourd'hui.")
-                
+                                    if p['statut'] == "TERMINEE":
+                                        st.caption(f"• 🟢 :green[Opérationnel à {p['fin'].strftime('%H:%M')} ({p['duree']} min)]")
+                                        st.caption(f"• 🔴 :red[Panne à {h_debut}]")
+                    else: st.write("✅ Aucun incident signalé.")
                 st.divider()
 
-    # --- FLUX DES DERNIÈRES PANNES ---
     st.subheader("🚨 Dernières interruptions")
     if not df_pannes.empty:
         df_pannes['start_time_dt'] = pd.to_datetime(df_pannes['start_time'])
         flux_clean = df_pannes[df_pannes['start_time_dt'] >= debut_journee].sort_values('start_time', ascending=False).head(5)
-        if not flux_clean.empty:
-            for _, p in flux_clean.iterrows():
-                d = pd.to_datetime(p['start_time']).astimezone(paris_tz)
-                if pd.isna(p['end_time']): st.error(f"🔴 {p['ride_name']} >> depuis {d.strftime('%H:%M')}")
-                else:
-                    f = pd.to_datetime(p['end_time']).astimezone(paris_tz)
-                    dur = int((f - d).total_seconds() / 60)
-                    st.success(f"✅ {p['ride_name']} >> fini à {f.strftime('%H:%M')} ({dur} min)")
-        else: st.write("✅ Aucune interruption réelle détectée.")
-    else: st.write("✅ Aucune interruption détectée.")
+        for _, p in flux_clean.iterrows():
+            d = pd.to_datetime(p['start_time']).astimezone(paris_tz)
+            if pd.isna(p['end_time']): st.error(f"🔴 {p['ride_name']} >> depuis {d.strftime('%H:%M')}")
+            else:
+                f = pd.to_datetime(p['end_time']).astimezone(paris_tz)
+                st.success(f"✅ {p['ride_name']} >> fini à {f.strftime('%H:%M')}")
 
-else: st.warning("📭 Aucune donnée live disponible.")
-
-# --- GESTION POPUP ---
-if df_live.empty and "popup_shown" not in st.session_state:
-    st.session_state.popup_shown = True
-    popup_alerte_donnees()
-elif not df_live.empty:
-    if "popup_shown" in st.session_state: del st.session_state.popup_shown
+else: 
+    st.warning("📭 Aucune donnée live disponible.")
+    if "popup_shown" not in st.session_state:
+        st.session_state.popup_shown = True
 
 st.divider()
 st.caption("Disney Wait Time Tool | Real-time Dashboard")
