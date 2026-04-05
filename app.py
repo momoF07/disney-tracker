@@ -79,13 +79,31 @@ def popup_alerte_donnees():
 heure_reset = maintenant.replace(hour=2, minute=30, second=0, microsecond=0)
 debut_journee = heure_reset if maintenant >= heure_reset else heure_reset - timedelta(days=1)
 
-# --- SECTION BOUTONS ---
-col_btn1, col_btn2 = st.columns(2)
-with col_btn1:
-    if st.button('🔄 Rafraîchir l\'Affichage'): st.rerun()
-with col_btn2:
-    if st.button('🚀 Forcer un Relevé Robot'):
-        if trigger_github_action() == 204: st.toast("🚀 Robot lancé !"); time.sleep(45); st.rerun()
+# --- SECTION ACTIONS & STATUS ---
+# On crée un container avec bordure pour isoler les contrôles
+with st.container(border=True):
+    c1, c2 = st.columns([1, 1], gap="medium")
+    
+    with c1:
+        st.markdown("**🔄 Interface**")
+        if st.button('Rafraîchir la page', use_container_width=True, help="Relancer le script Streamlit"):
+            st.rerun()
+            
+    with c2:
+        st.markdown("**🤖 Pilotage Robot**")
+        btn_robot = st.button('Lancer un relevé 🚀', use_container_width=True, type="primary")
+        if btn_robot:
+            status_code = trigger_github_action()
+            if status_code == 204:
+                with st.spinner("Le robot Disney est en route..."):
+                    st.toast("✅ Requête acceptée par GitHub !")
+                    time.sleep(30) # Un peu moins que 45 pour la réactivité
+                    st.rerun()
+            else:
+                st.error("Échec de connexion")
+
+# Petite info-bulle discrète sous les boutons
+st.caption(f"🕒 Dernière donnée : **{derniere_maj}** | Prochain relevé auto dans ~60s")
 
 # --- RÉCUPÉRATION DES DONNÉES ---
 try:
