@@ -306,46 +306,51 @@ if not df_live.empty:
                         st.markdown('<div style="background-color: rgba(46, 204, 113, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(46, 204, 113, 0.5); margin-bottom: 8px;"><span style="color: #2ecc71; font-weight: 600; font-size: 15px;">🟢 OUVERT</span></div>', unsafe_allow_html=True)
                         c2.metric("Attente", f"{int(current['wait_time'])} min")
 
-                with st.expander("📜 Historique d'état"):
+                                with st.expander("📜 Historique d'état"):
                     h_pannes = [p for p in all_pannes if p['ride'] == ride]
                     if h_pannes:
                         pannes_triees = sorted(h_pannes, key=lambda x: x['debut'], reverse=True)
                         for idx, p in enumerate(pannes_triees):
                             h_debut = p['debut'].strftime('%H:%M')
                             
-                            # --- 1. LOGIQUE DE FERMETURE DÉFINITIVE ---
-                            if idx == 0 and est_definitivement_ferme:
-                                if p['statut'] == "EN_COURS":
-                                    st.write(f"• 🔴 :red[**Fermé à {heure_fermeture_constatee}**]")
-                                    st.caption(f"• 🟠 :orange[**En panne** depuis {h_debut}]")
-                                else:
-                                    st.write(f"• 🟢 :green[**Opérationnel** jusqu'à la fermeture]")
-                                    st.caption(f"• 🔴 :red[**Fermé à {heure_fermeture_constatee}**]")
-                                    st.caption(f"• 🕒 Dernier incident à {h_debut}")
-                            
-                            # --- 2. LOGIQUE PANNE EN COURS (Parc ouvert) ---
-                            elif idx == 0 and p['statut'] == "EN_COURS":
-                                st.write(f"• 🟠 :orange[**En cours** depuis {h_debut}]")
-                                st.caption("• ⚠️ Incident technique signalé")
-                            
-                            # --- 3. LOGIQUE PANNES PASSÉES & RÉSOLUES ---
-                            elif p['statut'] == "TERMINEE":
-                                h_fin = p['fin'].strftime('%H:%M')
-                                st.write(f"• 🟢 :green[**Opérationnel à {h_fin}**]")
-                                st.caption(f"• 🔴 :red[**En panne** à {h_debut}] ({p['duree']} min)")
+                            # --- 1. ÉVÉNEMENT LE PLUS RÉCENT (ACTUEL) : AFFICHAGE EN WRITE ---
+                            if idx == 0:
+                                if est_definitivement_ferme:
+                                    if p['statut'] == "EN_COURS":
+                                        st.write(f"• 🔴 :red[**Fermé à {heure_fermeture_constatee}**]")
+                                        st.caption(f"• 🟠 :orange[**En panne** depuis {h_debut}]")
+                                    else:
+                                        st.write(f"• 🟢 :green[**Opérationnel jusqu'à la fermeture**]")
+                                        st.caption(f"• 🔴 :red[**Fermé à {heure_fermeture_constatee}**] | 🕒 Dernier incident à {h_debut}")
+                                
+                                elif p['statut'] == "EN_COURS":
+                                    st.write(f"• 🟠 :orange[**En cours** depuis {h_debut}]")
+                                    st.caption("• ⚠️ Incident technique signalé")
+                                
+                                elif p['statut'] == "TERMINEE":
+                                    # Si la dernière panne est finie et le parc est ouvert
+                                    st.write(f"• 🟢 :green[**Opérationnel** depuis {p['fin'].strftime('%H:%M')}]")
+                                    st.caption(f"• 🔴 :red[**En panne** à {h_debut}] ({p['duree']} min)")
+
+                            # --- 2. ÉVÉNEMENTS ANCIENS : TOUT EN CAPTION DANS UN BLOC ENSEMBLE ---
+                            else:
+                                if p['statut'] == "TERMINEE":
+                                    h_fin = p['fin'].strftime('%H:%M')
+                                    # Duo Panne/Ope sur une ligne discrète
+                                    st.caption(f"• 🟢 :green[Opérationnel à {h_fin}] ({p['duree']} min) | 🔴 :red[En panne à {h_debut}]")
                                     
-                            # Filet de séparation entre les blocs de pannes
-                            if len(pannes_triees) > 1 and idx < len(pannes_triees) - 1: 
+                            # Filet de séparation uniquement sous l'élément principal
+                            if idx == 0 and len(pannes_triees) > 1: 
                                 st.markdown("<hr style='margin: 5px 0px 5px 0px; opacity: 0.3;'>", unsafe_allow_html=True)
                     
                     else: 
-                        # --- 4. AUCUN INCIDENT SIGNALÉ ---
+                        # --- 3. AUCUN INCIDENT SIGNALÉ ---
                         if est_definitivement_ferme:
                             st.write(f"• 🔴 :red[**Fermé à {heure_fermeture_constatee}**]")
                             st.caption("• ✅ Aucun incident signalé aujourd'hui")
                         else:
                             st.write("✅ **Aucun incident signalé**")
-            st.divider()
+    st.divider()
 
 st.subheader("🚨 Dernières interruptions")
 if not df_pannes_brutes.empty:
