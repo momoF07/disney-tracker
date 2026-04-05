@@ -292,7 +292,7 @@ if not df_raw.empty:
                 if not ride_df.empty:
                     last = ride_df.iloc[0]
                     
-                    # NOUVELLE LOGIQUE : On utilise la table daily_status
+                    # On utilise la table daily_status
                     a_deja_ouvert_ce_ride = status_map.get(ride, False)
                     
                     # On cherche si une panne est déclarée "EN_COURS" dans logs_101
@@ -307,7 +307,7 @@ if not df_raw.empty:
                         c2.metric("Attente", "- - -")
                     
                     # 2. PRIORITÉ SECONDAIRE : L'ATTRACTION EST EN PANNE (101)
-                    # Si une panne est ouverte dans logs_101, on affiche INTERRUPTION
+                    # On affiche interruption SEULEMENT SI elle a déjà ouvert aujourd'hui
                     elif panne_actuelle or (a_deja_ouvert_ce_ride and not last['is_open']):
                         c1.warning("🔴 INTERRUPTION / 101")
                         if panne_actuelle:
@@ -318,7 +318,8 @@ if not df_raw.empty:
                         c2.metric("Attente", "- - -")
 
                     # 3. CAS CLASSIQUE : EN ATTENTE D'OUVERTURE (PAS DE 101 DÉTECTÉ)
-                    elif (heure_actuelle < PARK_OPENING) or (not a_deja_ouvert_ce_ride):
+                    # Si a_deja_ouvert_ce_ride est False, on tombe forcément ici
+                    elif not a_deja_ouvert_ce_ride or (heure_actuelle < PARK_OPENING):
                         c1.info("🕒 FERMÉ")
                         c2.metric("Attente", "- - -")
                         st.caption("⏳ En attente de l'ouverture officielle.")
