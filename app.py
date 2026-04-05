@@ -292,23 +292,32 @@ if not df_raw.empty:
                 if not ride_df.empty:
                     last = ride_df.iloc[0]
                     
-                    # On utilise la table daily_status
+                    # 1. RÉCUPÉRATION DU STATUT RÉEL (Table daily_status)
                     a_deja_ouvert_ce_ride = status_map.get(ride, False)
                     
-                    # On cherche si une panne est déclarée "EN_COURS" dans logs_101
+                    # 2. VÉRIFICATION DES PANNES (Table logs_101)
                     panne_actuelle = next((p for p in all_pannes if p['ride'] == ride and p['statut'] == "EN_COURS"), None)
                     
                     st.subheader(f"{get_emoji(ride)} {ride}")
                     c1, c2 = st.columns(2)
                     
-                    # 1. PRIORITÉ ABSOLUE : LE PARC EST FERMÉ (NUIT)
+                    # --- HIÉRARCHIE DES ÉTATS ---
+
+                    # ÉTAT A : LE PARC EST FERMÉ (NUIT)
                     if parc_actuellement_ferme:
                         c1.error("🔴 PARC FERMÉ")
                         c2.metric("Attente", "- - -")
                     
-                    # 2. PRIORITÉ SECONDAIRE : L'ATTRACTION EST EN PANNE (101)
-                    # On affiche interruption SEULEMENT SI elle a déjà ouvert aujourd'hui
-                    elif panne_actuelle or (a_deja_ouvert_ce_ride and not last['is_open']):
+                    # ÉTAT B : PAS ENCORE OUVERT (Priorité sur l'interruption)
+                    # Si has_opened_today est False, on ne parle jamais de 101
+                    elif not a_deja_ouvert_ce_ride:
+                        c1.info("🕒 FERMÉ")
+                        c2.metric("Attente", "- - -")
+                        st.caption("⏳ En attente de l'ouverture officielle.")
+
+                    # ÉTAT C : INTERRUPTION / 101 
+                    # (Seulement si l'attraction a déjà été ouverte aujourd'hui)
+                    elif panne_actuelle or not last['is_open']:
                         c1.warning("🔴 INTERRUPTION / 101")
                         if panne_actuelle:
                             min_inc = int((maintenant - panne_actuelle['debut']).total_seconds() / 60)
@@ -316,19 +325,13 @@ if not df_raw.empty:
                         else:
                             st.caption("⚠️ Attraction momentanément indisponible")
                         c2.metric("Attente", "- - -")
-
-                    # 3. CAS CLASSIQUE : EN ATTENTE D'OUVERTURE (PAS DE 101 DÉTECTÉ)
-                    # Si a_deja_ouvert_ce_ride est False, on tombe forcément ici
-                    elif not a_deja_ouvert_ce_ride or (heure_actuelle < PARK_OPENING):
-                        c1.info("🕒 FERMÉ")
-                        c2.metric("Attente", "- - -")
-                        st.caption("⏳ En attente de l'ouverture officielle.")
                     
-                    # 4. L'ATTRACTION EST OUVERTE
+                    # ÉTAT D : OUVERT
                     else:
                         c1.success("🟢 OUVERT")
                         c2.metric("Attente", f"{int(last['wait_time'])} min")
                     
+                    # --- HISTORIQUE (Inchangé) ---
                     with st.expander("📜 Historique des pannes"):
                         hist_pannes = [p for p in all_pannes if p['ride'] == ride and p['statut'] == "TERMINEE"]
                         if hist_pannes:
