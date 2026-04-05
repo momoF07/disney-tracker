@@ -232,11 +232,13 @@ if not df_live.empty:
                             
                             if p['statut'] == "EN_COURS":
                                 # Affichage distinct pour la panne actuelle
-                                st.write(f"🟠 :orange[**En cours** : Depuis {heure_debut}]")
+                                st.write(f"• 🟠 :orange[**En cours** : Depuis {heure_debut}]")
                             else:
                                 # Affichage classique pour les pannes passées
                                 heure_fin = p['fin'].strftime('%H:%M')
-                                st.markdown(f"<span style='font-size: 12px;'>• De {heure_debut} à {heure_fin}</span>", unsafe_allow_html=True)
+                                st.caption(f"• 🟢 :green[De {p['debut'].strftime('%H:%M')} à {p['fin'].strftime('%H:%M')} ({p['duree']} min)]")
+
+
 
                     else: 
                         st.write("✅ Aucune panne enregistrée aujourd'hui.")
