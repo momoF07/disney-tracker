@@ -306,46 +306,45 @@ if not df_live.empty:
                     else:
                         st.markdown('<div style="background-color: rgba(46, 204, 113, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(46, 204, 113, 0.5); margin-bottom: 8px;"><span style="color: #2ecc71; font-weight: 600; font-size: 15px;">🟢 OUVERT</span></div>', unsafe_allow_html=True)
                         c2.metric("Attente", f"{int(current['wait_time'])} min")
-                    with st.expander("📜 Historique d'état"):
-                        h_pannes = [p for p in all_pannes if p['ride'] == ride]
-                        if h_pannes:
-                            pannes_triees = sorted(h_pannes, key=lambda x: x['debut'], reverse=True)
-                            for idx, p in enumerate(pannes_triees):
-                                h_debut = p['debut'].strftime('%H:%M')
-                                
-                                # --- 1. LOGIQUE DE FERMETURE DÉFINITIVE (Dernier état connu) ---
-                                if idx == 0 and est_definitivement_ferme:
-                                    # Cas A : Elle a fermé alors qu'elle était encore en panne
-                                    if p['statut'] == "EN_COURS":
-                                        st.write(f"• 🔴 :red[**Fermé à {heure_fermeture_constatee}**]")
-                                        st.caption(f"• 🟠 :orange[**En panne** depuis {h_debut}]")
-                                    # Cas B : Elle a fermé normalement (pas de panne en cours)
-                                    else:
-                                        st.write(f"• 🟢 :green[**Opérationnel** jusqu'à la fermeture ({heure_fermeture_constatee})]")
-                                        st.caption(f"• 🔴 :red[**En panne** à {h_debut}]")
-                                
-                                # --- 2. LOGIQUE PANNE EN COURS (Parc ouvert) ---
-                                elif idx == 0 and p['statut'] == "EN_COURS":
-                                    st.write(f"• 🟠 :orange[**En cours** depuis {h_debut}]")
-                                    st.caption("• ⚠️ Incident technique signalé")
-                                
-                                # --- 3. LOGIQUE PANNES PASSÉES & RÉSOLUES ---
-                                elif p['statut'] == "TERMINEE":
-                                    st.write(f"• 🟢 :green[**Opérationnel** à {p['fin'].strftime('%H:%M')} ({p['duree']} min)]")
-                                    st.caption(f"• 🔴 :red[**En panne** à {h_debut}]")
-                                        
-                                # Filet de séparation entre les entrées de l'historique
-                                if len(pannes_triees) > 1 and idx < len(pannes_triees) - 1: 
-                                    st.markdown("<hr style='margin: -10px 0px 10px 0px; opacity: 0.5;'>", unsafe_allow_html=True)
-                        
-                        else: 
-                            # --- 4. AUCUN INCIDENT SIGNALÉ ---
-                            if est_definitivement_ferme:
-                                st.write(f"• 🔴 :red[**Fermé à {heure_fermeture_constatee}**]")
-                                st.caption("• ✅ Aucun incident signalé aujourd'hui")
-                            else:
-                                st.write("✅ **Aucun incident signalé**")
-    
+                with st.expander("📜 Historique d'état"):
+                    h_pannes = [p for p in all_pannes if p['ride'] == ride]
+                    if h_pannes:
+                        pannes_triees = sorted(h_pannes, key=lambda x: x['debut'], reverse=True)
+                        for idx, p in enumerate(pannes_triees):
+                            h_debut = p['debut'].strftime('%H:%M')
+                            
+                            # --- 1. LOGIQUE DE FERMETURE DÉFINITIVE (Dernier état connu) ---
+                            if idx == 0 and est_definitivement_ferme:
+                                if p['statut'] == "EN_COURS":
+                                    st.write(f"• 🔴 :red[**Fermé à {heure_fermeture_constatee}**]")
+                                    st.caption(f"• 🟠 :orange[**En panne** depuis {h_debut}]")
+                                else:
+                                    st.write(f"• 🟢 :green[**Opérationnel jusqu'à la fermeture**]")
+                                    st.caption(f"• 🔴 :red[**Fermé à {heure_fermeture_constatee}**] | 🕒 Dernier incident à {h_debut}")
+                            
+                            # --- 2. LOGIQUE PANNE EN COURS (Parc ouvert) ---
+                            elif idx == 0 and p['statut'] == "EN_COURS":
+                                st.write(f"• 🟠 :orange[**En cours** depuis {h_debut}]")
+                                st.caption("• ⚠️ Incident technique en cours de résolution")
+                            
+                            # --- 3. LOGIQUE PANNES PASSÉES & RÉSOLUES (Groupées en Caption) ---
+                            elif p['statut'] == "TERMINEE":
+                                # On met tout dans la caption pour un look plus compact
+                                h_fin = p['fin'].strftime('%H:%M')
+                                st.caption(f"• 🟢 :green[**Opérationnel à {h_fin}**] ({p['duree']} min) | 🔴 :red[**En panne à {h_debut}**]")
+                                    
+                            # Filet de séparation discret
+                            if len(pannes_triees) > 1 and idx < len(pannes_triees) - 1: 
+                                st.markdown("<hr style='margin: 5px 0px 5px 0px; opacity: 0.3;'>", unsafe_allow_html=True)
+                    
+                    else: 
+                        # --- 4. AUCUN INCIDENT SIGNALÉ ---
+                        if est_definitivement_ferme:
+                            st.write(f"• 🔴 :red[**Fermé à {heure_fermeture_constatee}**]")
+                            st.caption("• ✅ Aucun incident signalé aujourd'hui")
+                        else:
+                            st.write("✅ **Aucun incident signalé**")
+
                     st.divider()
 
 st.subheader("🚨 Dernières interruptions")
