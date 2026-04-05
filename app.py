@@ -270,4 +270,18 @@ if not df_live.empty:
                             st.write("✅ Aucun incident signalé.")
                 st.divider()
 
-# (Reste du code Dernières interruptions inchangé...)
+st.subheader("🚨 Dernières interruptions")
+    if not df_pannes.empty:
+        df_pannes['start_time_dt'] = pd.to_datetime(df_pannes['start_time'])
+        flux_clean = df_pannes[df_pannes['start_time_dt'] >= debut_journee].sort_values('start_time', ascending=False).head(5)
+        for _, p in flux_clean.iterrows():
+            d = pd.to_datetime(p['start_time']).astimezone(paris_tz)
+            if pd.isna(p['end_time']): st.error(f"🔴 {p['ride_name']} >> depuis {d.strftime('%H:%M')}")
+            else:
+                f = pd.to_datetime(p['end_time']).astimezone(paris_tz)
+                st.success(f"✅ {p['ride_name']} >> fini à {f.strftime('%H:%M')}")
+else: 
+    st.warning("📭 Aucune donnée live disponible.")
+
+st.divider()
+st.caption("Disney Wait Time Tool | Real-time Dashboard")
