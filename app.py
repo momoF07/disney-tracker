@@ -116,7 +116,7 @@ with col_btn2:
 st.markdown(
     f"""
     <div style="background-color: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 10px; border-left: 5px solid #4facfe; margin-bottom: 20px;">
-        <span style="font-size: 14px; color: #94a3b8;">🕒 Donnée API : <b>{derniere_maj}</b> | Sync : <b>{st.session_state.last_refresh}</b></span>
+        <span style="font-size: 14px; color: #94a3b8;">🕒 Donnée API : <b>{derniere_maj}</b> | Synchro Refresh : <b>{st.session_state.last_refresh}</b></span>
     </div>
     """, 
     unsafe_allow_html=True
