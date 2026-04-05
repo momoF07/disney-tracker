@@ -98,7 +98,6 @@ if not df_live.empty and not df_pannes_brutes.empty:
         d_paris = pd.to_datetime(row['start_time']).astimezone(paris_tz)
         f_paris = pd.to_datetime(row['end_time']).astimezone(paris_tz) if pd.notna(row['end_time']) else None
         
-        # Calcul heure fermeture pour le filtre 30min
         is_daw = any(attr.lower() in r_name.lower() for attr in RIDES_DAW)
         h_f = DAW_CLOSING if is_daw else DLP_CLOSING
         if r_name in ANTICIPATED_CLOSINGS:
@@ -108,7 +107,6 @@ if not df_live.empty and not df_pannes_brutes.empty:
         
         h_seuil = (datetime.combine(datetime.today(), h_f) - timedelta(minutes=30)).time()
         
-        # On ignore la panne si elle commence après le seuil
         if d_paris.time() >= h_seuil:
             continue
             
@@ -248,14 +246,15 @@ if selected_options:
                     st.write(f"• 🔴 :red[**Fermeture à {h_f_theorique.strftime('%H:%M')}**]" if est_definitivement_ferme else "✅ Aucun incident signalé.")
             st.divider()
 
-# --- BLOC EXTERNE (Indentation corrigée) ---
+# --- BLOC EXTERNE (SANS INDENTATION) ---
 st.subheader("🚨 Dernières interruptions")
 if not df_pannes_brutes.empty:
     df_pannes_brutes['start_time_dt'] = pd.to_datetime(df_pannes_brutes['start_time'])
     flux = df_pannes_brutes[df_pannes_brutes['start_time_dt'] >= debut_journee].sort_values('start_time', ascending=False).head(5)
     for _, p in flux.iterrows():
         d_p = pd.to_datetime(p['start_time']).astimezone(paris_tz)
-        if pd.isna(p['end_time']): st.error(f"🔴 {p['ride_name']} >> depuis {d_p.strftime('%H:%M')}")
+        if pd.isna(p['end_time']):
+            st.error(f"🔴 {p['ride_name']} >> depuis {d_p.strftime('%H:%M')}")
         else:
             f_p = pd.to_datetime(p['end_time']).astimezone(paris_tz)
             st.success(f"✅ {p['ride_name']} >> fini à {f_p.strftime('%H:%M')}")
