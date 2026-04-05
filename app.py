@@ -284,53 +284,45 @@ if not df_raw.empty:
         else:
             parc_actuellement_ferme = False
         
-        # --- AFFICHAGE DES ATTRACTIONS ---
+       # --- AFFICHAGE DES ATTRACTIONS ---
         if selected_options:
             st.divider()
             for ride in selected_options:
                 ride_df = df[df['ride_name'] == ride].sort_values('created_at', ascending=False)
-                if not ride_df.empty:
+                
+                # Statut d'ouverture (Table daily_status)
+                a_deja_ouvert_ce_ride = status_map.get(ride, False)
+                # Panne en cours (Table logs_101)
+                panne_actuelle = next((p for p in all_pannes if p['ride'] == ride and p['statut'] == "EN_COURS"), None)
+                
+                st.subheader(f"{get_emoji(ride)} {ride}")
+                c1, c2 = st.columns(2)
+        
+                # ÉTAT 1 : PARC FERMÉ (NUIT)
+                if parc_actuellement_ferme:
+                    c1.error("🔴 PARC FERMÉ")
+                    c2.metric("Attente", "- - -")
+        
+                # ÉTAT 2 : PAS ENCORE OUVERT (Selon daily_status)
+                elif not a_deja_ouvert_ce_ride:
+                    c1.info("🕒 FERMÉ")
+                    c2.metric("Attente", "- - -")
+                    st.caption("⏳ En attente de l'ouverture officielle.")
+        
+                # ÉTAT 3 : INTERRUPTION / 101 (Seulement si déjà ouvert aujourd'hui)
+                elif panne_actuelle or (not ride_df.empty and not ride_df.iloc[0]['is_open']):
+                    c1.warning("🔴 INTERRUPTION / 101")
+                    if panne_actuelle:
+                        min_inc = int((maintenant - panne_actuelle['debut']).total_seconds() / 60)
+                        st.caption(f"⚠️ En panne depuis **{max(0, min_inc)} min**")
+                    c2.metric("Attente", "- - -")
+        
+                # ÉTAT 4 : OUVERT
+                elif not ride_df.empty:
                     last = ride_df.iloc[0]
-                    
-                    # 1. RÉCUPÉRATION DU STATUT RÉEL (Table daily_status)
-                    a_deja_ouvert_ce_ride = status_map.get(ride, False)
-                    
-                    # 2. VÉRIFICATION DES PANNES (Table logs_101)
-                    panne_actuelle = next((p for p in all_pannes if p['ride'] == ride and p['statut'] == "EN_COURS"), None)
-                    
-                    st.subheader(f"{get_emoji(ride)} {ride}")
-                    c1, c2 = st.columns(2)
-                    
-                    # --- HIÉRARCHIE DES ÉTATS ---
+                    c1.success("🟢 OUVERT")
+                    c2.metric("Attente", f"{int(last['wait_time'])} min")
 
-                    # ÉTAT A : LE PARC EST FERMÉ (NUIT)
-                    if parc_actuellement_ferme:
-                        c1.error("🔴 PARC FERMÉ")
-                        c2.metric("Attente", "- - -")
-                    
-                    # ÉTAT B : PAS ENCORE OUVERT (Priorité sur l'interruption)
-                    # Si has_opened_today est False, on ne parle jamais de 101
-                    elif not a_deja_ouvert_ce_ride:
-                        c1.info("🕒 FERMÉ")
-                        c2.metric("Attente", "- - -")
-                        st.caption("⏳ En attente de l'ouverture officielle.")
-
-                    # ÉTAT C : INTERRUPTION / 101 
-                    # (Seulement si l'attraction a déjà été ouverte aujourd'hui)
-                    elif panne_actuelle or not last['is_open']:
-                        c1.warning("🔴 INTERRUPTION / 101")
-                        if panne_actuelle:
-                            min_inc = int((maintenant - panne_actuelle['debut']).total_seconds() / 60)
-                            st.caption(f"⚠️ En panne depuis **{max(0, min_inc)} min**")
-                        else:
-                            st.caption("⚠️ Attraction momentanément indisponible")
-                        c2.metric("Attente", "- - -")
-                    
-                    # ÉTAT D : OUVERT
-                    else:
-                        c1.success("🟢 OUVERT")
-                        c2.metric("Attente", f"{int(last['wait_time'])} min")
-                    
                     # --- HISTORIQUE (Inchangé) ---
                     with st.expander("📜 Historique des pannes"):
                         hist_pannes = [p for p in all_pannes if p['ride'] == ride and p['statut'] == "TERMINEE"]
