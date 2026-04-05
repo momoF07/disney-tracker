@@ -71,7 +71,7 @@ debut_journee = heure_reset if maintenant >= heure_reset else heure_reset - time
 
 derniere_maj = "--:--:--"
 df_live = pd.DataFrame()
-df_pannes = pd.DataFrame()
+df_pannes_brutes = pd.DataFrame()
 status_map = {}
 all_pannes = []
 
@@ -80,7 +80,7 @@ try:
     df_live = pd.DataFrame(resp_live.data)
     
     resp_101 = supabase.table("logs_101").select("*").gte("start_time", debut_journee.isoformat()).execute()
-    df_pannes = pd.DataFrame(resp_101.data)
+    df_pannes_brutes = pd.DataFrame(resp_101.data)
 
     resp_status = supabase.table("daily_status").select("*").execute()
     status_map = {item['ride_name']: item['has_opened_today'] for item in resp_status.data} if resp_status.data else {}
@@ -91,43 +91,37 @@ try:
 except Exception as e:
     st.error(f"Erreur Supabase : {e}")
 
-# --- TRAITEMENT DES PANNES (AVEC FILTRE FIN DE JOURNÉE) ---
-if not df_live.empty:
-    if not df_pannes.empty:
-        for _, row in df_pannes.iterrows():
-            ride_n = row['ride_name']
-            d_utc = pd.to_datetime(row['start_time'])
-            d_paris = d_utc.astimezone(paris_tz)
-            f_paris = pd.to_datetime(row['end_time']).astimezone(paris_tz) if pd.notna(row['end_time']) else None
+# --- TRAITEMENT DES PANNES (FILTRE FIN DE JOURNÉE) ---
+if not df_live.empty and not df_pannes_brutes.empty:
+    for _, row in df_pannes_brutes.iterrows():
+        r_name = row['ride_name']
+        d_paris = pd.to_datetime(row['start_time']).astimezone(paris_tz)
+        f_paris = pd.to_datetime(row['end_time']).astimezone(paris_tz) if pd.notna(row['end_time']) else None
+        
+        # Calcul heure fermeture pour le filtre 30min
+        is_daw = any(attr.lower() in r_name.lower() for attr in RIDES_DAW)
+        h_f = DAW_CLOSING if is_daw else DLP_CLOSING
+        if r_name in ANTICIPATED_CLOSINGS:
+            h_f = ANTICIPATED_CLOSINGS[r_name]
+        elif r_name in FANTASYLAND_EARLY_CLOSE:
+            h_f = (datetime.combine(datetime.today(), DLP_CLOSING) - timedelta(minutes=65)).time()
+        
+        h_seuil = (datetime.combine(datetime.today(), h_f) - timedelta(minutes=30)).time()
+        
+        # On ignore la panne si elle commence après le seuil
+        if d_paris.time() >= h_seuil:
+            continue
             
-            # --- CALCUL DE L'HEURE DE FERMETURE POUR LE FILTRE ---
-            is_daw = any(attr.lower() in ride_n.lower() for attr in RIDES_DAW)
-            h_ferme = DAW_CLOSING if is_daw else DLP_CLOSING
-            if ride_n in ANTICIPATED_CLOSINGS:
-                h_ferme = ANTICIPATED_CLOSINGS[ride_n]
-            elif ride_n in FANTASYLAND_EARLY_CLOSE:
-                full_dt = datetime.combine(datetime.today(), DLP_CLOSING)
-                h_ferme = (full_dt - timedelta(minutes=65)).time()
-            
-            # Seuil de tolérance : 30 minutes avant la fermeture
-            dt_ferme = datetime.combine(datetime.today(), h_ferme)
-            h_seuil = (dt_ferme - timedelta(minutes=30)).time()
-            
-            # RÈGLE : Si la panne commence dans les 30 min avant ou après, on l'oublie
-            if d_paris.time() >= h_seuil:
-                continue
-                
-            all_pannes.append({
-                "ride": ride_n, "debut": d_paris, "fin": f_paris,
-                "duree": int((f_paris - d_paris).total_seconds() / 60) if f_paris else 0,
-                "statut": "EN_COURS" if f_paris is None else "TERMINEE"
-            })
+        all_pannes.append({
+            "ride": r_name, "debut": d_paris, "fin": f_paris,
+            "duree": int((f_paris - d_paris).total_seconds() / 60) if f_paris else 0,
+            "statut": "EN_COURS" if f_paris is None else "TERMINEE"
+        })
 
-    # --- FILTRES ET POPOVER ---
-    st.write("---")
-    col_sc, col_help = st.columns([0.85, 0.15])
-    
-    with col_help:
+# --- FILTRES ET POPOVER ---
+st.write("---")
+col_sc, col_help = st.columns([0.85, 0.15])
+with col_help:
         with st.popover("❓"):
             st.markdown("""
             <style>
@@ -179,108 +173,93 @@ if not df_live.empty:
 
     with col_sc:
         sc = st.text_input("Raccourci...", placeholder="ex: *FANTASY", label_visibility="collapsed")
-    
-    current_selection = st.query_params.get_all("fav")
-    if sc.startswith("*"):
-        shortcut_selection = get_rides_by_zone(sc, sorted(df_live['ride_name'].unique()), all_pannes)
-        if shortcut_selection: current_selection = shortcut_selection
 
-    valid_default = [item for item in current_selection if item in sorted(df_live['ride_name'].unique())]
-    selected_options = st.multiselect("Attractions suivies :", options=sorted(df_live['ride_name'].unique()), default=valid_default, format_func=lambda x: f"{get_emoji(x)} {x}")
-    st.query_params["fav"] = selected_options
-    
-    # --- AFFICHAGE DES ATTRACTIONS ---
-    if selected_options:
-        st.divider()
-        for ride in selected_options:
-            ride_data = df_live[df_live['ride_name'] == ride]
-            if not ride_data.empty:
-                current = ride_data.iloc[0]
-                a_deja_ouvert = status_map.get(ride, False)
-                panne_actuelle = next((p for p in all_pannes if p['ride'] == ride and p['statut'] == "EN_COURS"), None)
-                
-                # --- 1. CALCUL DE L'HEURE DE FERMETURE THÉORIQUE ---
-                is_daw_ride = any(attr.lower() in ride.lower() for attr in RIDES_DAW)
-                heure_fermeture_theorique = DAW_CLOSING if is_daw_ride else DLP_CLOSING
-                
-                if ride in ANTICIPATED_CLOSINGS:
-                    heure_fermeture_theorique = ANTICIPATED_CLOSINGS[ride]
-                elif ride in FANTASYLAND_EARLY_CLOSE:
-                    full_dt = datetime.combine(datetime.today(), DLP_CLOSING)
-                    heure_fermeture_theorique = (full_dt - timedelta(minutes=65)).time()
+current_selection = st.query_params.get_all("fav")
+if sc.startswith("*"):
+    shortcut_selection = get_rides_by_zone(sc, sorted(df_live['ride_name'].unique()), all_pannes)
+    if shortcut_selection: current_selection = shortcut_selection
 
-                # --- 2. DÉTERMINATION DE L'ÉTAT (AVEC TOLÉRANCE 30MIN) ---
-                is_currently_open = current['is_open']
-                full_dt_ferme = datetime.combine(datetime.today(), heure_fermeture_theorique)
-                heure_tolerance_panne = (full_dt_ferme - timedelta(minutes=30)).time()
+valid_default = [item for item in current_selection if item in sorted(df_live['ride_name'].unique())]
+selected_options = st.multiselect("Attractions suivies :", options=sorted(df_live['ride_name'].unique()), default=valid_default, format_func=lambda x: f"{get_emoji(x)} {x}")
+st.query_params["fav"] = selected_options
 
-                est_apres_heure_limite = heure_actuelle >= heure_fermeture_theorique
-                est_dans_zone_ferme = heure_actuelle >= heure_tolerance_panne
-                
-                # RÈGLE : Fermé déf. si (Zone 30min OU après heure limite) ET is_open=False
-                est_definitivement_ferme = (est_dans_zone_ferme or est_apres_heure_limite) and not is_currently_open
-                est_en_interruption = not est_dans_zone_ferme and not is_currently_open
-                
-                if heure_actuelle < PARK_OPENING or heure_actuelle >= DLP_CLOSING:
-                    est_definitivement_ferme = True
+# --- AFFICHAGE DES ATTRACTIONS ---
+if selected_options:
+    st.divider()
+    for ride in selected_options:
+        ride_data = df_live[df_live['ride_name'] == ride]
+        if not ride_data.empty:
+            current = ride_data.iloc[0]
+            a_deja_ouvert = status_map.get(ride, False)
+            panne_actuelle = next((p for p in all_pannes if p['ride'] == ride and p['statut'] == "EN_COURS"), None)
+            
+            is_daw_ride = any(attr.lower() in ride.lower() for attr in RIDES_DAW)
+            h_f_theorique = DAW_CLOSING if is_daw_ride else DLP_CLOSING
+            if ride in ANTICIPATED_CLOSINGS:
+                h_f_theorique = ANTICIPATED_CLOSINGS[ride]
+            elif ride in FANTASYLAND_EARLY_CLOSE:
+                h_f_theorique = (datetime.combine(datetime.today(), DLP_CLOSING) - timedelta(minutes=65)).time()
 
-                st.subheader(f"{get_emoji(ride)} {ride}")
-                c1, c2 = st.columns(2)
-                
-                with c1:
+            h_tolerance = (datetime.combine(datetime.today(), h_f_theorique) - timedelta(minutes=30)).time()
+            is_open_api = current['is_open']
+            
+            est_definitivement_ferme = (heure_actuelle >= h_tolerance or heure_actuelle >= h_f_theorique) and not is_open_api
+            est_en_interruption = heure_actuelle < h_tolerance and not is_open_api
+            
+            if heure_actuelle < PARK_OPENING or heure_actuelle >= DLP_CLOSING:
+                est_definitivement_ferme = True
+
+            st.subheader(f"{get_emoji(ride)} {ride}")
+            c1, c2 = st.columns(2)
+            
+            with c1:
+                if est_definitivement_ferme:
+                    st.markdown(f'<div style="background-color: rgba(255, 75, 75, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 75, 75, 0.5); margin-bottom: 8px;"><span style="color: #ff4b4b; font-weight: 600; font-size: 15px;">🔴 FERMÉ POUR LA JOURNÉE ({h_f_theorique.strftime("%H:%M")})</span></div>', unsafe_allow_html=True)
+                    c2.metric("Attente", "- - -")
+                elif not a_deja_ouvert:
+                    st.markdown('<div style="background-color: rgba(0, 123, 255, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(0, 123, 255, 0.5); margin-bottom: 8px;"><span style="color: #007bff; font-weight: 600; font-size: 15px;">🕒 FERMÉ (PAS ENCORE OUVERT)</span></div>', unsafe_allow_html=True)
+                    c2.metric("Attente", "- - -")
+                elif est_en_interruption:
+                    st.markdown('<div style="background-color: rgba(255, 165, 0, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 165, 0, 0.5); margin-bottom: 8px;"><span style="color: #FF8C00; font-weight: 600; font-size: 15px;">🟠 INTERRUPTION</span></div>', unsafe_allow_html=True)
+                    if panne_actuelle: st.caption(f"⚠️ Depuis {max(0, int((maintenant - panne_actuelle['debut']).total_seconds() / 60))} min")
+                    c2.metric("Attente", "- - -")
+                else:
+                    st.markdown('<div style="background-color: rgba(46, 204, 113, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(46, 204, 113, 0.5); margin-bottom: 8px;"><span style="color: #2ecc71; font-weight: 600; font-size: 15px;">🟢 OUVERT</span></div>', unsafe_allow_html=True)
+                    c2.metric("Attente", f"{int(current['wait_time'])} min")
+
+            with st.expander("📜 Historique d'état"):
+                h_p = [p for p in all_pannes if p['ride'] == ride]
+                if h_p:
+                    p_triees = sorted(h_p, key=lambda x: x['debut'], reverse=True)
                     if est_definitivement_ferme:
-                        st.markdown(f'<div style="display: flex; align-items: center; background-color: rgba(255, 75, 75, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 75, 75, 0.5); margin-bottom: 8px;"><span style="color: #ff4b4b; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">🔴 FERMÉ POUR LA JOURNÉE ({heure_fermeture_theorique.strftime("%H:%M")})</span></div>', unsafe_allow_html=True)
-                        c2.metric("Attente", "- - -")
-                    elif not a_deja_ouvert:
-                        st.markdown('<div style="display: flex; align-items: center; background-color: rgba(0, 123, 255, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(0, 123, 255, 0.5); margin-bottom: 8px;"><span style="color: #007bff; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">🕒 FERMÉ (PAS ENCORE OUVERT)</span></div>', unsafe_allow_html=True)
-                        c2.metric("Attente", "- - -")
-                    elif est_en_interruption:
-                        st.markdown('<div style="display: flex; align-items: center; background-color: rgba(255, 165, 0, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 165, 0, 0.5); margin-bottom: 8px;"><div class="mini-loader" style="border: 2px solid rgba(255, 165, 0, 0.2); border-top: 2px solid #FF8C00; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; margin-right: 12px; flex-shrink: 0;"></div><span style="color: #FF8C00; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">🟠 INTERRUPTION</span></div>', unsafe_allow_html=True)
-                        if panne_actuelle:
-                            delta = maintenant - panne_actuelle['debut']
-                            st.caption(f"⚠️ Depuis {max(0, int(delta.total_seconds() / 60))} min")
-                        c2.metric("Attente", "- - -")
-                    else:
-                        st.markdown('<div style="display: flex; align-items: center; background-color: rgba(46, 204, 113, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(46, 204, 113, 0.5); margin-bottom: 8px;"><span style="color: #2ecc71; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">🟢 OUVERT</span></div>', unsafe_allow_html=True)
-                        c2.metric("Attente", f"{int(current['wait_time'])} min")
-    
-                with st.expander("📜 Historique d'état"):
-                    h_pannes = [p for p in all_pannes if p['ride'] == ride]
-                    if h_pannes:
-                        pannes_triees = sorted(h_pannes, key=lambda x: x['debut'], reverse=True)
-                        if est_definitivement_ferme:
-                            last_p = pannes_triees[0]
-                            if last_p['statut'] == "EN_COURS":
-                                st.write(f"• 🔴 :red[**Fermeture à {heure_fermeture_theorique.strftime('%H:%M')}**]")
-                                st.caption(f"• 🟠 Panne non résolue (débutée à {last_p['debut'].strftime('%H:%M')})")
-                            else:
-                                st.write(f"• 🟢 :green[**Opérationnel** jusqu'à la fermeture]")
-                                st.caption(f"• ✅ Dernier cycle à {last_p['fin'].strftime('%H:%M')}")
+                        last = p_triees[0]
+                        if last['statut'] == "EN_COURS":
+                            st.write(f"• 🔴 :red[**Fermeture à {h_f_theorique.strftime('%H:%M')}**]")
+                            st.caption(f"• 🟠 Panne non résolue (débutée à {last['debut'].strftime('%H:%M')})")
                         else:
-                            for idx, p in enumerate(pannes_triees):
-                                if idx == 0 and p['statut'] == "EN_COURS":
-                                    st.write(f"• 🟠 :orange[**En cours** depuis {p['debut'].strftime('%H:%M')}]")
-                                elif p['statut'] == "TERMINEE":
-                                    st.write(f"• 🟢 :green[**Opérationnel** à {p['fin'].strftime('%H:%M')} ({p['duree']} min)]")
-                                    st.caption(f"• 🔴 :red[Panne à {p['debut'].strftime('%H:%M')}]")
+                            st.write(f"• 🟢 :green[**Opérationnel** jusqu'à la fermeture]")
                     else:
-                        if est_definitivement_ferme:
-                            st.write(f"• 🔴 :red[**Fermeture à {heure_fermeture_theorique.strftime('%H:%M')}**]")
-                        else:
-                            st.write("✅ Aucun incident signalé.")
-                st.divider()
+                        for idx, p in enumerate(p_triees):
+                            if idx == 0 and p['statut'] == "EN_COURS":
+                                st.write(f"• 🟠 :orange[**En cours** depuis {p['debut'].strftime('%H:%M')}]")
+                            elif p['statut'] == "TERMINEE":
+                                st.write(f"• 🟢 :green[**Opérationnel** à {p['fin'].strftime('%H:%M')} ({p['duree']} min)]")
+                else:
+                    st.write(f"• 🔴 :red[**Fermeture à {h_f_theorique.strftime('%H:%M')}**]" if est_definitivement_ferme else "✅ Aucun incident signalé.")
+            st.divider()
 
+# --- BLOC EXTERNE (Indentation corrigée) ---
 st.subheader("🚨 Dernières interruptions")
-    if not df_pannes.empty:
-        df_pannes['start_time_dt'] = pd.to_datetime(df_pannes['start_time'])
-        flux_clean = df_pannes[df_pannes['start_time_dt'] >= debut_journee].sort_values('start_time', ascending=False).head(5)
-        for _, p in flux_clean.iterrows():
-            d = pd.to_datetime(p['start_time']).astimezone(paris_tz)
-            if pd.isna(p['end_time']): st.error(f"🔴 {p['ride_name']} >> depuis {d.strftime('%H:%M')}")
-            else:
-                f = pd.to_datetime(p['end_time']).astimezone(paris_tz)
-                st.success(f"✅ {p['ride_name']} >> fini à {f.strftime('%H:%M')}")
-else: 
+if not df_pannes_brutes.empty:
+    df_pannes_brutes['start_time_dt'] = pd.to_datetime(df_pannes_brutes['start_time'])
+    flux = df_pannes_brutes[df_pannes_brutes['start_time_dt'] >= debut_journee].sort_values('start_time', ascending=False).head(5)
+    for _, p in flux.iterrows():
+        d_p = pd.to_datetime(p['start_time']).astimezone(paris_tz)
+        if pd.isna(p['end_time']): st.error(f"🔴 {p['ride_name']} >> depuis {d_p.strftime('%H:%M')}")
+        else:
+            f_p = pd.to_datetime(p['end_time']).astimezone(paris_tz)
+            st.success(f"✅ {p['ride_name']} >> fini à {f_p.strftime('%H:%M')}")
+else:
     st.warning("📭 Aucune donnée live disponible.")
 
 st.divider()
