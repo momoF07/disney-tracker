@@ -30,7 +30,7 @@ def run_worker():
     current_time = now_paris.time()
     current_hour = now_paris.hour
     
-    # Seuil de reset pour la vérification de l'historique du jour
+    # Seuil de reset pour vérifier si l'attraction a ouvert aujourd'hui
     reset_time_today = now_paris.replace(hour=2, minute=30, second=0, microsecond=0).isoformat()
 
     # --- 2. LOGIQUE DE RESET (02h30) ---
@@ -81,22 +81,24 @@ def run_worker():
 
                     # B. LOGIQUE GESTION DES PANNES (logs_101)
                     
-                    # 1. Vérifier si l'attraction a déjà été ouverte aujourd'hui
-                    # (Si elle est ouverte à l'instant T, c'est bon. Sinon, on check la DB)
+                    # 1. Vérification robuste de l'ouverture précédente
+                    has_opened_today = False
                     if is_open:
                         has_opened_today = True
                     else:
+                        # On utilise count="exact" pour une réponse fiable de la DB
                         check_db = supabase.table("disney_logs")\
-                            .select("id")\
+                            .select("id", count="exact")\
                             .eq("ride_name", name)\
                             .eq("is_open", True)\
                             .gte("created_at", reset_time_today)\
                             .limit(1)\
                             .execute()
-                        has_opened_today = len(check_db.data) > 0
+                        has_opened_today = (check_db.count is not None and check_db.count > 0)
 
-                    # 2. On ne gère log_101 que si l'attraction a ouvert au moins une fois
+                    # 2. Gestion de la table logs_101
                     if has_opened_today:
+                        # On cherche une panne non terminée (end_time is NULL)
                         last_incident = supabase.table("logs_101")\
                             .select("*")\
                             .eq("ride_name", name)\
@@ -104,29 +106,26 @@ def run_worker():
                             .execute()
 
                         if not is_open:
-                            # Si en panne et rien n'est ouvert en DB -> On crée l'incident
+                            # Début de panne : pas d'incident ouvert trouvé
                             if not last_incident.data:
                                 supabase.table("logs_101").insert({
                                     "ride_name": name,
                                     "start_time": datetime.now(pytz.utc).isoformat()
                                 }).execute()
-                                print(f"🚨 LOG_101 : Début de panne pour {name}")
+                                print(f"🚨 LOG_101 : Début d'interruption pour {name}")
                         else:
-                            # Si ouvert et une panne était en cours -> On la ferme (end_time)
+                            # Fin de panne : on ferme l'incident avec end_time
                             if last_incident.data:
                                 incident_id = last_incident.data[0]['id']
                                 supabase.table("logs_101").update({
                                     "end_time": datetime.now(pytz.utc).isoformat()
                                 }).eq("id", incident_id).execute()
-                                print(f"✅ LOG_101 : Fin de panne pour {name}")
-                    else:
-                        # Si l'attraction n'a pas encore ouvert de la journée, on ne log pas de 101
-                        pass
+                                print(f"✅ LOG_101 : Réouverture de {name}")
 
-            # Insertion Bulk dans disney_logs
+            # Insertion Bulk dans disney_logs (pour le graph et le live)
             if to_insert_live:
                 supabase.table("disney_logs").insert(to_insert_live).execute()
-                print(f"✅ Relevé live terminé pour {p_id}")
+                print(f"✅ Relevé live inséré pour {p_id}")
 
         except Exception as e:
             print(f"❌ Erreur critique pour le parc {p_id} : {e}")
