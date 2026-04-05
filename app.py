@@ -321,27 +321,28 @@ if not df_live.empty:
                                         st.caption(f"• 🟠 :orange[**En panne** depuis {h_debut}]")
                                     else:
                                         st.write(f"• 🟢 :green[**Opérationnel jusqu'à la fermeture**]")
-                                        st.caption(f"• 🔴 :red[**Fermé à {heure_fermeture_constatee}**] | 🕒 Dernier incident à {h_debut}")
+                                        st.caption(f"• 🔴 :red[**Fermé à {heure_fermeture_constatee}**]")
+                                        st.caption(f"• 🕒 Dernier incident à {h_debut}")
                                 
                                 elif p['statut'] == "EN_COURS":
                                     st.write(f"• 🟠 :orange[**En cours** depuis {h_debut}]")
                                     st.caption("• ⚠️ Incident technique signalé")
                                 
                                 elif p['statut'] == "TERMINEE":
-                                    # Si la dernière panne est finie et le parc est ouvert
                                     st.write(f"• 🟢 :green[**Opérationnel** depuis {p['fin'].strftime('%H:%M')}]")
                                     st.caption(f"• 🔴 :red[**En panne** à {h_debut}] ({p['duree']} min)")
 
-                            # --- 2. ÉVÉNEMENTS ANCIENS : TOUT EN CAPTION DANS UN BLOC ENSEMBLE ---
+                            # --- 2. ÉVÉNEMENTS ANCIENS : UNE LIGNE CHACUN DANS UN BLOC (CAPTION) ---
                             else:
                                 if p['statut'] == "TERMINEE":
                                     h_fin = p['fin'].strftime('%H:%M')
-                                    # Duo Panne/Ope sur une ligne discrète
-                                    st.caption(f"• 🟢 :green[Opérationnel à {h_fin}] ({p['duree']} min) | 🔴 :red[En panne à {h_debut}]")
+                                    # Bloc duo vertical en caption
+                                    st.caption(f"• 🟢 :green[**Opérationnel à {h_fin}**] ({p['duree']} min)")
+                                    st.caption(f"• 🔴 :red[**En panne à {h_debut}**]")
                                     
-                            # Filet de séparation uniquement sous l'élément principal
-                            if idx == 0 and len(pannes_triees) > 1: 
-                                st.markdown("<hr style='margin: 5px 0px 5px 0px; opacity: 0.3;'>", unsafe_allow_html=True)
+                            # Filet de séparation entre les cycles de pannes
+                            if idx < len(pannes_triees) - 1: 
+                                st.markdown("<hr style='margin: 5px 0px 5px 0px; opacity: 0.2;'>", unsafe_allow_html=True)
                     
                     else: 
                         # --- 3. AUCUN INCIDENT SIGNALÉ ---
@@ -350,7 +351,7 @@ if not df_live.empty:
                             st.caption("• ✅ Aucun incident signalé aujourd'hui")
                         else:
                             st.write("✅ **Aucun incident signalé**")
-    st.divider()
+            st.divider()
 
 st.subheader("🚨 Dernières interruptions")
 if not df_pannes_brutes.empty:
