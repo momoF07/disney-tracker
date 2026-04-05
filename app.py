@@ -64,10 +64,11 @@ def trigger_github_action():
         return res.status_code
     except: return 500
 
-# --- LOGIQUE DE TEMPS & RÉCUPÉRATION (Déplacé ici pour éviter NameError) ---
+# --- LOGIQUE DE TEMPS & RÉCUPÉRATION ---
 st.title("🏰 Disney Wait Time")
 maintenant = datetime.now(paris_tz)
 heure_actuelle = maintenant.time()
+prochain_refresh = (maintenant + timedelta(seconds=60)).strftime("%H:%M:%S")
 
 heure_reset = maintenant.replace(hour=2, minute=30, second=0, microsecond=0)
 debut_journee = heure_reset if maintenant >= heure_reset else heure_reset - timedelta(days=1)
@@ -95,27 +96,49 @@ try:
 except Exception as e:
     st.error(f"Erreur Supabase : {e}")
 
-# --- SECTION ACTIONS & STATUS ---
+# --- SECTION ACTIONS & STATUS (PREMIUM) ---
 with st.container(border=True):
-    c1, c2 = st.columns([1, 1], gap="medium")
+    col_header, col_status = st.columns([0.7, 0.3])
+    with col_header:
+        st.markdown("### ⚙️ Centre de Contrôle")
+    with col_status:
+        st.markdown(f"<p style='text-align:right; color:#4ade80; font-weight:bold; margin-top:10px;'>🟢 Live</p>", unsafe_allow_html=True)
+
+    c1, c2 = st.columns(2, gap="small")
+    
     with c1:
-        st.markdown("**🔄 Interface**")
-        if st.button('Rafraîchir la page', use_container_width=True):
+        if st.button('🔄 Mettre à jour l\'affichage', use_container_width=True):
             st.rerun()
+        st.caption(f"✨ Interface synchro : **{st.session_state.last_refresh}**")
+            
     with c2:
-        st.markdown("**🤖 Pilotage Robot**")
         btn_robot = st.button('Lancer un relevé 🚀', use_container_width=True, type="primary")
         if btn_robot:
             status_code = trigger_github_action()
             if status_code == 204:
-                with st.spinner("Le robot Disney est en route..."):
-                    st.toast("✅ Requête acceptée par GitHub !")
-                    time.sleep(30)
+                with st.status("Activation du robot distant...", expanded=True) as status_indicator:
+                    st.write("Connexion à GitHub Actions...")
+                    time.sleep(2)
+                    st.write("Injection de la requête de scan...")
+                    time.sleep(2)
+                    status_indicator.update(label="✅ Scan en cours ! Rechargement...", state="complete", expanded=False)
+                    st.toast("Le robot parcourt les files d'attente ! 🎢")
+                    time.sleep(20)
                     st.rerun()
             else:
                 st.error("Échec de connexion")
+        st.caption(f"🤖 Prochain scan auto : **{prochain_refresh}**")
 
-st.caption(f"🕒 Dernière donnée : **{derniere_maj}** | Prochain relevé auto dans ~60s")
+# Bandeau de données élégant
+st.markdown(
+    f"""
+    <div style="background-color: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 10px; border-left: 5px solid #4facfe; margin-top: -10px; margin-bottom: 20px;">
+        <span style="font-size: 14px; color: #94a3b8;">🕒 Donnée API : <b>{derniere_maj}</b></span>
+        <span style="float: right; font-size: 14px; color: #94a3b8;">Rafraîchissement automatique dans <b>60s</b></span>
+    </div>
+    """, 
+    unsafe_allow_html=True
+)
 
 # --- TRAITEMENT DES PANNES ---
 if not df_live.empty:
@@ -202,8 +225,8 @@ if not df_live.empty:
                 elif panne_actuelle or not current['is_open']:
                     c1.warning("🔴 INTERRUPTION")
                     if panne_actuelle:
-                        delta = maintenant - panne_actuelle['debut']
-                        st.caption(f"⚠️ En panne depuis **{max(0, int(delta.total_seconds() / 60))} min** ({panne_actuelle['debut'].strftime('%H:%M')})")
+                        delta_p = maintenant - panne_actuelle['debut']
+                        st.caption(f"⚠️ En panne depuis **{max(0, int(delta_p.total_seconds() / 60))} min** ({panne_actuelle['debut'].strftime('%H:%M')})")
                     c2.metric("Attente", "- - -")
                 else:
                     c1.success("🟢 OUVERT"); c2.metric("Attente", f"{int(current['wait_time'])} min")
