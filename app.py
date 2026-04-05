@@ -156,8 +156,16 @@ if not df_live.empty:
             with st.container():
                 c1, c2, c3 = st.columns(3)
                 c1.code("*ALL"); c2.code("*DLP"); c3.code("*DAW")
+                
             st.markdown('<span class="cat-badge bg-green">🏰 DISNEYLAND PARK</span>', unsafe_allow_html=True)
-            lands_dlp_map = {"Main Street": ["*MS", "*MAINSTREET"], "Frontierland": ["*FRONTIER", "*FRONTIERLAND"], "Adventureland": ["*ADVENTURE", "*ADVENTURELAND"], "Fantasyland": ["*FANTASY", "*FANTASYLAND"], "Discoveryland": ["*DISCO", "*DISCOVERYLAND"]}
+            lands_dlp_map = 
+            {
+            "Main Street": ["*MS", "*MAINSTREET"], 
+            "Frontierland": ["*FRONTIER", "*FRONTIERLAND"], 
+            "Adventureland": ["*ADVENTURE", "*ADVENTURELAND"], 
+            "Fantasyland": ["*FANTASY", "*FANTASYLAND"], 
+            "Discoveryland": ["*DISCO", "*DISCOVERYLAND"]
+            }
             for land, codes in lands_dlp_map.items():
                 st.markdown(f'<div class="shortcut-box"><span class="shortcut-label">{land}</span>', unsafe_allow_html=True)
                 cl1, cl2 = st.columns(2); cl1.code(codes[0]); cl2.code(codes[1])
