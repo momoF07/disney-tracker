@@ -169,24 +169,42 @@ with col_help:
         
         st.markdown('<p class="main-title">🔍 INDEX DES CODES</p>', unsafe_allow_html=True)
         st.markdown('<span class="cat-badge bg-blue">🎡 PARCS</span>', unsafe_allow_html=True)
-        c1, c2, c3 = st.columns(3)
-        c1.code("*ALL"); c2.code("*DLP"); c3.code("*DAW")
         
+        with st.container():
+            c1, c2, c3 = st.columns(3)
+            c1.code("*ALL"); c2.code("*DLP"); c3.code("*DAW")
+            
         st.markdown('<span class="cat-badge bg-green">🏰 DISNEYLAND PARK</span>', unsafe_allow_html=True)
-        lands_dlp = {"Main Street": ["*MS", "*MAINSTREET"], "Frontierland": ["*FRONTIER", "*FRONTIERLAND"], "Adventureland": ["*ADVENTURE", "*ADVENTURELAND"], "Fantasyland": ["*FANTASY", "*FANTASYLAND"], "Discoveryland": ["*DISCO", "*DISCOVERYLAND"]}
-        for land, codes in lands_dlp.items():
+        lands_dlp_map = {
+            "Main Street": ["*MS", "*MAINSTREET"], 
+            "Frontierland": ["*FRONTIER", "*FRONTIERLAND"], 
+            "Adventureland": ["*ADVENTURE", "*ADVENTURELAND"], 
+            "Fantasyland": ["*FANTASY", "*FANTASYLAND"], 
+            "Discoveryland": ["*DISCO", "*DISCOVERYLAND"]
+        }
+        
+        for land, codes in lands_dlp_map.items():
             st.markdown(f'<div class="shortcut-box"><span class="shortcut-label">{land}</span>', unsafe_allow_html=True)
-            cl1, cl2 = st.columns(2); cl1.code(codes[0]); cl2.code(codes[1]); st.markdown('</div>', unsafe_allow_html=True)
+            cl1, cl2 = st.columns(2); cl1.code(codes[0]); cl2.code(codes[1])
+            st.markdown('</div>', unsafe_allow_html=True)
             
         st.markdown('<span class="cat-badge bg-orange">🎬 ADVENTURE WORLD</span>', unsafe_allow_html=True)
-        zones_daw = {"Avengers Campus": ["*CAMPUS", "*AVENGERS"], "Production Courtyard": ["*COURTYARD", "*PROD3"], "Worlds of Pixar": ["*PIXAR", "*PROD4"], "World of Frozen": ["*FROZEN", "*WOF"], "Adventure Way": ["*WAY", "*ADVENTURE-WAY"]}
-        for zone, codes in zones_daw.items():
+        shortcut_zones_daw = {
+            "Avengers Campus": ["*CAMPUS", "*AVENGERS", "*AVENGERS-CAMPUS"], 
+            "Production Courtyard": ["*COURTYARD", "PRODUCTION3", "*PROD3"], 
+            "Worlds of Pixar": ["*WORLD-OF-PIXAR", "*PIXAR", "PRODUCTION4", "*PROD4"], 
+            "World of Frozen": ["*WORLD-OF-FROZEN", "*FROZEN", "*WOF"], 
+            "Adventure Way": ["*WAY", "*ADVENTURE-WAY"]
+        }
+        
+        for zone, codes in shortcut_zones_daw.items():
             st.markdown(f'<div class="shortcut-box"><span class="shortcut-label">{zone}</span>', unsafe_allow_html=True)
-            cz1, cz2 = st.columns(2); cz1.code(codes[0]); cz2.code(codes[1]); st.markdown('</div>', unsafe_allow_html=True)
+            cols_z = st.columns(len(codes))
+            for idx, code in enumerate(codes): cols_z[idx].code(code)
+            st.markdown('</div>', unsafe_allow_html=True)
 
 with col_sc:
     sc = st.text_input("Raccourci...", placeholder="ex: *FANTASY", label_visibility="collapsed")
-
 current_selection = st.query_params.get_all("fav")
 if sc.startswith("*"):
     shortcut_selection = get_rides_by_zone(sc, sorted(df_live['ride_name'].unique()) if not df_live.empty else [], all_pannes)
