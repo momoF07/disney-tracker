@@ -151,8 +151,11 @@ if not df_live.empty:
                 .shortcut-label { font-size: 15px; color: #94a3b8; text-transform: uppercase; margin-bottom: 5px; display: block; }
             </style>
             """, unsafe_allow_html=True)
+            
             st.markdown('<p class="main-title">🔍 INDEX DES CODES</p>', unsafe_allow_html=True)
+            
             st.markdown('<span class="cat-badge bg-blue">🎡 PARCS</span>', unsafe_allow_html=True)
+            
             with st.container():
                 c1, c2, c3 = st.columns(3)
                 c1.code("*ALL"); c2.code("*DLP"); c3.code("*DAW")
@@ -166,12 +169,21 @@ if not df_live.empty:
             "Fantasyland": ["*FANTASY", "*FANTASYLAND"], 
             "Discoveryland": ["*DISCO", "*DISCOVERYLAND"]
             }
+            
             for land, codes in lands_dlp_map.items():
                 st.markdown(f'<div class="shortcut-box"><span class="shortcut-label">{land}</span>', unsafe_allow_html=True)
                 cl1, cl2 = st.columns(2); cl1.code(codes[0]); cl2.code(codes[1])
                 st.markdown('</div>', unsafe_allow_html=True)
+                
             st.markdown('<span class="cat-badge bg-orange">🎬 ADVENTURE WORLD</span>', unsafe_allow_html=True)
-            shortcut_zones_daw = {"Avengers Campus": ["*CAMPUS", "*AVENGERS"], "Production Courtyard": ["*COURTYARD", "*PROD3"], "Worlds of Pixar": ["*PIXAR", "*PROD4"], "World of Frozen": ["*FROZEN", "*WOF"], "Adventure Way": ["*WAY", "*ADVENTURE-WAY"]}
+            shortcut_zones_daw = 
+            {
+            "Avengers Campus": ["*CAMPUS", "*AVENGERS", "*AVENGERS-CAMPUS"], 
+            "Production Courtyard": ["*COURTYARD", "PRODUCTION3", "*PROD3"], 
+            "Worlds of Pixar": ["*WORLD-OF-PIXAR", "*PIXAR", "PRODUCTION4", "*PROD4"], 
+            "World of Frozen": ["*WORLD-OF-FROZEN", "*FROZEN", "*WOF"], 
+            "Adventure Way": ["*WAY", "*ADVENTURE-WAY"]}
+            
             for zone, codes in shortcut_zones_daw.items():
                 st.markdown(f'<div class="shortcut-box"><span class="shortcut-label">{zone}</span>', unsafe_allow_html=True)
                 cols_z = st.columns(len(codes))
