@@ -222,12 +222,25 @@ if not df_live.empty:
                     c1.success("🟢 OUVERT"); c2.metric("Attente", f"{int(current['wait_time'])} min")
 
                 with st.expander("📜 Historique des pannes"):
-                    h_pannes = [p for p in all_pannes if p['ride'] == ride and p['statut'] == "TERMINEE"]
+                    # On récupère TOUTES les pannes du ride (en cours + terminées)
+                    h_pannes = [p for p in all_pannes if p['ride'] == ride]
+                    
                     if h_pannes:
+                        # On trie par date de début (la plus récente en haut)
                         for p in sorted(h_pannes, key=lambda x: x['debut'], reverse=True):
-                            st.write(f"• De {p['debut'].strftime('%H:%M')} à {p['fin'].strftime('%H:%M')} ({p['duree']} min)")
-                    else: st.write("✅ Aucune panne terminée aujourd'hui.")
+                            heure_debut = p['debut'].strftime('%H:%M')
+                            
+                            if p['statut'] == "EN_COURS":
+                                # Affichage distinct pour la panne actuelle
+                                st.write(f"🟠 :orange[**En cours** : Depuis {heure_debut}]")
+                            else:
+                                # Affichage classique pour les pannes passées
+                                heure_fin = p['fin'].strftime('%H:%M')
+                                st.write(f"• De {heure_debut} à {heure_fin} ({p['duree']} min)")
+                    else: 
+                        st.write("✅ Aucune panne enregistrée aujourd'hui.")
                 st.divider()
+
 
     # --- FLUX DES DERNIÈRES PANNES ---
     st.subheader("🚨 Dernières interruptions")
