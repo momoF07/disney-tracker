@@ -227,7 +227,7 @@ if not df_live.empty:
                                     flex-shrink: 0;
                                 "></div>
                                 <span style="color: #ff4b4b; font-weight: 600; font-size: 14px; letter-spacing: 0.3px;">
-                                    🔴 INTERRUPTION DE SERVICE
+                                    -- 🔴 INTERRUPTION DE SERVICE
                                 </span>
                             </div>
                             <style>
