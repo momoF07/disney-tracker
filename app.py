@@ -320,6 +320,17 @@ if not df_raw.empty:
 
     else: st.warning("⏳ En attente des premières données de la journée.")
 else: st.warning(f"📭 Aucune donnée disponible.\nMerci de patienter jusqu'à {PARK_OPENING}.")
+    # --- À LA TOUTE FIN DU CODE ---
+if df_raw.empty:
+    # On vérifie si on a déjà montré la popup pour ne pas boucler à l'infini
+    if "popup_shown" not in st.session_state:
+        st.session_state.popup_shown = True
+        popup_alerte_donnees()
+    st.warning("📭 Aucune donnée disponible dans la base de données.")
+else:
+    # Si des données reviennent, on réinitialise pour la prochaine fois
+    if "popup_shown" in st.session_state:
+        del st.session_state.popup_shown
 
 st.divider()
 st.caption("Disney Wait Time Tool")
