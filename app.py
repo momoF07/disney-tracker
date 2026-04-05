@@ -72,12 +72,11 @@ heure_actuelle = maintenant.time()
 heure_reset = maintenant.replace(hour=2, minute=30, second=0, microsecond=0)
 debut_journee = heure_reset if maintenant >= heure_reset else heure_reset - timedelta(days=1)
 
-# Initialisation par défaut pour éviter NameError
+# Initialisation par défaut
 derniere_maj = "--:--:--"
 df_live = pd.DataFrame()
 df_pannes = pd.DataFrame()
 status_map = {}
-closing_map = {}
 all_pannes = []
 
 try:
@@ -85,17 +84,13 @@ try:
     resp_live = supabase.table("disney_live").select("*").execute()
     df_live = pd.DataFrame(resp_live.data)
     
-    # Données Pannes
+    # Données Pannes (Depuis le reset de 2h30)
     resp_101 = supabase.table("logs_101").select("*").gte("start_time", debut_journee.isoformat()).execute()
     df_pannes = pd.DataFrame(resp_101.data)
 
     # Statut d'ouverture quotidienne
     resp_status = supabase.table("daily_status").select("*").execute()
     status_map = {item['ride_name']: item['has_opened_today'] for item in resp_status.data} if resp_status.data else {}
-
-    # Récupération des horaires (Table ride_schedules)
-    resp_sched = supabase.table("ride_schedules").select("ride_name, closing_time").execute()
-    closing_map = {item['ride_name']: item['closing_time'] for item in resp_sched.data} if resp_sched.data else {}
 
     if not df_live.empty:
         df_live['updated_at'] = pd.to_datetime(df_live['updated_at']).dt.tz_convert('Europe/Paris')
@@ -112,7 +107,7 @@ with col_btn2:
     if st.button('🚀 Forcer un Relevé Manuel', type="primary"):
         status_code = trigger_github_action()
         if status_code == 204:
-            with st.status("Le robot Disney récupère les temps d'attente...", expanded=False) as status:
+            with st.status("Le robot Disney récupère les temps d'attente...", expanded=False):
                 st.toast("✅ Requête acceptée par GitHub !")
                 time.sleep(40)
                 st.rerun()
@@ -204,9 +199,8 @@ if not df_live.empty:
     st.query_params["fav"] = selected_options
     
     parc_theoriquement_ouvert = is_park_theoretically_open(heure_actuelle, PARK_OPENING, PARK_CLOSING)
-    parc_actuellement_ferme = not parc_theoriquement_ouvert
-    if parc_actuellement_ferme:
-        st.info(f"ℹ️ Le parc est fermé ({PARK_OPENING} -> {PARK_CLOSING}).")
+    if not parc_theoriquement_ouvert:
+        st.info(f"ℹ️ Le parc est théoriquement fermé ({PARK_OPENING} -> {PARK_CLOSING}).")
 
     # --- AFFICHAGE DES ATTRACTIONS ---
     if selected_options:
@@ -218,29 +212,15 @@ if not df_live.empty:
                 a_deja_ouvert = status_map.get(ride, False)
                 panne_actuelle = next((p for p in all_pannes if p['ride'] == ride and p['statut'] == "EN_COURS"), None)
                 
-                # Logique de fermeture anticipée (Scheduler)
-                h_fermeture_str = closing_map.get(ride)
-                est_en_fermeture_anticipee = False
-                if h_fermeture_str:
-                    h_ferme = datetime.strptime(h_fermeture_str, "%H:%M:%S").time()
-                    if heure_actuelle >= h_ferme and not parc_actuellement_ferme:
-                        est_en_fermeture_anticipee = True
-
                 st.subheader(f"{get_emoji(ride)} {ride}")
                 c1, c2 = st.columns(2)
                 
                 with c1:
                     # ÉTAT 1 : PARC FERMÉ
-                    if parc_actuellement_ferme:
+                    if not parc_theoriquement_ouvert:
                         st.markdown('<div style="display: flex; align-items: center; background-color: rgba(255, 75, 75, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 75, 75, 0.5); margin-bottom: 8px;"><span style="color: #ff4b4b; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">🔴 PARC FERMÉ</span></div>', unsafe_allow_html=True)
                         c2.metric("Attente", "- - -")
 
-                    # ÉTAT : FERMETURE ANTICIPÉE (ZONE SPECTACLE)
-                    elif est_en_fermeture_anticipee:
-                        st.markdown('<div style="display: flex; align-items: center; background-color: rgba(108, 117, 125, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(108, 117, 125, 0.5); margin-bottom: 8px;"><span style="color: #6c757d; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">🌙 FERMÉ (ZONE SPECTACLE)</span></div>', unsafe_allow_html=True)
-                        st.caption(f"ℹ️ Fin des admissions à {h_fermeture_str[:5]} pour le show nocturne.")
-                        c2.metric("Attente", "- - -")
-        
                     # ÉTAT 2 : FERMÉ (MATIN / PAS ENCORE OUVERT)
                     elif not a_deja_ouvert:
                         st.markdown('<div style="display: flex; align-items: center; background-color: rgba(0, 123, 255, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(0, 123, 255, 0.5); margin-bottom: 8px;"><span style="color: #007bff; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">🕒 FERMÉ (PAS ENCORE OUVERT)</span></div>', unsafe_allow_html=True)
