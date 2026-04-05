@@ -81,8 +81,18 @@ st.title("🏰 Disney Wait Time")
 maintenant = datetime.now(paris_tz)
 heure_actuelle = maintenant.time()
 
-# AJOUT : Changement de l'heure de reset à 4h pour s'aligner sur le worker
-heure_reset = maintenant.replace(hour=4, minute=0, second=0, microsecond=0)
+@st.dialog("⚠️ Système en pause")
+def popup_alerte_donnees():
+    st.write("Aucune donnée n'a été enregistrée pour le moment aujourd'hui.")
+    st.info("Le robot Disney est peut-être en attente de l'ouverture ou en maintenance.")
+    if st.button("Tenter de forcer un relevé maintenant"):
+        if trigger_github_action() == 204:
+            st.toast("🚀 Signal envoyé au robot ! Merci de patienter un instant.")
+            time.sleep(45)
+            st.rerun()
+
+# AJOUT : Changement de l'heure de reset à 2h30 pour s'aligner sur le worker
+heure_reset = maintenant.replace(hour=2, minute=30, second=0, microsecond=0)
 debut_journee = heure_reset if maintenant >= heure_reset else heure_reset - timedelta(days=1)
 
 if st.button('🔄 Actualiser & Forcer un Relevé'):
@@ -309,7 +319,8 @@ if not df_raw.empty:
         else: st.write("✅ Aucune interruption détectée.")
 
     else: st.warning("⏳ En attente des premières données de la journée.")
-else: st.warning(f"📭 Aucune donnée disponible.\nMerci de patienter jusqu'à {PARK_OPENING}")
+else: st.warning(f"📭 Aucune donnée disponible.\n
+Merci de patienter jusqu'à {PARK_OPENING}.")
 
 st.divider()
 st.caption("Disney Wait Time Tool")
