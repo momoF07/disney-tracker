@@ -311,21 +311,43 @@ if not df_live.empty:
                     h_p = [p for p in all_pannes if p['ride'] == ride]
                     if h_p:
                         p_triees = sorted(h_p, key=lambda x: x['debut'], reverse=True)
+                        
+                        # --- CAS 1 : ATTRACTION FERMÉE POUR LA JOURNÉE ---
                         if est_definitivement_ferme:
                             last = p_triees[0]
                             if last['statut'] == "EN_COURS":
                                 st.write(f"• 🔴 :red[**Fermé à {heure_fermeture_constatee}**]")
-                                st.caption(f"• 🟠 Panne non résolue (débutée à {last['debut'].strftime('%H:%M')})")
+                                st.caption(f"• 🟠 :orange[**En panne** depuis {last['debut'].strftime('%H:%M')}]")
                             else:
-                                st.write(f"• 🟢 :green[**Opérationnel jusqu'à la fermeture ({heure_fermeture_constatee})**]")
+                                st.write(f"• 🟢 :green[**Opérationnel** jusqu'à la fermeture ({heure_fermeture_constatee})]")
+                                st.caption(f"• 🔴 :red[**En panne** à {last['debut'].strftime('%H:%M')}]")
+                        
+                        # --- CAS 2 : ATTRACTION EN SERVICE (OUVERTE OU EN PANNE) ---
                         else:
                             for idx, p in enumerate(p_triees):
+                                h_debut = p['debut'].strftime('%H:%M')
+                                
                                 if idx == 0 and p['statut'] == "EN_COURS":
-                                    st.write(f"• 🟠 :orange[**En cours** depuis {p['debut'].strftime('%H:%M')}]")
+                                    # Panne actuelle
+                                    st.write(f"• 🟠 :orange[**En cours** depuis {h_debut}]")
+                                    st.caption("• ⚠️ Incident technique signalé")
+                                
                                 elif p['statut'] == "TERMINEE":
-                                    st.write(f"• 🟢 :green[**Opérationnel** à {p['fin'].strftime('%H:%M')}]")
+                                    # Panne passée et résolue
+                                    st.write(f"• 🟢 :green[**Opérationnel** à {p['fin'].strftime('%H:%M')} ({p['duree']} min)]")
+                                    st.caption(f"• 🔴 :red[**En panne** à {h_debut}]")
+                                
+                                # Filet de séparation
+                                if len(p_triees) > 1 and idx < len(p_triees) - 1:
+                                    st.markdown("<hr style='margin: -5px 0px 10px 0px; opacity: 0.5;'>", unsafe_allow_html=True)
+                    
+                    # --- CAS 3 : AUCUNE PANNE SIGNALÉE ---
                     else:
-                        st.write(f"• 🔴 :red[**Fermé à {heure_fermeture_constatee}**]" if est_definitivement_ferme else "✅ Aucun incident signalé.")
+                        if est_definitivement_ferme:
+                            st.write(f"• 🔴 :red[**Fermé à {heure_fermeture_constatee}**]")
+                            st.caption("• ✅ Aucun incident signalé aujourd'hui")
+                        else:
+                            st.write("✅ **Aucun incident signalé**")
             st.divider()
 
 st.subheader("🚨 Dernières interruptions")
