@@ -110,15 +110,17 @@ with col_btn2:
 
 # --- RÉCUPÉRATION DES DONNÉES ---
 try:
-    response = supabase.table("disney_logs")\
-        .select("*")\
-        .order("created_at", desc=True)\
-        .limit(3000)\
-        .execute()
-    df_raw = pd.DataFrame(response.data)
+    # On récupère le Live (Temps d'attente récents)
+    resp_live = supabase.table("disney_logs").select("*").order("created_at", desc=True).limit(200).execute()
+    df_raw = pd.DataFrame(resp_live.data)
+    
+    # On récupère les pannes depuis la nouvelle table dédiée
+    resp_101 = supabase.table("logs_101").select("*").gte("start_time", debut_journee.isoformat()).execute()
+    df_pannes = pd.DataFrame(resp_101.data)
 except Exception as e:
     st.error(f"Erreur Supabase : {e}")
-    df_raw = pd.DataFrame()
+    df_raw, df_pannes = pd.DataFrame(), pd.DataFrame()
+
 
 if not df_raw.empty:
     # --- GESTION TIMEZONE ROBUSTE ---
@@ -142,23 +144,22 @@ if not df_raw.empty:
         derniere_maj_time = df['created_at'].max()
         etat_actuel = df[df['created_at'] == derniere_maj_time]
         tous_fermes_globalement = not etat_actuel['is_open'].any()
-
-        # --- CALCUL DES PANNES ---
-        for ride_name in toutes_attractions:
-            ride_data = df[df['ride_name'] == ride_name].sort_values('created_at')
-            en_panne, debut_panne = False, None
-            for i, row in ride_data.iterrows():
-                est_ouvert, temps_log = row['is_open'], row['created_at']
-                if 2 <= temps_log.hour < 4: continue # On ignore la période de reset
-                if not est_ouvert and not en_panne:
-                    en_panne, debut_panne = True, temps_log
-                elif est_ouvert and en_panne:
-                    duree = int((temps_log - debut_panne).total_seconds() / 60)
-                    if duree >= 1:
-                        all_pannes.append({"ride": ride_name, "debut": debut_panne, "fin": temps_log, "duree": duree, "statut": "TERMINEE"})
-                    en_panne, debut_panne = False, None
-            if en_panne and debut_panne:
-                all_pannes.append({"ride": ride_name, "debut": debut_panne, "fin": None, "statut": "EN_COURS"})
+        
+        # --- PRÉPARATION DES PANNES (LUES DEPUIS LOGS_101) ---
+        all_pannes = []
+        if not df_pannes.empty:
+            for _, row in df_pannes.iterrows():
+                # On convertit les dates pour l'affichage
+                d = pd.to_datetime(row['start_time']).astimezone(paris_tz)
+                f = pd.to_datetime(row['end_time']).astimezone(paris_tz) if pd.notna(row['end_time']) else None
+                
+                all_pannes.append({
+                    "ride": row['ride_name'],
+                    "debut": d,
+                    "fin": f,
+                    "duree": int((f - d).total_seconds() / 60) if f else 0,
+                    "statut": "EN_COURS" if f is None else "TERMINEE"
+                })
 
         # --- FILTRES ---
         st.write("---")
@@ -278,7 +279,7 @@ if not df_raw.empty:
         else:
             parc_actuellement_ferme = False
         
-        # --- AFFICHAGE DES ATTRACTIONS ---
+                # --- AFFICHAGE DES ATTRACTIONS ---
         if selected_options:
             st.divider()
             for ride in selected_options:
@@ -286,6 +287,9 @@ if not df_raw.empty:
                 if not ride_df.empty:
                     last = ride_df.iloc[0]
                     a_deja_ouvert_ce_ride = ride_df['is_open'].any()
+                    
+                    # AJOUT : On cherche si une panne est déclarée "EN_COURS" dans logs_101 pour cette attraction
+                    panne_actuelle = next((p for p in all_pannes if p['ride'] == ride and p['statut'] == "EN_COURS"), None)
                     
                     st.subheader(f"{get_emoji(ride)} {ride}")
                     c1, c2 = st.columns(2)
@@ -297,24 +301,28 @@ if not df_raw.empty:
                         c1.info("🕒 FERMÉ")
                         c2.metric("Attente", "- - -")
                         st.caption("⏳ En attente de l'ouverture.")
-                    elif not last['is_open']:
+                    
+                    # MODIFICATION : On affiche l'interruption si is_open est False OU si logs_101 a une panne ouverte
+                    elif not last['is_open'] or panne_actuelle:
                         c1.warning("🔴 INTERRUPTION / 101")
-                        ride_pannes = [p for p in all_pannes if p['ride'] == ride]
-                        panne_actuelle = next((p for p in ride_pannes if p['statut'] == "EN_COURS"), None)
                         if panne_actuelle:
+                            # Calcul de la durée depuis le début réel enregistré dans logs_101
                             min_inc = int((maintenant - panne_actuelle['debut']).total_seconds() / 60)
-                            st.caption(f"⚠️ En panne depuis **{min_inc} min**")
+                            st.caption(f"⚠️ En panne depuis **{max(0, min_inc)} min**")
                         c2.metric("Attente", "- - -")
+                        
                     else:
                         c1.success("🟢 OUVERT")
                         c2.metric("Attente", f"{int(last['wait_time'])} min")
                     
                     with st.expander("📜 Historique des pannes"):
+                        # Lecture directe des pannes terminées depuis logs_101
                         hist_pannes = [p for p in all_pannes if p['ride'] == ride and p['statut'] == "TERMINEE"]
                         if hist_pannes:
-                            for p in reversed(hist_pannes):
+                            # On affiche les plus récentes en haut
+                            for p in sorted(hist_pannes, key=lambda x: x['debut'], reverse=True):
                                 st.write(f"• De {p['debut'].strftime('%H:%M')} à {p['fin'].strftime('%H:%M')} ({p['duree']} min)")
-                        else: st.write("✅ Aucune panne détectée.")
+                        else: st.write("✅ Aucune panne terminée aujourd'hui.")
                     st.divider()
 
         # --- FLUX DES DERNIÈRES PANNES ---
