@@ -250,7 +250,7 @@ if not df_live.empty:
                             h_debut = p['debut'].strftime('%H:%M')
                             # LOGIQUE : Si l'attraction est en panne lors du passage à l'heure limite
                             if idx == 0 and est_definitivement_ferme and p['statut'] == "EN_COURS":
-                                st.write(f"• 🔴 :red[**Fermeture à {heure_fermeture_theorique.strftime('%H:%M')}**]")
+                                st.write(f"• 🔴 :red[**Fermeture à {heure_fermeture_theorique.strftime('%H:%M')}** ({p['duree']} min)]")
                                 st.caption(f"• 🟠 Panne débutée à {h_debut}")
                             elif idx == 0 and p['statut'] == "EN_COURS":
                                 st.write(f"• 🟠 :orange[**En cours** depuis {h_debut}]")
