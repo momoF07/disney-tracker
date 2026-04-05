@@ -325,14 +325,31 @@ if not df_raw.empty:
                         else: st.write("✅ Aucune panne terminée aujourd'hui.")
                     st.divider()
 
-        # --- FLUX DES DERNIÈRES PANNES ---
+               # --- FLUX DES DERNIÈRES PANNES ---
         st.subheader("🚨 Dernières interruptions")
-        flux = sorted(all_pannes, key=lambda x: x['debut'], reverse=True)[:5]
-        if flux:
-            for p in flux:
-                if p['statut'] == "EN_COURS": st.error(f"🔴 {p['ride']} >> {p['debut'].strftime('%H:%M')}")
-                else: st.success(f"✅ {p['ride']} >> {p['fin'].strftime('%H:%M')} ({p['duree']} min)")
-        else: st.write("✅ Aucune interruption détectée.")
+        
+        # On ne garde que les pannes qui ont réellement commencé APRES le reset de 2h30
+        # et on s'assure que la table n'est pas vide
+        if not df_pannes.empty:
+            # Conversion de la colonne start_time en datetime pour le filtre
+            df_pannes['start_time_dt'] = pd.to_datetime(df_pannes['start_time'])
+            
+            # FILTRE CRUCIAL : On ignore les pannes fantômes créées juste après un clear de DB
+            flux_clean = df_pannes[df_pannes['start_time_dt'] >= debut_journee].sort_values('start_time', ascending=False).head(5)
+            
+            if not flux_clean.empty:
+                for _, p in flux_clean.iterrows():
+                    d = pd.to_datetime(p['start_time']).astimezone(paris_tz)
+                    if pd.isna(p['end_time']):
+                        st.error(f"🔴 {p['ride_name']} >> depuis {d.strftime('%H:%M')}")
+                    else:
+                        f = pd.to_datetime(p['end_time']).astimezone(paris_tz)
+                        dur = int((f - d).total_seconds() / 60)
+                        st.success(f"✅ {p['ride_name']} >> fini à {f.strftime('%H:%M')} ({dur} min)")
+            else:
+                st.write("✅ Aucune interruption réelle détectée.")
+        else:
+            st.write("✅ Aucune interruption détectée.")
 
     else: st.warning("⏳ En attente des premières données de la journée.")
 else: st.warning(f"📭 Aucune donnée disponible.\nMerci de patienter jusqu'à {PARK_OPENING}.")
