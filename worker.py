@@ -29,6 +29,9 @@ def run_worker():
     now_paris = datetime.now(paris_tz)
     current_time = now_paris.time()
     current_hour = now_paris.hour
+    
+    # Seuil de reset pour la vérification de l'historique du jour
+    reset_time_today = now_paris.replace(hour=2, minute=30, second=0, microsecond=0).isoformat()
 
     # --- 2. LOGIQUE DE RESET (02h30) ---
     if current_hour == 2 and now_paris.minute < 30:
@@ -77,29 +80,48 @@ def run_worker():
                     })
 
                     # B. LOGIQUE GESTION DES PANNES (logs_101)
-                    # On vérifie s'il existe une panne en cours (end_time est NULL)
-                    last_incident = supabase.table("logs_101")\
-                        .select("*")\
-                        .eq("ride_name", name)\
-                        .is_("end_time", "null")\
-                        .execute()
-
-                    if not is_open:
-                        # Si en panne et rien n'est ouvert en DB -> On crée l'incident
-                        if not last_incident.data:
-                            supabase.table("logs_101").insert({
-                                "ride_name": name,
-                                "start_time": datetime.now(pytz.utc).isoformat()
-                            }).execute()
-                            print(f"🚨 LOG_101 : Début de panne pour {name}")
+                    
+                    # 1. Vérifier si l'attraction a déjà été ouverte aujourd'hui
+                    # (Si elle est ouverte à l'instant T, c'est bon. Sinon, on check la DB)
+                    if is_open:
+                        has_opened_today = True
                     else:
-                        # Si ouvert et une panne était en cours -> On la ferme (end_time)
-                        if last_incident.data:
-                            incident_id = last_incident.data[0]['id']
-                            supabase.table("logs_101").update({
-                                "end_time": datetime.now(pytz.utc).isoformat()
-                            }).eq("id", incident_id).execute()
-                            print(f"✅ LOG_101 : Fin de panne pour {name}")
+                        check_db = supabase.table("disney_logs")\
+                            .select("id")\
+                            .eq("ride_name", name)\
+                            .eq("is_open", True)\
+                            .gte("created_at", reset_time_today)\
+                            .limit(1)\
+                            .execute()
+                        has_opened_today = len(check_db.data) > 0
+
+                    # 2. On ne gère log_101 que si l'attraction a ouvert au moins une fois
+                    if has_opened_today:
+                        last_incident = supabase.table("logs_101")\
+                            .select("*")\
+                            .eq("ride_name", name)\
+                            .is_("end_time", "null")\
+                            .execute()
+
+                        if not is_open:
+                            # Si en panne et rien n'est ouvert en DB -> On crée l'incident
+                            if not last_incident.data:
+                                supabase.table("logs_101").insert({
+                                    "ride_name": name,
+                                    "start_time": datetime.now(pytz.utc).isoformat()
+                                }).execute()
+                                print(f"🚨 LOG_101 : Début de panne pour {name}")
+                        else:
+                            # Si ouvert et une panne était en cours -> On la ferme (end_time)
+                            if last_incident.data:
+                                incident_id = last_incident.data[0]['id']
+                                supabase.table("logs_101").update({
+                                    "end_time": datetime.now(pytz.utc).isoformat()
+                                }).eq("id", incident_id).execute()
+                                print(f"✅ LOG_101 : Fin de panne pour {name}")
+                    else:
+                        # Si l'attraction n'a pas encore ouvert de la journée, on ne log pas de 101
+                        pass
 
             # Insertion Bulk dans disney_logs
             if to_insert_live:
