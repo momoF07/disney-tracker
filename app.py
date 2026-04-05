@@ -196,7 +196,7 @@ if not df_live.empty:
     
     # Info globale (DLP par défaut)
     if heure_actuelle < PARK_OPENING or heure_actuelle >= DLP_CLOSING:
-        st.info(f"ℹ️ Le parc principal est fermé ({PARK_OPENING.strftime('%H:%M')} -> {DLP_CLOSING.strftime('%H:%M')}).")
+        st.info(f"ℹ️ Les parcs sont fermés ({PARK_OPENING.strftime('%H:%M')} -> {DLP_CLOSING.strftime('%H:%M')}).")
 
     # --- AFFICHAGE DES ATTRACTIONS ---
     if selected_options:
@@ -208,10 +208,9 @@ if not df_live.empty:
                 a_deja_ouvert = status_map.get(ride, False)
                 panne_actuelle = next((p for p in all_pannes if p['ride'] == ride and p['statut'] == "EN_COURS"), None)
                 
-                # --- LOGIQUE DE FERMETURE PAR PARC ---
-                daw_keywords = ["Avengers", "Spider-Man", "Tower of Terror", "Ratatouille", "Cars ROAD TRIP", "Crush", "RC Racer", "Slinky", "Toy Soldiers", "Flying Carpets"]
-                is_daw_ride = any(key in ride for key in daw_keywords)
-                heure_fermeture_ride = DAW_CLOSING if is_daw_ride else DLP_CLOSING
+                # --- LOGIQUE DE FERMETURE SIMPLIFIÉE ---
+                # Si l'attraction est dans la liste DAW, on prend DAW_CLOSING, sinon DLP_CLOSING
+                heure_fermeture_ride = DAW_CLOSING if ride in RIDES_DAW else DLP_CLOSING
                 est_ferme_par_horaire = heure_actuelle < PARK_OPENING or heure_actuelle >= heure_fermeture_ride
                 
                 st.subheader(f"{get_emoji(ride)} {ride}")
