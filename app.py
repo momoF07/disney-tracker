@@ -217,7 +217,7 @@ if not df_live.empty:
                         st.markdown("""
                             <div style="display: flex; align-items: center; background-color: rgba(255, 165, 0, 0.1); padding: 10px; border-radius: 12px; border: 1px solid rgba(255, 165, 0, 0.2); margin-bottom: 8px;">
                                 <div class="mini-loader" style="
-                                    border: 2px solid rgba(255, 165, 0, 0.2);
+                                    border: 4px solid rgba(255, 165, 0, 0.5);
                                     border-top: 2px solid #FF8C00;
                                     border-radius: 50%;
                                     width: 16px;
@@ -226,7 +226,7 @@ if not df_live.empty:
                                     margin-right: 12px;
                                     flex-shrink: 0;
                                 "></div>
-                                <span style="color: #FF8C00; font-weight: 600; font-size: 14px; letter-spacing: 0.3px;">
+                                <span style="color: #FF8C00; font-weight: 600; font-size: 15px; letter-spacing: 0.3px;">
                                     🟠 INTERRUPTION DE SERVICE
                                 </span>
                             </div>
