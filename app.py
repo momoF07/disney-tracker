@@ -6,8 +6,9 @@ import pytz
 import requests
 import time
 from streamlit_autorefresh import st_autorefresh 
-from emojis import get_emoji, get_rides_by_zone
+from emojis import get_emoji, get_rides_by_zone, RIDES_DLP, RIDES_DAW
 from config import PARK_OPENING, DLP_CLOSING, DAW_CLOSING
+
 
 # --- CONFIGURATION DE LA PAGE ---
 st.set_page_config(page_title="Disney Wait Time", page_icon="🏰", layout="centered")
