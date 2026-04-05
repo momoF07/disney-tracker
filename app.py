@@ -297,10 +297,10 @@ if not df_live.empty:
                         st.markdown(f'<div style="background-color: rgba(255, 75, 75, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 75, 75, 0.5); margin-bottom: 8px;"><span style="color: #ff4b4b; font-weight: 600; font-size: 15px;">🔴 FERMÉ DEPUIS {heure_fermeture_constatee}</span></div>', unsafe_allow_html=True)
                         c2.metric("Attente", "- - -")
                     elif not a_deja_ouvert:
-                        st.markdown('<div style="background-color: rgba(0, 123, 255, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(0, 123, 255, 0.5); margin-bottom: 8px;"><span style="color: #007bff; font-weight: 600; font-size: 15px;">🕒 FERMÉ (PAS ENCORE OUVERT)</span></div>', unsafe_allow_html=True)
+                        st.markdown('<div style="background-color: rgba(0, 123, 255, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(0, 123, 255, 0.5); margin-bottom: 8px;"><span style="color: #007bff; font-weight: 600; font-size: 15px;">🕒 EN ATTENTE</span></div>', unsafe_allow_html=True)
                         c2.metric("Attente", "- - -")
                     elif est_en_interruption:
-                        st.markdown('<div style="background-color: rgba(255, 165, 0, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 165, 0, 0.5); margin-bottom: 8px;"><span style="color: #FF8C00; font-weight: 600; font-size: 15px;">🟠 INTERRUPTION</span></div>', unsafe_allow_html=True)
+                        st.markdown('<div style="background-color: rgba(255, 165, 0, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 165, 0, 0.5); margin-bottom: 8px;"><span style="color: #FF8C00; font-weight: 600; font-size: 15px;">🟠 INTERRUPTION DE SERVICE</span></div>', unsafe_allow_html=True)
                         if panne_actuelle: st.caption(f"⚠️ Depuis {max(0, int((maintenant - panne_actuelle['debut']).total_seconds() / 60))} min")
                         c2.metric("Attente", "- - -")
                     else:
@@ -320,20 +320,20 @@ if not df_live.empty:
                                     st.caption(f"• 🟠 :orange[**En panne** depuis {h_debut}]")
                                 else:
                                     st.write(f"• 🟢 :green[**Opérationnel jusqu'à la fermeture**]")
-                                    st.caption(f"• 🔴 :red[**Fermé à {heure_fermeture_constatee}**] | 🕒 Dernier incident à {h_debut}")
+                                    st.caption(f"• 🔴 :red[**Fermé à {heure_fermeture_constatee}**]")
+                                    st.caption(f"• 🕒 Dernier incident à {h_debut}")
                             
                             # --- 2. LOGIQUE PANNE EN COURS (Parc ouvert) ---
                             elif idx == 0 and p['statut'] == "EN_COURS":
                                 st.write(f"• 🟠 :orange[**En cours** depuis {h_debut}]")
-                                st.caption("• ⚠️ Incident technique en cours de résolution")
                             
-                            # --- 3. LOGIQUE PANNES PASSÉES & RÉSOLUES (Groupées en Caption) ---
+                            # --- 3. LOGIQUE PANNES PASSÉES & RÉSOLUES ---
                             elif p['statut'] == "TERMINEE":
-                                # On met tout dans la caption pour un look plus compact
                                 h_fin = p['fin'].strftime('%H:%M')
-                                st.caption(f"• 🟢 :green[**Opérationnel à {h_fin}**] ({p['duree']} min) | 🔴 :red[**En panne à {h_debut}**]")
+                                st.write(f"• 🟢 :green[**Opérationnel à {h_fin}**]")
+                                st.caption(f"• 🔴 :red[**En panne** à {h_debut}] ({p['duree']} min)")
                                     
-                            # Filet de séparation discret
+                            # Filet de séparation entre les blocs de pannes
                             if len(pannes_triees) > 1 and idx < len(pannes_triees) - 1: 
                                 st.markdown("<hr style='margin: 5px 0px 5px 0px; opacity: 0.3;'>", unsafe_allow_html=True)
                     
