@@ -213,10 +213,10 @@ if not df_live.empty:
                     c1.info("🕒 FERMÉ"); c2.metric("Attente", "- - -")
                     st.caption("⏳ En attente de l'ouverture officielle.")
                 elif panne_actuelle or not current['is_open']:
-                    c1.warning("🔴 INTERRUPTION / 101")
+                    c1.warning("🔴 INTERRUPTION DE SERVICE")
                     if panne_actuelle:
                         min_inc = int((maintenant - panne_actuelle['debut']).total_seconds() / 60)
-                        st.caption(f"⚠️ En panne depuis **{max(0, min_inc)} min**")
+                        st.caption(f"⚠️ En panne depuis **{max(0, min_inc)} min** ({panne_actuelle['debut']})")
                     c2.metric("Attente", "- - -")
                 else:
                     c1.success("🟢 OUVERT"); c2.metric("Attente", f"{int(current['wait_time'])} min")
