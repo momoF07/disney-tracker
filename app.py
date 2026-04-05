@@ -253,7 +253,7 @@ if not df_live.empty:
                                 else:
                                     heure_fin = p['fin'].strftime('%H:%M')
                                     st.write(f"• 🟢 :green[**Opérationnel** à {heure_fin} ({p['duree']} min)]")
-                                    st.caption(f"• 🔴 Panne à {heure_debut}")
+                                    st.caption(f"• 🔴 :red[Panne à {heure_debut}]")
                                 
                                 if len(pannes_triees) > 1:
                                     st.markdown("<hr style='margin: -10px 0px 10px 0px; opacity: 0.8;'>", unsafe_allow_html=True)
@@ -261,13 +261,17 @@ if not df_live.empty:
                             
                             # --- LES ANCIENS (Index > 0) : AFFICHAGE EN PETIT ---
                             else:
-                                if p['statut'] == "EN_COURS":
-                                    st.caption(f"• 🟠 :orange[En cours depuis {heure_debut}]")
-                                else:
-                                    heure_fin = p['fin'].strftime('%H:%M')
-                                    st.caption(f"• 🟢 :green[Opérationnel à {heure_fin} ({p['duree']} min)]")
-                                    st.caption(f"• 🔴 :red[Panne à {heure_debut}]")
-                                    
+                                # On crée une petite boîte grise pour regrouper l'incident
+                                with st.container(border=True):
+                                    if p['statut'] == "EN_COURS":
+                                        # Cas rare d'une double panne en cours (sécurité)
+                                        st.caption(f"• 🟠 :orange[**En cours** depuis {heure_debut}]")
+                                    else:
+                                        heure_fin = p['fin'].strftime('%H:%M')
+                                        # L'ordre chronologique inverse : Opérationnel en haut, Panne en bas
+                                        st.caption(f"• 🟢 :green[**Opérationnel** à {heure_fin} ({p['duree']} min)]")
+                                        st.caption(f"• 🔴 :red[Panne à {heure_debut}]")
+                            
                     else: 
                         st.write("✅ Aucun incident signalé aujourd'hui.")
                 
