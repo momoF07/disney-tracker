@@ -34,7 +34,7 @@ def run_worker():
 
     # --- 2. LOGIQUE DE RESET (Décalée à 04h00) ---
     # On vide la DB quand le parc est GARANTI fermé, même en cas de soirée spéciale.
-    if current_hour == 4 and now_paris.minute < 15:
+    if current_hour == 2 and now_paris.minute < 30:
         try:
             supabase.table("disney_logs").delete().gt("id", 0).execute()
             print("🌙 Reset quotidien : Database nettoyée à 04:00.")
