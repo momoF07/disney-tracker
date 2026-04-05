@@ -29,7 +29,7 @@ def update_schedules():
         # On parcourt les entrées du calendrier
         for entry in data.get('schedules', []):
             # On ne récupère que les horaires de type 'OPERATING' (ouverture standard)
-            if entry.get('type') == 'OPERATING':
+            if str(entry.get('type')).upper() == 'OPERATING':
                 name = entry.get('description')
                 
                 # Formatage des heures (on passe de ISO 2026-04-05T09:30:00 à 09:30:00)
