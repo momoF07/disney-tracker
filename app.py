@@ -216,7 +216,7 @@ if not df_live.empty:
                     c1.warning("🔴 INTERRUPTION DE SERVICE")
                     if panne_actuelle:
                         min_inc = int((maintenant - panne_actuelle['debut']).total_seconds() / 60)
-                        st.caption(f"⚠️ En panne depuis **{max(0, min_inc)} min** ({panne_actuelle['debut'].total_seconds()/60})")
+                        st.caption(f"⚠️ En panne depuis **{max(0, min_inc)} min** ({panne_actuelle['debut'].strftime('%H:%M')})")
                     c2.metric("Attente", "- - -")
                 else:
                     c1.success("🟢 OUVERT"); c2.metric("Attente", f"{int(current['wait_time'])} min")
