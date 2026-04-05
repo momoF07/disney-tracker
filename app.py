@@ -120,7 +120,7 @@ if not df_live.empty:
                 "statut": "EN_COURS" if f is None else "TERMINEE"
             })
 
-        # --- FILTRES ET POPOVER ---
+    # --- FILTRES ET POPOVER ---
     st.write("---")
     col_sc, col_help = st.columns([0.85, 0.15])
     
@@ -258,17 +258,13 @@ if not df_live.empty:
                                 if len(pannes_triees) > 1:
                                     st.markdown("<hr style='margin: -10px 0px 10px 0px; opacity: 0.8;'>", unsafe_allow_html=True)
 
-                            
-                            # --- LES ANCIENS (Index > 0) : AFFICHAGE EN PETIT ---
+                            # --- LES ANCIENS (Index > 0) : AFFICHAGE DANS UNE BOÎTE ---
                             else:
-                                # On crée une petite boîte grise pour regrouper l'incident
                                 with st.container(border=True):
                                     if p['statut'] == "EN_COURS":
-                                        # Cas rare d'une double panne en cours (sécurité)
                                         st.caption(f"• 🟠 :orange[**En cours** depuis {heure_debut}]")
                                     else:
                                         heure_fin = p['fin'].strftime('%H:%M')
-                                        # L'ordre chronologique inverse : Opérationnel en haut, Panne en bas
                                         st.caption(f"• 🟢 :green[**Opérationnel** à {heure_fin} ({p['duree']} min)]")
                                         st.caption(f"• 🔴 :red[Panne à {heure_debut}]")
                             
@@ -277,7 +273,6 @@ if not df_live.empty:
                 
                 st.divider()
 
-    
     # --- FLUX DES DERNIÈRES PANNES ---
     st.subheader("🚨 Dernières interruptions")
     if not df_pannes.empty:
