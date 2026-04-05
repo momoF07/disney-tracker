@@ -236,7 +236,7 @@ if not df_live.empty:
                             else:
                                 # Affichage classique pour les pannes passées
                                 heure_fin = p['fin'].strftime('%H:%M')
-                                st.write(f"• De {heure_debut} à {heure_fin} ({p['duree']} min)")
+                                st.caption(f"• De {heure_debut} à {heure_fin} ({p['duree']} min)")
                     else: 
                         st.write("✅ Aucune panne enregistrée aujourd'hui.")
                 st.divider()
