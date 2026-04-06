@@ -126,44 +126,136 @@ with col_btn2:
     if st.button('🚀 Relevé manuel', type="primary", use_container_width=True):
         if trigger_github_action() == 204: st.toast("🚀 Requête envoyée !"); time_sleep.sleep(40); st.rerun()
 
-with st.expander("📜 Historique"):
-                if rehab: 
-                    st.write("• 🛠️ :grey[**Maintenance en cours**]")
-                else:
-                    # --- FILTRE : Minimum 5 minutes (ou en cours) ---
-                    h_p_clean = [
-                        p for p in all_pannes 
-                        if p['ride'] == ride and (p['statut'] == "EN_COURS" or p['duree'] >= 5)
-                    ]
-                    
-                    if h_p_clean:
-                        # Tri du plus récent au plus ancien
-                        pannes_triees = sorted(h_p_clean, key=lambda x: x['debut'], reverse=True)
-                        
-                        for idx, p in enumerate(pannes_triees):
-                            h_d = p['debut'].strftime('%H:%M')
-                            
-                            if idx == 0:
-                                # GESTION DU STATUT ACTUEL
-                                if heure_actuelle >= h_f and not data['is_open']: 
-                                    st.write("• 🔴 :red[**Fermé pour la nuit**]")
-                                elif h_o <= heure_actuelle < h_f and not info.get('has_opened_today', False) and not data['is_open']: 
-                                    st.write("• 🟣 :violet[**Ouverture retardée**]")
-                                elif p['statut'] == "EN_COURS": 
-                                    st.write(f"• 🟠 :orange[**En cours** depuis {h_d}]")
-                                else: 
-                                    # L'attraction est réouverte
-                                    st.write(f"• 🟢 :green[**Opérationnel** à {p['fin'].strftime('%H:%M')}]")
-                                    # DÉTAIL DE LA PANNE QUI A PRÉCÉDÉ LA RÉOUVERTURE
-                                    if p['debut'].time() <= h_o:
-                                        st.caption(f"&nbsp;&nbsp;&nbsp;&nbsp;└ 🟣 :violet[**Ouverture retardée**] (Prévue à {h_o.strftime('%H:%M')})")
-                                    else:
-                                        st.caption(f"&nbsp;&nbsp;&nbsp;&nbsp;└ 🔴 :red[**Panne** à {h_d}] ({p['duree']} min)")
-                            else:
-                                # ÉVÉNEMENTS PRÉCÉDENTS (> 5 min)
-                                if p['statut'] == "TERMINEE": 
-                                    st.caption(f"• 🟢 :green[**Ope à {p['fin'].strftime('%H:%M')}**] | 🔴 :red[**Panne à {h_d}**] ({p['duree']} min)")
-                    else: 
-                        st.write("✅ Aucun incident notable aujourd'hui (+5 min)")
-                        
+# --- CONFIGURATION DE LA PAGE ---
+st.set_page_config(page_title="Disney Live Board", page_icon="🏰", layout="wide")
+
+# --- STYLE CSS TABLEAUX PAR LAND ---
+st.markdown("""
+<style>
+    .land-header {
+        background: linear-gradient(90deg, #1e293b 0%, #334155 100%);
+        color: #f8fafc;
+        padding: 12px 20px;
+        border-radius: 12px;
+        margin: 25px 0 15px 0;
+        font-size: 20px;
+        font-weight: 700;
+        border-left: 5px solid #4facfe;
+    }
+    .ride-container {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 15px;
+        padding: 12px 18px;
+        margin-bottom: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: 0.3s;
+    }
+    .ride-container:hover {
+        background: rgba(255, 255, 255, 0.06);
+        transform: translateX(5px);
+    }
+    .wait-box-magic {
+        min-width: 65px;
+        height: 50px;
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        color: white;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    .land-title-text { font-size: 16px; font-weight: 600; color: white; margin: 0; }
+    .land-sub-text { font-size: 10px; color: #94a3b8; text-transform: uppercase; margin: 0; }
+</style>
+""", unsafe_allow_html=True)
+
+# --- STRUCTURE DES LANDS ---
+lands_structure = {
+    "🏰 Disneyland Park": {
+        "Main Street": ["Horse-Drawn Streetcars", "Main Street Vehicles", "Disneyland Railroad Main Street Station"],
+        "Frontierland": ["Big Thunder Mountain", "Phantom Manor", "Thunder Mesa Riverboat Landing"],
+        "Adventureland": ["Pirates of the Caribbean", "Indiana Jones and the Temple of Peril", "La Cabane des Robinson"],
+        "Fantasyland": ["Peter Pan's Flight", "It's a small world", "Dumbo the Flying Elephant", "Ratatouille: L'Aventure Totalement Toquée de Rémy", "Mad Hatter's Tea Cups", "Casey Jr. - le Petit Train du Cirque"],
+        "Discoveryland": ["Star Wars Hyperspace Mountain", "Star Tours: l'Aventure Continue", "Buzz Lightyear Laser Blast", "Orbitron", "Autopia"]
+    },
+    "🎬 Walt Disney Studios": {
+        "Avengers Campus": ["Avengers Assemble: Flight Force", "Spider-Man W.E.B. Adventure"],
+        "Worlds of Pixar": ["Crush's Coaster", "Ratatouille: L'Aventure Totalement Toquée de Rémy", "RC Racer", "Toy Soldiers Parachute Drop"],
+        "Production Courtyard": ["The Twilight Zone Tower of Terror"],
+        "Adventure Way": ["Raiponce Tangled Spin"]
+    }
+}
+
+# --- FONCTION DE RENDU CELLULE ---
+def render_land_ride(ride_name):
+    if df_live.empty: return
+    ride_data = df_live[df_live['ride_name'] == ride_name]
+    if ride_data.empty: return
+    
+    row = ride_data.iloc[0]
+    info = status_map.get(ride_name, {})
+    
+    # Calcul des variables (Rehab, Fermé, Panne...)
+    is_daw = any(a.lower() in ride_name.lower() for a in RIDES_DAW)
+    h_o = EMT_OPENING if ride_name in EMT_EARLY_OPEN else PARK_OPENING
+    h_f = DAW_CLOSING if is_daw else DLP_CLOSING
+    if ride_name in ANTICIPATED_CLOSINGS: h_f = ANTICIPATED_CLOSINGS[ride_name]
+    
+    try:
+        wait_val = int(row['wait_time'])
+    except:
+        wait_val = 0
+        
+    rehab = not info.get('opened_yesterday', True) and not info.get('has_opened_today', False) and not row['is_open']
+    
+    if rehab: color, label, wait_txt = "#4b5563", "REHAB", "TRVX"
+    elif heure_actuelle >= h_f and not row['is_open']: color, label, wait_txt = "#7f1d1d", "FERMÉ", "FIN"
+    elif heure_actuelle < h_o and not row['is_open']: color, label, wait_txt = "#1e40af", "SOON", "⌛"
+    elif not row['is_open']: color, label, wait_txt = "#92400e", "INCIDENT", "101"
+    else:
+        if wait_val <= 15: color = "#059669"
+        elif wait_val <= 45: color = "#d97706"
+        else: color = "#dc2626"
+        label, wait_txt = "OUVERT", f"{wait_val}"
+
+    st.markdown(f"""
+        <div class="ride-container">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <span style="font-size:22px;">{get_emoji(ride_name)}</span>
+                <div>
+                    <p class="land-title-text">{ride_name}</p>
+                    <p class="land-sub-text">{label}</p>
+                </div>
+            </div>
+            <div class="wait-box-magic" style="background:{color};">
+                <div style="font-size:18px;">{wait_txt}</div>
+                <div style="font-size:8px; opacity:0.8;">{"MIN" if wait_txt.isdigit() else ""}</div>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
+# --- AFFICHAGE PARC PAR PARC ---
+st.title("🏰 Live Board par Land")
+st.caption(f"Dernière synchro : {derniere_maj} | Actualisation 60s")
+
+col_dlp, col_daw = st.columns(2)
+
+with col_dlp:
+    st.markdown('<div class="land-header">🏰 DISNEYLAND PARK</div>', unsafe_allow_html=True)
+    for land, rides in lands_structure["🏰 Disneyland Park"].items():
+        with st.expander(f"📍 {land}", expanded=True):
+            for r in rides:
+                render_land_ride(r)
+
+with col_daw:
+    st.markdown('<div class="land-header">🎬 WALT DISNEY STUDIOS</div>', unsafe_allow_html=True)
+    for land, rides in lands_structure["🎬 Walt Disney Studios"].items():
+        with st.expander(f"📍 {land}", expanded=True):
+            for r in rides:
+                render_land_ride(r)                        
 st.caption("Disney Wait Time Tool | Dashboard v3.1")
