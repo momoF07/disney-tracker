@@ -235,6 +235,34 @@ if not df_live.empty:
                 </div>
             """, unsafe_allow_html=True)
 
+# --- HISTORIQUE D'ÉTAT (REMIS ICI) ---
+            with st.expander("📜 Historique d'état"):
+                if rehab:
+                    st.write("• 🛠️ :grey[**Maintenance détectée**] (Fermé hier)")
+                else:
+                    ride_pannes = [p for p in all_pannes if p['ride'] == ride]
+                    h_pannes_clean = [p for p in ride_pannes if p['statut'] == "EN_COURS" or p['duree'] >= 3]
+                    
+                    if h_pannes_clean:
+                        pannes_triees = sorted(h_pannes_clean, key=lambda x: x['debut'], reverse=True)
+                        for idx, p in enumerate(pannes_triees):
+                            h_debut = p['debut'].strftime('%H:%M')
+                            if idx == 0:
+                                if heure_actuelle >= h_f and not data['is_open']:
+                                    st.write(f"• 🔴 :red[**Fermé pour la nuit**]")
+                                elif h_o <= heure_actuelle < h_f and not info.get('has_opened_today', False) and not data['is_open']:
+                                    st.write(f"• 🟣 :violet[**Ouverture retardée**]")
+                                elif p['statut'] == "EN_COURS":
+                                    st.write(f"• 🟠 :orange[**En cours** depuis {h_debut}]")
+                                elif p['statut'] == "TERMINEE":
+                                    st.write(f"• 🟢 :green[**Opérationnel** depuis {p['fin'].strftime('%H:%M')}]")
+                            else:
+                                if p['statut'] == "TERMINEE":
+                                    st.caption(f"• 🟢 :green[**Ope à {p['fin'].strftime('%H:%M')}**] | 🔴 :red[**Panne à {h_debut}**] ({p['duree']} min)")
+                    else:
+                        st.write("✅ **Aucun incident signalé aujourd'hui**")
+            st.write("") # Espace entre attractions
+
 # --- INTERRUPTIONS ---
 st.subheader("🚨 Dernières interruptions")
 if not df_pannes_brutes.empty:
