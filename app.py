@@ -299,9 +299,13 @@ if not df_live.empty:
                 with st.expander("📜 Historique d'état"):
                     h_pannes = [p for p in all_pannes if p['ride'] == ride]
                     if h_pannes:
+                        # FILTRE : On ignore les micro-pannes (durée < 3 min) sauf si elles sont EN_COURS
+                        h_pannes = [p for p in h_pannes if p['statut'] == "EN_COURS" or p['duree'] >= 3]
+                        
                         pannes_triees = sorted(h_pannes, key=lambda x: x['debut'], reverse=True)
                         for idx, p in enumerate(pannes_triees):
                             h_debut = p['debut'].strftime('%H:%M')
+                            
                             if idx == 0:
                                 if est_definitivement_ferme:
                                     if p['statut'] == "EN_COURS":
@@ -320,22 +324,35 @@ if not df_live.empty:
                                     h_fin = p['fin'].strftime('%H:%M')
                                     st.caption(f"• 🟢 :green[**Opérationnel à {h_fin}**] ({p['duree']} min)")
                                     st.caption(f"• 🔴 :red[**En panne à {h_debut}**]")
+                            
                             if idx < len(pannes_triees) - 1: 
                                 st.markdown("<hr style='margin: 5px 0px 5px 0px; opacity: 0.2;'>", unsafe_allow_html=True)
-                    else: 
-                        if est_definitivement_ferme:
-                            st.write(f"• 🔴 :red[**Fermé à {heure_fermeture_constatee}**]")
-                        else:
-                            st.write("✅ **Aucun incident signalé**")
+                    else:
+                        st.write("✅ **Aucun incident signalé**")
             st.divider()
 
 st.subheader("🚨 Dernières interruptions")
 if not df_pannes_brutes.empty:
     df_pannes_brutes['start_time_dt'] = pd.to_datetime(df_pannes_brutes['start_time'])
-    flux = df_pannes_brutes[df_pannes_brutes['start_time_dt'] >= debut_journee].sort_values('start_time', ascending=False).head(5)
+    
+    # On filtre les pannes du jour
+    flux = df_pannes_brutes[df_pannes_brutes['start_time_dt'] >= debut_journee].copy()
+    
+    # On calcule la durée pour filtrer le bruit ici aussi (si finie)
+    flux['end_time_dt'] = pd.to_datetime(flux['end_time'])
+    flux['duree'] = (flux['end_time_dt'] - flux['start_time_dt']).dt.total_seconds() / 60
+    
+    # FILTRE : On garde soit les pannes en cours, soit celles de + de 2 min
+    flux = flux[(flux['end_time'].isna()) | (flux['duree'] >= 3)]
+    
+    # TRI ET DOUBLONS : On trie par date et on ne garde qu'une ligne par attraction
+    flux = flux.sort_values('start_time', ascending=False)
+    flux = flux.drop_duplicates(subset=['ride_name']).head(5)
+    
     for _, p in flux.iterrows():
         d_p = pd.to_datetime(p['start_time']).astimezone(paris_tz)
-        if pd.isna(p['end_time']): st.error(f"🔴 {p['ride_name']} >> depuis {d_p.strftime('%H:%M')}")
+        if pd.isna(p['end_time']):
+            st.error(f"🔴 {p['ride_name']} >> depuis {d_p.strftime('%H:%M')}")
         else:
             f_p = pd.to_datetime(p['end_time']).astimezone(paris_tz)
             st.success(f"✅ {p['ride_name']} >> fini à {f_p.strftime('%H:%M')}")
