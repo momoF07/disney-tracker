@@ -120,9 +120,74 @@ with col_btn2:
     if st.button('🚀 Relevé manuel', type="primary", use_container_width=True):
         if trigger_github_action() == 204: st.toast("🚀 Requête envoyée !"); time_sleep.sleep(40); st.rerun()
 
+# --- STYLE CSS MAGIQUE ---
+st.markdown("""
+<style>
+    /* Animation de brillance pour les titres */
+    @keyframes shine {
+        to { background-position: 200% center; }
+    }
+
+    .magic-title {
+        text-align: center;
+        background: linear-gradient(120deg, #89f7fe 0%, #66a6ff 50%, #89f7fe 100%);
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 800;
+        font-size: 28px;
+        margin-bottom: 20px;
+        animation: shine 3s linear infinite;
+    }
+
+    /* Badges de catégories avec relief */
+    .cat-badge-magic {
+        padding: 8px 20px;
+        border-radius: 50px;
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        display: block;
+        text-align: center;
+        margin: 20px 0 10px 0;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        text-transform: uppercase;
+    }
+    .bg-blue-magic { background: linear-gradient(45deg, #4facfe, #00f2fe); color: white; }
+    .bg-green-magic { background: linear-gradient(45deg, #43e97b, #38f9d7); color: white; }
+    .bg-orange-magic { background: linear-gradient(45deg, #f9d423, #ff4e50); color: white; }
+
+    /* Boîtes de raccourcis Glassmorphism */
+    .shortcut-card {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        padding: 12px;
+        margin-bottom: 10px;
+        transition: all 0.3s ease;
+    }
+    .shortcut-card:hover {
+        transform: translateY(-3px);
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.3);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    }
+    .shortcut-label-magic {
+        font-size: 11px;
+        color: #a1a1aa;
+        font-weight: 700;
+        text-transform: uppercase;
+        margin-bottom: 5px;
+        display: block;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # --- FILTRES & INDEX ---
 st.write("---")
 col_sc, col_help = st.columns([0.88, 0.12])
+
 with col_help:
     with st.popover("❓"):
         st.markdown("""
@@ -174,19 +239,27 @@ with col_help:
             st.markdown('</div>', unsafe_allow_html=True)
 
 with col_sc:
-    sc = st.text_input("Raccourci...", placeholder="ex: *FANTASY", label_visibility="collapsed")
+    sc = st.text_input("Recherche rapide...", placeholder="🔮 Lancez un sortilège (ex: *FANTASY)", label_visibility="collapsed")
+
+# --- LOGIQUE DE SÉLECTION ---
 current_selection = st.query_params.get_all("fav")
 if sc.startswith("*"):
     res = get_rides_by_zone(sc, sorted(df_live['ride_name'].unique()) if not df_live.empty else [], all_pannes)
-    if res: current_selection = res
+    if res: 
+        current_selection = res
+        st.toast(f"🪄 Sortilège **{sc}** activé !", icon="✨")
 
 if not df_live.empty:
     options = sorted(df_live['ride_name'].unique())
-    selected_options = st.multiselect("Suivi :", options=options, default=[i for i in current_selection if i in options], format_func=lambda x: f"{get_emoji(x)} {x}")
+    selected_options = st.multiselect("📍 Sélection d'attractions :", 
+                                      options=options, 
+                                      default=[i for i in current_selection if i in options], 
+                                      format_func=lambda x: f"{get_emoji(x)} {x}")
     st.query_params["fav"] = selected_options
 
     if selected_options:
         # --- BARRE DE TRI ÉLÉGANTE ---
+        st.write("")
         col_sort, col_dir = st.columns([0.82, 0.18])
         
         with col_sort:
@@ -195,67 +268,35 @@ if not df_live.empty:
                 options=["🔠 Nom", "⏳ Temps d'Attente", "⚠️ Incidents"],
                 default="🔠 Nom",
                 key="sort_selector",
-                label_visibility="collapsed" # On cache le label pour gagner de la place
+                label_visibility="collapsed"
             )
         
         with col_dir:
-            # On utilise un toggle avec une icône de direction
-            descending = st.toggle("↕️", value=False, help="Inverser l'ordre")
-    
+            descending = st.toggle("↕️", value=False, help="Inverser l'ordre des astres")
+
         # --- LOGIQUE DE TRI ---
         if sort_mode == "⏳ Temps d'Attente":
-            # Filtrer uniquement les attractions ouvertes
-            selected_options = [
-                r for r in selected_options 
-                if df_live[df_live['ride_name'] == r]['is_open'].iloc[0]
-            ]
-            # Trier par temps d'attente
-            selected_options = sorted(
-                selected_options, 
-                key=lambda x: df_live[df_live['ride_name'] == x]['wait_time'].iloc[0],
-                reverse=descending
-            )
-            if not selected_options:
-                st.info("🕒 Aucune attraction ouverte dans votre sélection.")
-    
+            selected_options = [r for r in selected_options if df_live[df_live['ride_name'] == r]['is_open'].iloc[0]]
+            selected_options = sorted(selected_options, key=lambda x: df_live[df_live['ride_name'] == x]['wait_time'].iloc[0], reverse=descending)
+            if not selected_options: st.info("🕒 Tout est calme... aucune attraction ouverte ici.")
+        
         elif sort_mode == "⚠️ Incidents":
-            # Fonction de filtrage des incidents réels (pas de rehab, pas de fermeture nuit)
             def is_real_incident(ride_name):
                 r_data = df_live[df_live['ride_name'] == ride_name].iloc[0]
                 r_info = status_map.get(ride_name, {})
                 is_daw_check = any(a.lower() in ride_name.lower() for a in RIDES_DAW)
-                h_f_check = (ANTICIPATED_CLOSINGS.get(ride_name) or 
-                            (DAW_CLOSING if is_daw_check else DLP_CLOSING))
-                
+                h_f_check = (ANTICIPATED_CLOSINGS.get(ride_name) or (DAW_CLOSING if is_daw_check else DLP_CLOSING))
                 est_en_rehab = not r_info.get('opened_yesterday', True) and not r_info.get('has_opened_today', False)
-                est_ferme_nuit = heure_actuelle >= h_f_check
-                return not r_data['is_open'] and not est_en_rehab and not est_ferme_nuit
-    
+                return not r_data['is_open'] and not est_en_rehab and heure_actuelle < h_f_check
+
             selected_options = [r for r in selected_options if is_real_incident(r)]
             selected_options = sorted(selected_options, reverse=descending)
-            if not selected_options:
-                st.success("✅ Aucune panne signalée sur votre sélection.")
-    
-        else:
-            # Tri Nom (Garde toute la liste)
-            selected_options = sorted(selected_options, reverse=descending)
-    
-        st.write("") # Espace
-
-    # --- BOUCLE D'AFFICHAGE ---
-    for ride in selected_options:
-        data = df_live[df_live['ride_name'] == ride].iloc[0]
-        info = status_map.get(ride, {})
-        panne_actuelle = next((p for p in all_pannes if p['ride'] == ride and p['statut'] == "EN_COURS"), None)
+            if not selected_options: st.success("🌟 Le royaume est en paix, aucun incident à signaler.")
         
-        is_daw = any(a.lower() in ride.lower() for a in RIDES_DAW)
-        h_o = EMT_OPENING if ride in EMT_EARLY_OPEN else PARK_OPENING
-        h_f = DAW_CLOSING if is_daw else DLP_CLOSING
-        if ride in ANTICIPATED_CLOSINGS: h_f = ANTICIPATED_CLOSINGS[ride]
-        elif ride in FANTASYLAND_EARLY_CLOSE: h_f = (datetime.combine(datetime.today(), DLP_CLOSING) - timedelta(minutes=65)).time()
+        else:
+            selected_options = sorted(selected_options, reverse=descending)
 
-        rehab = not info.get('opened_yesterday', True) and not info.get('has_opened_today', False) and not data['is_open']
-        if data['is_open'] and data['wait_time'] > 0: rehab = False
+        st.write("") # Espace final avant les cartes
         
         # --- LOGIQUE DE COULEUR & LABELS ---
         if rehab: sub, wait, bg, card_style, pill = "🛠️ Travaux détectés", "REHAB", "bg-grey", "card-grey", "TRAVAUX"
