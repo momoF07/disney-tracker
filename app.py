@@ -310,24 +310,54 @@ with col_help:
             cols_z = st.columns(len(codes))
             for idx, code in enumerate(codes): cols_z[idx].code(code)
             st.markdown('</div>', unsafe_allow_html=True)
+# --- SECTION SÉLECTION ---
 with col_sc:
-    sc = st.text_input("Raccourci...", placeholder="ex: *FANTASY", label_visibility="collapsed")
+    # On ajoute une petite icône de recherche dans le placeholder
+    sc = st.text_input("Raccourci...", placeholder="🔍 Tapez un code (ex: *FANTASY)", label_visibility="collapsed")
 
-# Logique de sélection (Inchangée mais intégrée)
+# Logique de sélection (Inchangée mais optimisée)
 current_selection = st.query_params.get_all("fav")
+applied_shortcut = False
+
 if sc.startswith("*"):
     shortcut_selection = get_rides_by_zone(sc, sorted(df_live['ride_name'].unique()) if not df_live.empty else [], all_pannes)
     if shortcut_selection: 
         current_selection = shortcut_selection
+        applied_shortcut = True
 
 if not df_live.empty:
     options_list = sorted(df_live['ride_name'].unique())
     valid_default = [item for item in current_selection if item in options_list]
+    
+    # Stylisation du Multiselect via CSS pour rendre les "tags" plus beaux
+    st.markdown("""
+        <style>
+            span[data-baseweb="tag"] {
+                background-color: rgba(79, 172, 254, 0.2) !important;
+                border: 1px solid rgba(79, 172, 254, 0.4) !important;
+                border-radius: 8px !important;
+                padding-right: 5px !important;
+            }
+            .applied-msg {
+                font-size: 12px;
+                color: #4ade80;
+                margin-top: -15px;
+                margin-bottom: 10px;
+                font-weight: 500;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    # Message de confirmation si un raccourci est détecté
+    if applied_shortcut:
+        st.markdown(f'<p class="applied-msg">✨ Raccourci "{sc}" appliqué avec succès</p>', unsafe_allow_html=True)
+
     selected_options = st.multiselect(
         "Attractions suivies :", 
         options=options_list, 
         default=valid_default, 
-        format_func=lambda x: f"{get_emoji(x)} {x}"
+        format_func=lambda x: f"{get_emoji(x)} {x}",
+        help="Choisissez vos attractions ou utilisez un code raccourci ci-dessus."
     )
     st.query_params["fav"] = selected_options
 
