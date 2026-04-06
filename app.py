@@ -281,29 +281,40 @@ if not df_live.empty:
                 c1, c2 = st.columns(2)
                 
                 with c1:
+                    # CAS : Fermé pour la journée
                     if est_definitivement_ferme:
                         st.markdown(f'<div style="background-color: rgba(255, 75, 75, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 75, 75, 0.5); margin-bottom: 8px;"><span style="color: #ff4b4b; font-weight: 600; font-size: 15px;">🔴 FERMÉ DEPUIS {heure_fermeture_constatee}</span></div>', unsafe_allow_html=True)
                         c2.metric("Attente", "- - -")
+                    
+                    # CAS : En attente (Avant l'heure théorique)
                     elif est_en_attente:
                         st.markdown('<div style="background-color: rgba(0, 123, 255, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(0, 123, 255, 0.5); margin-bottom: 8px;"><span style="color: #007bff; font-weight: 600; font-size: 15px;">🕒 EN ATTENTE</span></div>', unsafe_allow_html=True)
                         c2.metric("Attente", "- - -")
-                    elif est_en_interruption:
+                    
+                    # CAS : OUVERTURE RETARDÉE (Heure passée, n'a jamais ouvert)
+                    elif est_en_interruption and not a_deja_ouvert:
+                        st.markdown('<div style="background-color: rgba(155, 89, 182, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(155, 89, 182, 0.5); margin-bottom: 8px;"><span style="color: #9b59b6; font-weight: 600; font-size: 15px;">🟣 OUVERTURE RETARDÉE</span></div>', unsafe_allow_html=True)
+                        st.caption(f"⏳ Devait ouvrir à {h_ouverture_theorique.strftime('%H:%M')}")
+                        c2.metric("Attente", "- - -")
+
+                    # CAS : INTERRUPTION (A déjà ouvert mais est tombé en panne)
+                    elif est_en_interruption and a_deja_ouvert:
                         st.markdown('<div style="background-color: rgba(255, 165, 0, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 165, 0, 0.5); margin-bottom: 8px;"><span style="color: #FF8C00; font-weight: 600; font-size: 15px;">🟠 INTERRUPTION DE SERVICE</span></div>', unsafe_allow_html=True)
                         if panne_actuelle: st.caption(f"⚠️ Depuis {max(0, int((maintenant - panne_actuelle['debut']).total_seconds() / 60))} min")
-                        else: st.caption(f"⏳ Ouverture prévue à {h_ouverture_theorique.strftime('%H:%M')}")
                         c2.metric("Attente", "- - -")
+                    
+                    # CAS : OUVERT
                     else:
                         st.markdown('<div style="background-color: rgba(46, 204, 113, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(46, 204, 113, 0.5); margin-bottom: 8px;"><span style="color: #2ecc71; font-weight: 600; font-size: 15px;">🟢 OUVERT</span></div>', unsafe_allow_html=True)
                         c2.metric("Attente", f"{int(current['wait_time'])} min")
                         
                 with st.expander("📜 Historique d'état"):
-                    # 1. On récupère les pannes de l'attraction
                     h_pannes_brutes = [p for p in all_pannes if p['ride'] == ride]
-                    
-                    # 2. On applique le filtre anti-bruit (on garde si EN_COURS ou si durée >= 3 min)
                     h_pannes_clean = [p for p in h_pannes_brutes if p['statut'] == "EN_COURS" or p['duree'] >= 3]
                     
-                    # 3. On vérifie si la liste est vide APRÈS filtrage
+                    # Déterminer si l'attraction a subi un retard à l'ouverture
+                    # (Si la première panne de la journée a commencé pile à l'heure d'ouverture)
+                    
                     if h_pannes_clean:
                         pannes_triees = sorted(h_pannes_clean, key=lambda x: x['debut'], reverse=True)
                         for idx, p in enumerate(pannes_triees):
@@ -312,36 +323,43 @@ if not df_live.empty:
                             # --- ÉVÉNEMENT LE PLUS RÉCENT (ACTUEL) ---
                             if idx == 0:
                                 if est_definitivement_ferme:
-                                    if p['statut'] == "EN_COURS":
-                                        st.write(f"• 🔴 :red[**Fermé à {heure_fermeture_constatee}**]")
-                                        st.caption(f"• 🟠 :orange[**En panne** depuis {h_debut}]")
-                                    else:
-                                        st.write(f"• 🟢 :green[**Opérationnel jusqu'à la fermeture**]")
-                                        st.caption(f"• 🔴 :red[**Fermé à {heure_fermeture_constatee}**]")
+                                    st.write(f"• 🔴 :red[**Fermé à {heure_fermeture_constatee}**]")
+                                    if p['statut'] == "EN_COURS": st.caption(f"• 🟠 :orange[**En panne** depuis {h_debut}]")
+                                
+                                elif est_en_interruption and not a_deja_ouvert:
+                                    st.write(f"• 🟣 :violet[**Ouverture retardée**]")
+                                    st.caption(f"• 🕒 Stand-by depuis {h_ouverture_theorique.strftime('%H:%M')}")
                                 
                                 elif p['statut'] == "EN_COURS":
                                     st.write(f"• 🟠 :orange[**En cours** depuis {h_debut}]")
-                                    st.caption("• ⚠️ Incident technique signalé")
                                 
                                 elif p['statut'] == "TERMINEE":
                                     st.write(f"• 🟢 :green[**Opérationnel** depuis {p['fin'].strftime('%H:%M')}]")
-                                    st.caption(f"• 🔴 :red[**En panne** à {h_debut}] ({p['duree']} min)")
+                                    # Si c'était un retard à l'ouverture (panne au tout début)
+                                    if p['debut'].time() <= h_ouverture_theorique:
+                                        st.caption(f"• 🟣 :violet[**Ouverture retardée**] (Prévue à {h_ouverture_theorique.strftime('%H:%M')})")
+                                    else:
+                                        st.caption(f"• 🔴 :red[**En panne** à {h_debut}] ({p['duree']} min)")
 
                             # --- ÉVÉNEMENTS ANCIENS ---
                             else:
                                 if p['statut'] == "TERMINEE":
                                     h_fin = p['fin'].strftime('%H:%M')
-                                    st.caption(f"• 🟢 :green[**Opérationnel à {h_fin}**] ({p['duree']} min)")
-                                    st.caption(f"• 🔴 :red[**En panne à {h_debut}**]")
+                                    if p['debut'].time() <= h_ouverture_theorique:
+                                        st.caption(f"• 🟢 :green[**Opérationnel à {h_fin}**] | 🟣 :violet[**Ouverture retardée**]")
+                                    else:
+                                        st.caption(f"• 🟢 :green[**Opérationnel à {h_fin}**] ({p['duree']} min)")
+                                        st.caption(f"• 🔴 :red[**En panne à {h_debut}**]")
                                     
                             if idx < len(pannes_triees) - 1: 
                                 st.markdown("<hr style='margin: 5px 0px 5px 0px; opacity: 0.2;'>", unsafe_allow_html=True)
                     
                     else: 
-                        # --- AUCUN INCIDENT (OU SEULEMENT DU BRUIT FILTRÉ) ---
                         if est_definitivement_ferme:
                             st.write(f"• 🔴 :red[**Fermé à {heure_fermeture_constatee}**]")
-                            st.caption("• ✅ Aucun incident signalé aujourd'hui")
+                        elif est_en_interruption and not a_deja_ouvert:
+                            st.write(f"• 🟣 :violet[**Ouverture retardée**]")
+                            st.caption(f"• 🕒 Stand-by depuis {h_ouverture_theorique.strftime('%H:%M')}")
                         else:
                             st.write("✅ **Aucun incident signalé**")
             st.divider()
