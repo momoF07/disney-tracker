@@ -511,30 +511,56 @@ if not df_pannes_brutes.empty:
     flux = flux.drop_duplicates(subset=['ride_name']).head(5)
     
     for _, p in flux.iterrows():
+        ride_name = p['ride_name']
         d_p = pd.to_datetime(p['start_time']).astimezone(paris_tz)
         h_debut = d_p.strftime('%H:%M')
-        ride_name = p['ride_name']
         emoji = get_emoji(ride_name)
         
+        # --- RÉCUPÉRATION HEURE FERMETURE POUR LOGIQUE ROUGE ---
+        is_daw = any(attr.lower() in ride_name.lower() for attr in RIDES_DAW)
+        h_f_theorique = DAW_CLOSING if is_daw else DLP_CLOSING
+        if ride_name in ANTICIPATED_CLOSINGS: h_f_theorique = ANTICIPATED_CLOSINGS[ride_name]
+        elif ride_name in FANTASYLAND_EARLY_CLOSE:
+            h_f_theorique = (datetime.combine(datetime.today(), DLP_CLOSING) - timedelta(minutes=65)).time()
+
+        # --- LOGIQUE D'AFFICHAGE ---
         if pd.isna(p['end_time']):
-            # --- CARD PANNE EN COURS ---
-            st.markdown(f"""
-                <div style="background: rgba(255, 75, 75, 0.05); border: 1px solid rgba(255, 75, 75, 0.2); 
-                            padding: 12px; border-radius: 15px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <span style="font-size: 20px;">{emoji}</span>
-                        <div>
-                            <div style="font-weight: 600; font-size: 14px; color: #f8f9fa;">{ride_name}</div>
-                            <div style="font-size: 12px; color: #ff4b4b;">En cours d'interruption</div>
+            # Si la panne est en cours MAIS que le parc est fermé
+            if heure_actuelle >= h_f_theorique:
+                st.markdown(f"""
+                    <div style="background: rgba(255, 75, 75, 0.05); border: 1px solid rgba(255, 75, 75, 0.2); 
+                                padding: 12px; border-radius: 15px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 20px;">{emoji}</span>
+                            <div>
+                                <div style="font-weight: 600; font-size: 14px; color: var(--text-color);">{ride_name}</div>
+                                <div style="font-size: 12px; color: #ff4b4b;">N'a pas rouvert avant la fermeture</div>
+                            </div>
+                        </div>
+                        <div style="background: #ff4b4b; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: bold;">
+                            FERMÉ À {h_f_theorique.strftime('%H:%M')}
                         </div>
                     </div>
-                    <div style="background: #ff4b4b; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: bold;">
-                        DEPUIS {h_debut}
+                """, unsafe_allow_html=True)
+            else:
+                # Panne classique en cours de journée
+                st.markdown(f"""
+                    <div style="background: rgba(255, 75, 75, 0.05); border: 1px solid rgba(255, 75, 75, 0.2); 
+                                padding: 12px; border-radius: 15px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 20px;">{emoji}</span>
+                            <div>
+                                <div style="font-weight: 600; font-size: 14px; color: var(--text-color);">{ride_name}</div>
+                                <div style="font-size: 12px; color: #ff4b4b;">Interruption en cours</div>
+                            </div>
+                        </div>
+                        <div style="background: #ff4b4b; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: bold;">
+                            DEPUIS {h_debut}
+                        </div>
                     </div>
-                </div>
-            """, unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
         else:
-            # --- CARD PANNE TERMINÉE ---
+            # Réouverture réussie
             f_p = pd.to_datetime(p['end_time']).astimezone(paris_tz)
             h_fin = f_p.strftime('%H:%M')
             st.markdown(f"""
@@ -543,7 +569,7 @@ if not df_pannes_brutes.empty:
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <span style="font-size: 20px;">{emoji}</span>
                         <div>
-                            <div style="font-weight: 600; font-size: 14px; color: #f8f9fa;">{ride_name}</div>
+                            <div style="font-weight: 600; font-size: 14px; color: var(--text-color);">{ride_name}</div>
                             <div style="font-size: 12px; color: #2ecc71;">Réouverture confirmée</div>
                         </div>
                     </div>
@@ -558,6 +584,6 @@ else:
             ✅ Aucune interruption majeure signalée aujourd'hui.
         </div>
     """, unsafe_allow_html=True)
-
+    
 st.divider()
 st.caption("Disney Wait Time Tool | Real-time Dashboard")
