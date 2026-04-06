@@ -420,7 +420,7 @@ if not df_live.empty:
                     if est_en_rehab:
                         st.markdown(f'<div style="background-color: rgba(128, 128, 128, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(128, 128, 128, 0.5); margin-bottom: 8px;"><span style="color: #808080; font-weight: 600; font-size: 15px;">🛠️ EN RÉHABILITATION</span></div>', unsafe_allow_html=True)
                         st.caption(f"⏳ Jusqu'au {datetime.strptime(infos_rehab['rehab_end'], '%Y-%m-%d').strftime('%d/%m')}")
-                        c2.metric("Attente", "TRVX")
+                        c2.metric("Attente", "- - -")
 
                     # CAS 1 : FERMETURE NOCTURNE (Badge Rouge) - Uniquement après h_f_theorique
                     elif est_definitivement_ferme:
