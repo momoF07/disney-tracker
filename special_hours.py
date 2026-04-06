@@ -29,19 +29,20 @@ FANTASYLAND_EARLY_CLOSE = [
     "Les Voyages de Pinocchio",
 ]
 
+
 EMT_EARLY_OPEN = [
     "Big Thunder Mountain",
     "Peter Pan's Flight", 
     "Dumbo The Flying Elephant", 
-    "HyperSpace Mountain", 
-    "Buzz Lightyear Laserblast",
+    "Star Wars Hyperspace Mountain", 
+    "Buzz Lightyear Laser Blast",
     "Main Street Vehicles",
     "Crush's Coaster",
-    "WEB", 
-    "Flight Force",
-    "Tour de la Terreur", 
-    "Slinky Dog", 
-    "Ratatouille",
+    "Spider-Man W.E.B. Adventure", 
+    "Avengers Assemble: Flight Force",
+    "The Twilight Zone Tower of Terror", 
+    "Slinky® Dog Zigzag Spin", 
+    "Ratatouille : L’Aventure Totalement Toquée de Rémy​",
     "Frozen Ever After",
     "Raiponce Tangled Spin",
 ]
