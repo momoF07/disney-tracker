@@ -164,4 +164,6 @@ with st.expander("📜 Historique"):
                                 if p['statut'] == "TERMINEE": 
                                     st.caption(f"• 🟢 :green[**Ope à {p['fin'].strftime('%H:%M')}**] | 🔴 :red[**Panne à {h_d}**] ({p['duree']} min)")
                     else: 
-                        st.write("✅ Aucun incident notable aujourd'hui (+5 min)")st.caption("Disney Wait Time Tool | Dashboard v3.1")
+                        st.write("✅ Aucun incident notable aujourd'hui (+5 min)")
+                        
+st.caption("Disney Wait Time Tool | Dashboard v3.1")
