@@ -269,30 +269,35 @@ if not df_live.empty:
                         h_d = p['debut'].strftime('%H:%M')
                         h_f_p = p['fin'].strftime('%H:%M') if p['fin'] else None
                         
-                        # Affichage du statut actuel (le premier de la liste)
+                        # --- ÉVÉNEMENT LE PLUS RÉCENT (Index 0) ---
                         if idx == 0:
+                            # Cas Parc Fermé
                             if heure_actuelle >= h_f and not data['is_open']:
-                                st.write(f"• 🔴 :red[**Fermé pour la nuit**] (Dernier état)")
-                            elif h_o <= heure_actuelle < h_f and not info.get('has_opened_today', False) and not data['is_open']:
-                                st.write(f"• 🟣 :violet[**Ouverture retardée**] (Toujours en attente)")
+                                st.write(f"• 🏁 :red[**Fermé pour la nuit**]")
                             
-                            # Affichage de l'événement le plus récent
+                            # Cas Ouverture Retardée (si aucune panne n'a encore fini)
+                            elif h_o <= heure_actuelle < h_f and not info.get('has_opened_today', False) and not data['is_open']:
+                                st.write(f"• 🟣 :violet[**Ouverture retardée**]")
+
+                            # État de la panne la plus récente
                             if p['statut'] == "EN_COURS":
-                                st.write(f"• 🟠 :orange[**Interruption**] en cours depuis {h_d}")
+                                st.write(f"• 🟠 :orange[**Interruption en cours**] depuis {h_d}")
                             else:
                                 st.write(f"• 🟢 :green[**Opérationnel**] depuis {h_f_p}")
                                 st.caption(f"&nbsp;&nbsp;&nbsp;&nbsp;└ Panne de {h_d} à {h_f_p} ({p['duree']} min)")
                         
-                        # Affichage des événements précédents (historique)
+                        # --- ÉVÉNEMENTS PRÉCÉDENTS (Le reste de la liste) ---
                         else:
                             if p['statut'] == "TERMINEE":
-                                st.write(f"• ⏳ :grey[**Précédent :**] Panne à {h_d} pendant {p['duree']} min")
+                                st.write(f"• ⏳ :grey[**Précédent :**] Panne à {h_d} ({p['duree']} min)")
                                 st.caption(f"&nbsp;&nbsp;&nbsp;&nbsp;└ Réouverture à {h_f_p}")
                 
                 else:
-                    # Cas spécifique : Pas de panne mais pas encore ouvert
+                    # Cas spécifique : Pas de panne enregistrée mais l'attraction est fermée
                     if h_o <= heure_actuelle < h_f and not info.get('has_opened_today', False) and not data['is_open']:
                         st.write(f"• 🟣 :violet[**Ouverture retardée**]")
+                    elif heure_actuelle >= h_f and not data['is_open']:
+                        st.write(f"• 🏁 :red[**Fermé pour la nuit**]")
                     else:
                         st.write("✅ **Aucun incident signalé aujourd'hui**")
             
