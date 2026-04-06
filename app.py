@@ -243,7 +243,12 @@ if not df_live.empty:
                 if rehab: 
                     st.write("• 🛠️ :grey[**Maintenance en cours**]")
                 else:
-                    h_p_clean = [p for p in all_pannes if p['ride'] == ride and (p['statut'] == "EN_COURS" or p['duree'] >= 3)]
+                    # --- FILTRE : Minimum 5 minutes (ou en cours) ---
+                    h_p_clean = [
+                        p for p in all_pannes 
+                        if p['ride'] == ride and (p['statut'] == "EN_COURS" or p['duree'] >= 5)
+                    ]
+                    
                     if h_p_clean:
                         # Tri du plus récent au plus ancien
                         pannes_triees = sorted(h_p_clean, key=lambda x: x['debut'], reverse=True)
@@ -262,18 +267,17 @@ if not df_live.empty:
                                 else: 
                                     # L'attraction est réouverte
                                     st.write(f"• 🟢 :green[**Opérationnel** à {p['fin'].strftime('%H:%M')}]")
-                                    # ON AJOUTE LE DÉTAIL DE LA PANNE PRÉCÉDENTE ICI
+                                    # DÉTAIL DE LA PANNE QUI A PRÉCÉDÉ LA RÉOUVERTURE
                                     if p['debut'].time() <= h_o:
                                         st.caption(f"&nbsp;&nbsp;&nbsp;&nbsp;└ 🟣 :violet[**Ouverture retardée**] (Prévue à {h_o.strftime('%H:%M')})")
                                     else:
-                                        st.caption(f"&nbsp;&nbsp;&nbsp;&nbsp;└ 🔴 :red[**En panne** à {h_d}] ({p['duree']} min)")
+                                        st.caption(f"&nbsp;&nbsp;&nbsp;&nbsp;└ 🔴 :red[**Panne** à {h_d}] ({p['duree']} min)")
                             else:
-                                # ÉVÉNEMENTS PLUS ANCIENS
+                                # ÉVÉNEMENTS PRÉCÉDENTS (> 5 min)
                                 if p['statut'] == "TERMINEE": 
                                     st.caption(f"• 🟢 :green[**Ope à {p['fin'].strftime('%H:%M')}**] | 🔴 :red[**Panne à {h_d}**] ({p['duree']} min)")
                     else: 
-                        st.write("✅ Aucun incident aujourd'hui")
-
+                        st.write("✅ Aucun incident notable aujourd'hui (+5 min)")
 st.subheader("🚨 Dernières interruptions")
 if not df_pannes_brutes.empty:
     flux = df_pannes_brutes[pd.to_datetime(df_pannes_brutes['start_time']).dt.tz_convert('Europe/Paris') >= debut_journee].copy()
