@@ -78,6 +78,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- INITIALISATION ---
+st.title("🏰 Disney Wait Time")
 paris_tz = pytz.timezone('Europe/Paris')
 if "last_refresh" not in st.session_state:
     st.session_state.last_refresh = datetime.now(paris_tz).strftime("%H:%M:%S")
