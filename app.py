@@ -212,7 +212,7 @@ if not df_live.empty:
                             else:
                                 if p['statut'] == "TERMINEE": st.caption(f"• 🟢 :green[**Ope à {p['fin'].strftime('%H:%M')}**] | 🔴 :red[**Panne à {h_d}**] ({p['duree']} min)")
                     else: st.write("✅ **Aucun incident signalé aujourd'hui**")
-            st.divider()
+            st.caption("")
 
 # --- DERNIÈRES INTERRUPTIONS ---
 st.subheader("🚨 Dernières interruptions")
