@@ -189,7 +189,7 @@ if not df_live.empty:
             descending = st.toggle("↕️", value=False, help="Inverser l'ordre")
     
         # --- LOGIQUE DE TRI ---
-        if sort_mode == "⏳ Ouvertes":
+        if sort_mode == "⏳ Temps d'Attente":
             # Filtrer uniquement les attractions ouvertes
             selected_options = [
                 r for r in selected_options 
