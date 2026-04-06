@@ -543,18 +543,18 @@ if not df_pannes_brutes.empty:
                     </div>
                 """, unsafe_allow_html=True)
             else:
-                # Panne classique en cours de journée
+                # Panne classique en cours de journée (Orange)
                 st.markdown(f"""
-                    <div style="background: rgba(255, 75, 75, 0.05); border: 1px solid rgba(255, 75, 75, 0.2); 
+                    <div style="background: rgba(255, 140, 0, 0.05); border: 1px solid rgba(255, 140, 0, 0.2); 
                                 padding: 12px; border-radius: 15px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <span style="font-size: 20px;">{emoji}</span>
                             <div>
                                 <div style="font-weight: 600; font-size: 14px; color: var(--text-color);">{ride_name}</div>
-                                <div style="font-size: 12px; color: #ff4b4b;">Interruption en cours</div>
+                                <div style="font-size: 12px; color: #FF8C00;">Interruption de service</div>
                             </div>
                         </div>
-                        <div style="background: #ff4b4b; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: bold;">
+                        <div style="background: #FF8C00; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: bold;">
                             DEPUIS {h_debut}
                         </div>
                     </div>
