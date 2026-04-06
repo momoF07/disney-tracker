@@ -77,6 +77,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# --- CONFIGURATION DE LA PAGE ---
+st.set_page_config(page_title="Disney Wait Time", page_icon="🏰", layout="centered")
+
 # --- INITIALISATION ---
 paris_tz = pytz.timezone('Europe/Paris')
 if "last_refresh" not in st.session_state:
