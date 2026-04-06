@@ -324,13 +324,32 @@ st.subheader("🚨 Dernières interruptions")
 if not df_pannes_brutes.empty:
     flux = df_pannes_brutes[pd.to_datetime(df_pannes_brutes['start_time']).dt.tz_convert('Europe/Paris') >= debut_journee].copy()
     flux = flux.sort_values('start_time', ascending=False).drop_duplicates(subset=['ride_name']).head(5)
+    
     for _, p in flux.iterrows():
         r_n, d_p = p['ride_name'], pd.to_datetime(p['start_time']).astimezone(paris_tz)
         h_f_p = pd.to_datetime(p['end_time']).astimezone(paris_tz).strftime("%H:%M") if pd.notna(p['end_time']) else None
-        if not h_f_p:
-            st.markdown(f'<div class="ride-left-card card-orange" style="width:100%; margin-bottom:10px;"><div class="ride-info-meta"><span style="font-size:20px;">{get_emoji(r_n)}</span><div class="ride-titles"><p class="ride-main-name">{r_n}</p><p class="ride-sub-status">En panne depuis {d_p.strftime("%H:%M")}</p></div></div><div class="state-pill">101</div></div>', unsafe_allow_html=True)
-        else:
-            st.markdown(f'<div class="ride-left-card card-green" style="width:100%; margin-bottom:10px;"><div class="ride-info-meta"><span style="font-size:20px;">{get_emoji(r_n)}</span><div class="ride-titles"><p class="ride-main-name">{r_n}</p><p class="ride-sub-status">Rétabli à {h_f_p}</p></div></div><div class="state-pill">RETOUR</div></div>', unsafe_allow_html=True)
-else: st.info("Aucun incident aujourd'hui.")
+        
+        # --- CALCUL DE L'HEURE DE FERMETURE THÉORIQUE ---
+        is_daw_check = any(a.lower() in r_n.lower() for a in RIDES_DAW)
+        h_f_check = DAW_CLOSING if is_daw_check else DLP_CLOSING
+        if r_n in ANTICIPATED_CLOSINGS: h_f_check = ANTICIPATED_CLOSINGS[r_n]
+        elif r_n in FANTASYLAND_EARLY_CLOSE: h_f_check = (datetime.combine(datetime.today(), DLP_CLOSING) - timedelta(minutes=65)).time()
+        
+        # Détermination si c'est une fermeture de nuit ou une panne
+        est_ferme_nuit = heure_actuelle >= h_f_check
 
+        if not h_f_p:
+            # Si pas d'heure de fin, on vérifie si c'est parce que le parc est fermé
+            if est_ferme_nuit:
+                pill_txt, pill_bg, sub_txt = "FERMETURE", "card-bordeaux", f"Fermé pour la nuit (depuis {d_p.strftime('%H:%M')})"
+                # On adapte la couleur du badge de droite en bordeaux via le CSS si besoin, 
+                # ici on réutilise card-bordeaux pour le fond
+                st.markdown(f'<div class="ride-left-card card-bordeaux" style="width:100%; margin-bottom:10px;"><div class="ride-info-meta"><span style="font-size:20px;">{get_emoji(r_n)}</span><div class="ride-titles"><p class="ride-main-name">{r_n}</p><p class="ride-sub-status">{sub_txt}</p></div></div><div class="state-pill">{pill_txt}</div></div>', unsafe_allow_html=True)
+            else:
+                # C'est une vraie panne 101
+                st.markdown(f'<div class="ride-left-card card-orange" style="width:100%; margin-bottom:10px;"><div class="ride-info-meta"><span style="font-size:20px;">{get_emoji(r_n)}</span><div class="ride-titles"><p class="ride-main-name">{r_n}</p><p class="ride-sub-status">En panne depuis {d_p.strftime("%H:%M")}</p></div></div><div class="state-pill">101</div></div>', unsafe_allow_html=True)
+        else:
+            # C'est un rétablissement
+            st.markdown(f'<div class="ride-left-card card-green" style="width:100%; margin-bottom:10px;"><div class="ride-info-meta"><span style="font-size:20px;">{get_emoji(r_n)}</span><div class="ride-titles"><p class="ride-main-name">{r_n}</p><p class="ride-sub-status">Réouverture à {h_f_p}</p></div></div><div class="state-pill">RETOUR</div></div>', unsafe_allow_html=True)
+else: st.info("Aucun incident aujourd'hui.")
 st.caption("Disney Wait Time Tool | Dashboard v3.3")
