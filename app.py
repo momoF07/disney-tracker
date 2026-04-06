@@ -193,25 +193,42 @@ if not df_live.empty:
             elif not data['is_open']: sub, wait, bg, card_style, pill = f"⚠️ Panne ({max(0, int((maintenant - panne_actuelle['debut']).total_seconds() / 60))} min)" if panne_actuelle else "⚠️ Interruption", "- - -", "bg-orange", "card-orange", "INCIDENT"
             else: sub, wait, bg, card_style, pill = "✅ Opérationnel", f"{int(data['wait_time'])}", "bg-green", "card-green", "OUVERT"
 
+            # --- GÉNÉRATION DE L'HISTORIQUE HTML ---
+            hist_html = ""
+            if rehab:
+                hist_html = '<p style="margin:2px 0 0 0; font-size:10px; color:rgba(255,255,255,0.5);">• Maintenance détectée</p>'
+            else:
+                h_p_clean = [p for p in all_pannes if p['ride'] == ride and (p['statut'] == "EN_COURS" or p['duree'] >= 3)]
+                if h_p_clean:
+                    latest_p = sorted(h_p_clean, key=lambda x: x['debut'], reverse=True)[0]
+                    h_d = latest_p['debut'].strftime('%H:%M')
+                    if latest_p['statut'] == "EN_COURS":
+                        hist_html = f'<p style="margin:2px 0 0 0; font-size:10px; color:#fbbf24;">• Interruption depuis {h_d}</p>'
+                    else:
+                        hist_html = f'<p style="margin:2px 0 0 0; font-size:10px; color:#4ade80;">• Rétabli à {latest_p["fin"].strftime("%H:%M")}</p>'
+                else:
+                    hist_html = '<p style="margin:2px 0 0 0; font-size:10px; color:rgba(255,255,255,0.4);">• Aucun incident aujourd\'hui</p>'
+
             wait_html = f'<span class="wait-val">{wait}</span>' if wait in ["- - -", "REHAB"] else f'<span class="wait-val">{wait}</span><span class="wait-unit">min</span>'
             
-            st.markdown(f"""<div class="ride-row"><div class="ride-left-card {card_style}"><div class="ride-info-meta"><span style="font-size: 24px;">{get_emoji(ride)}</span><div class="ride-titles"><p class="ride-main-name">{ride}</p><p class="ride-sub-status">{sub}</p></div></div><div class="state-pill">{pill}</div></div><div class="ride-right-wait {bg}"><span style="font-size:10px; opacity:0.7;">ATTENTE</span>{wait_html}</div></div>""", unsafe_allow_html=True)
-
-            with st.expander("📜 Historique d'état"):
-                if rehab: st.write("• 🛠️ :grey[**Maintenance détectée**] (Fermé hier)")
-                else:
-                    h_p_clean = [p for p in all_pannes if p['ride'] == ride and (p['statut'] == "EN_COURS" or p['duree'] >= 3)]
-                    if h_p_clean:
-                        for idx, p in enumerate(sorted(h_p_clean, key=lambda x: x['debut'], reverse=True)):
-                            h_d = p['debut'].strftime('%H:%M')
-                            if idx == 0:
-                                if heure_actuelle >= h_f and not data['is_open']: st.write(f"• 🔴 :red[**Fermé pour la nuit**]")
-                                elif h_o <= heure_actuelle < h_f and not info.get('has_opened_today', False) and not data['is_open']: st.write(f"• 🟣 :violet[**Ouverture retardée**]")
-                                elif p['statut'] == "EN_COURS": st.write(f"• 🟠 :orange[**En cours** depuis {h_d}]")
-                                else: st.write(f"• 🟢 :green[**Opérationnel** à {p['fin'].strftime('%H:%M')}]")
-                            else:
-                                if p['statut'] == "TERMINEE": st.caption(f"• 🟢 :green[**Ope à {p['fin'].strftime('%H:%M')}**] | 🔴 :red[**Panne à {h_d}**] ({p['duree']} min)")
-                    else: st.write("✅ **Aucun incident signalé aujourd'hui**")
+            # --- RENDU DE LA CARTE ---
+            # La hauteur passe de 68px à auto pour accueillir l'historique
+            st.markdown(f"""
+                <div class="ride-row">
+                    <div class="ride-left-card {card_style}" style="height: auto; min-height: 68px; padding: 12px 15px;">
+                        <div class="ride-info-meta">
+                            <span style="font-size: 24px;">{get_emoji(ride)}</span>
+                            <div class="ride-titles">
+                                <p class="ride-main-name">{ride}</p>
+                                <p class="ride-sub-status">{sub}</p>
+                                {hist_html}
+                            </div>
+                        </div>
+                        <div class="state-pill" style="align-self: center;">{pill}</div>
+                    </div>
+                    <div class="ride-right-wait {bg}"><span style="font-size:10px; opacity:0.7;">ATTENTE</span>{wait_html}</div>
+                </div>
+            """, unsafe_allow_html=True)
             st.write("")
 
 # --- DERNIÈRES INTERRUPTIONS ---
