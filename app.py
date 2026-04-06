@@ -290,7 +290,7 @@ if not df_live.empty:
                                     st.caption(f"• 🔴 :red[**En panne à {h_debut}**]")
         
                         if idx < len(pannes_triees) - 1: 
-                            st.markdown("<hr style='margin: 5px 0px 5px 0px; opacity: 0.2;'>", unsafe_allow_html=True)
+                            st.markdown("<hr style='margin: 5px 0px 5px 0px; opacity: 0.5;'>", unsafe_allow_html=True)
                 else: 
                     # Cas sans aucune panne enregistrée
                     if heure_actuelle >= h_f and not data['is_open']:
