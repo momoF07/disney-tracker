@@ -206,25 +206,61 @@ with st.sidebar.expander("🔐 Panel Administration"):
     elif admin_password != "":
         st.error("Mot de passe incorrect")
 
-# --- SECTION ACTIONS ---
-col_btn1, col_btn2 = st.columns(2)
-with col_btn1:
-    if st.button('🔄 Rafraîchir l\'Affichage'):
-        st.rerun()
-with col_btn2:
-    if st.button('🚀 Forcer un Relevé Manuel', type="primary"):
-        status_code = trigger_github_action()
-        if status_code == 204:
-            with st.status("Le robot Disney récupère les temps...", expanded=False):
-                st.toast("✅ Requête acceptée !")
-                time_sleep.sleep(40)
-                st.rerun()
+# --- SECTION ACTIONS & INFOS ---
+st.markdown("---")
 
+# Style pour harmoniser les boutons et le bandeau d'info
+st.markdown("""
+<style>
+    .info-container {
+        background: linear-gradient(90deg, rgba(79, 172, 254, 0.1) 0%, rgba(0, 242, 254, 0.05) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-left: 4px solid #4facfe;
+        border-radius: 15px;
+        padding: 15px;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .time-label { font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
+    .time-value { font-size: 16px; color: #f8f9fa; font-weight: 600; font-family: 'Courier New', monospace; }
+</style>
+""", unsafe_allow_html=True)
+
+# Bandeau d'information stylisé
 st.markdown(f"""
-    <div style="background-color: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 10px; border-left: 5px solid #4facfe; margin-bottom: 20px;">
-        <span style="font-size: 14px; color: #94a3b8;">🕒 Donnée API : <b>{derniere_maj}</b> | Synchro Refresh : <b>{st.session_state.last_refresh}</b></span>
+    <div class="info-container">
+        <div>
+            <div class="time-label">📡 Dernière mise à jour API</div>
+            <div class="time-value">{derniere_maj}</div>
+        </div>
+        <div style="text-align: right;">
+            <div class="time-label">🔄 Prochain rafraîchissement</div>
+            <div class="time-value">{st.session_state.last_refresh}</div>
+        </div>
     </div>
 """, unsafe_allow_html=True)
+
+# Boutons d'action avec colonnes
+col_btn1, col_btn2 = st.columns(2)
+
+with col_btn1:
+    if st.button('✨ Actualiser la page', use_container_width=True):
+        st.rerun()
+
+with col_btn2:
+    if st.button('🚀 Lancer un relevé immédiat', type="primary", use_container_width=True):
+        status_code = trigger_github_action()
+        if status_code == 204:
+            with st.status("🛠️ Synchronisation avec les serveurs Disney...", expanded=False) as status:
+                st.toast("🚀 Requête envoyée avec succès !")
+                # On simule l'attente du traitement GitHub Action
+                time_sleep.sleep(40)
+                status.update(label="✅ Données récupérées !", state="complete", expanded=False)
+                st.rerun()
+        else:
+            st.error("⚠️ Serveur occupé. Réessayez dans 1 minute.")
 
 # --- FILTRES ET POPOVER ---
 st.write("---")
