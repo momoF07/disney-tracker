@@ -119,36 +119,86 @@ if not df_live.empty and not df_pannes_brutes.empty:
             "statut": "EN_COURS" if f_paris is None else "TERMINEE"
         })
 
-# --- MODE SIMULATION (ADMIN) ---
+# --- PANEL ADMIN GLOBAL ---
 st.sidebar.write("---")
-with st.sidebar.expander("🔐 Admin Panel"):
-    admin_pass = st.text_input("Password", type="password")
-    sim_mode = False
+with st.sidebar.expander("🔐 Panel Administration"):
+    admin_password = st.text_input("Mot de passe", type="password", key="global_admin_pass")
     
-    if admin_pass == st.secrets.get("ADMIN_PASSWORD", "disney123"):
-        sim_mode = st.toggle("Activer Mode Simulation")
+    if admin_password == st.secrets.get("ADMIN_PASSWORD", "disney123"):
         
+        # --- ONGLET 1 : SIMULATION DE FLUX ---
+        st.markdown("### 🧪 Simulation (Test)")
+        sim_mode = st.toggle("Activer Mode Simulation")
         if sim_mode and not df_live.empty:
-            st.warning("⚠️ MODE TEST COHÉRENT ACTIF")
+            st.warning("⚠️ Mode test actif")
             df_live['wait_time'] = [random.randint(0, 12) * 5 for _ in range(len(df_live))]
             for idx, row in df_live.iterrows():
                 ride_n = row['ride_name']
-                etat_test = random.choice(["OUVERT", "INTERRUPTION", "FERME_DEPUIS_PANNE", "JAMAIS_OUVERT"])
+                etat_test = random.choice(["OUVERT", "INTERRUPTION", "JAMAIS_OUVERT"])
                 if etat_test == "OUVERT":
                     df_live.at[idx, 'is_open'] = True
                     status_map[ride_n] = True
                 elif etat_test == "INTERRUPTION":
                     df_live.at[idx, 'is_open'] = False
                     status_map[ride_n] = True 
-                    all_pannes.append({"ride": ride_n, "debut": maintenant - timedelta(minutes=random.randint(10, 30)), "fin": None, "statut": "EN_COURS"})
-                elif etat_test == "FERME_DEPUIS_PANNE":
-                    df_live.at[idx, 'is_open'] = False
-                    status_map[ride_n] = True
-                    all_pannes.append({"ride": ride_n, "debut": maintenant - timedelta(hours=1), "fin": None, "statut": "EN_COURS"})
+                    all_pannes.append({"ride": ride_n, "debut": maintenant - timedelta(minutes=15), "fin": None, "statut": "EN_COURS"})
                 elif etat_test == "JAMAIS_OUVERT":
                     df_live.at[idx, 'is_open'] = False
                     status_map[ride_n] = False 
-            st.info("✅ Données de test injectées proprement.")
+
+        st.markdown("---")
+
+        # --- ONGLET 2 : GESTION DES TRAVAUX (SUPABASE) ---
+        st.markdown("### 🛠️ Gestion des Travaux")
+        with st.form("rehab_form", clear_on_submit=True):
+            if not df_live.empty:
+                all_rides_names = sorted(df_live['ride_name'].unique())
+                sel_ride = st.selectbox("Attraction", all_rides_names)
+            else:
+                sel_ride = st.text_input("Nom de l'attraction")
+            
+            col_d1, col_d2 = st.columns(2)
+            d_start = col_d1.date_input("Début", value=date.today())
+            d_end = col_d2.date_input("Fin", value=date.today() + timedelta(days=14))
+            
+            rehab_msg = st.text_input("Message", placeholder="ex: Réouverture le 30 mai")
+            is_active = st.checkbox("Activer le badge gris", value=True)
+            
+            if st.form_submit_button("Enregistrer en Base"):
+                try:
+                    payload = {
+                        "ride_name": sel_ride,
+                        "rehab_start": str(d_start),
+                        "rehab_end": str(d_end),
+                        "rehab_msg": rehab_msg,
+                        "is_refurb": is_active,
+                        "updated_at": "now()"
+                    }
+                    supabase.table("ride_schedules").upsert(payload).execute()
+                    st.success(f"✅ {sel_ride} enregistré !")
+                    time_sleep.sleep(1)
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Erreur : {e}")
+
+        # --- LISTE DES TRAVAUX ACTUELS (POUR SUPPRESSION) ---
+        st.markdown("#### 📋 Maintenances actives")
+        try:
+            res_db = supabase.table("ride_schedules").select("*").eq("is_refurb", True).execute()
+            if res_db.data:
+                for r in res_db.data:
+                    c_info, c_del = st.columns([0.8, 0.2])
+                    c_info.caption(f"**{r['ride_name']}** (Fin: {r['rehab_end']})")
+                    if c_del.button("🗑️", key=f"del_{r['id']}"):
+                        supabase.table("ride_schedules").delete().eq("id", r['id']).execute()
+                        st.rerun()
+            else:
+                st.info("Aucun travaux en base.")
+        except:
+            pass
+
+    elif admin_password != "":
+        st.error("Mot de passe incorrect")
 
 # --- SECTION ACTIONS ---
 col_btn1, col_btn2 = st.columns(2)
