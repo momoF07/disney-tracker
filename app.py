@@ -430,24 +430,66 @@ if not df_live.empty:
             st.divider()
 
 st.subheader("🚨 Dernières interruptions")
+
 if not df_pannes_brutes.empty:
     df_pannes_brutes['start_time_dt'] = pd.to_datetime(df_pannes_brutes['start_time'])
     flux = df_pannes_brutes[df_pannes_brutes['start_time_dt'] >= debut_journee].copy()
     flux['end_time_dt'] = pd.to_datetime(flux['end_time'])
     flux['duree'] = (flux['end_time_dt'] - flux['start_time_dt']).dt.total_seconds() / 60
+    
+    # Filtre anti-bruit
     flux = flux[(flux['end_time'].isna()) | (flux['duree'] >= 3)]
     flux = flux.sort_values('start_time', ascending=False)
     flux = flux.drop_duplicates(subset=['ride_name']).head(5)
     
     for _, p in flux.iterrows():
         d_p = pd.to_datetime(p['start_time']).astimezone(paris_tz)
+        h_debut = d_p.strftime('%H:%M')
+        ride_name = p['ride_name']
+        emoji = get_emoji(ride_name)
+        
         if pd.isna(p['end_time']):
-            st.error(f"🔴 {p['ride_name']} >> depuis {d_p.strftime('%H:%M')}")
+            # --- CARD PANNE EN COURS ---
+            st.markdown(f"""
+                <div style="background: rgba(255, 75, 75, 0.05); border: 1px solid rgba(255, 75, 75, 0.2); 
+                            padding: 12px; border-radius: 15px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 20px;">{emoji}</span>
+                        <div>
+                            <div style="font-weight: 600; font-size: 14px; color: #f8f9fa;">{ride_name}</div>
+                            <div style="font-size: 12px; color: #ff4b4b;">En cours d'interruption</div>
+                        </div>
+                    </div>
+                    <div style="background: #ff4b4b; color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: bold;">
+                        DEPUIS {h_debut}
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
         else:
+            # --- CARD PANNE TERMINÉE ---
             f_p = pd.to_datetime(p['end_time']).astimezone(paris_tz)
-            st.success(f"✅ {p['ride_name']} >> fini à {f_p.strftime('%H:%M')}")
+            h_fin = f_p.strftime('%H:%M')
+            st.markdown(f"""
+                <div style="background: rgba(46, 204, 113, 0.05); border: 1px solid rgba(46, 204, 113, 0.2); 
+                            padding: 12px; border-radius: 15px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 20px;">{emoji}</span>
+                        <div>
+                            <div style="font-weight: 600; font-size: 14px; color: #f8f9fa;">{ride_name}</div>
+                            <div style="font-size: 12px; color: #2ecc71;">Réouverture confirmée</div>
+                        </div>
+                    </div>
+                    <div style="background: rgba(46, 204, 113, 0.2); color: #2ecc71; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; border: 1px solid rgba(46, 204, 113, 0.3);">
+                        RÉTABLI À {h_fin}
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
 else:
-    st.warning("📭 Aucune donnée live disponible.")
+    st.markdown("""
+        <div style="text-align: center; padding: 20px; color: #6c757d; font-style: italic; font-size: 14px;">
+            ✅ Aucune interruption majeure signalée aujourd'hui.
+        </div>
+    """, unsafe_allow_html=True)
 
 st.divider()
 st.caption("Disney Wait Time Tool | Real-time Dashboard")
