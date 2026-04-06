@@ -173,12 +173,12 @@ if not df_live.empty:
 
     if selected_options:
     # --- SÉLECTEUR DE TRI ---
-    sort_mode = st.segmented_control(
-        "Trier par :",
-        options=["🔠 Nom", "⏳ Attente", "⚠️ Incidents"],
-        default="🔠 Nom",
-        key="sort_selector"
-    )
+        sort_mode = st.segmented_control(
+            "Trier par :",
+            options=["🔠 Nom", "⏳ Attente", "⚠️ Incidents"],
+            default="🔠 Nom",
+            key="sort_selector"
+        )
 
     # --- LOGIQUE DE TRI ---
     if sort_mode == "⏳ Attente":
