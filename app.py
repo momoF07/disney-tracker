@@ -117,7 +117,7 @@ if not df_live.empty and not df_pannes_brutes.empty:
         all_pannes.append({"ride": row['ride_name'], "debut": pd.to_datetime(row['start_time']).astimezone(paris_tz), "fin": pd.to_datetime(row['end_time']).astimezone(paris_tz) if pd.notna(row['end_time']) else None, "statut": "EN_COURS" if pd.isna(row['end_time']) else "TERMINEE"})
 
 # --- ACTIONS PANEL ---
-st.markdown(f'<div style="background:rgba(255,255,255,0.05); padding:12px; border-radius:15px; border-left:4px solid #4facfe; margin-bottom:15px;"><div style="display:flex; justify-content:space-between; width:100%;"><div><span style="color:#94a3b8; font-size:12px;">API:</span> <b style="color:white;">{derniere_maj}</b></div><div><span style="color:#94a3b8; font-size:12px;">PAGE:</span> <b style="color:white;">{st.session_state.last_refresh}</b></div></div></div>', unsafe_allow_html=True)
+st.markdown(f'<div style="background:rgba(255,255,255,0.05); padding:12px; border-radius:15px; border-left:4px solid #4facfe; margin-bottom:15px;"><div style="display:flex; justify-content:space-between; width:100%;"><div><span style="color:#94a3b8; font-size:12px;">Dernier envoi de données API :</span> <b style="color:white;">{derniere_maj}</b></div><div><span style="color:#94a3b8; font-size:12px;">Dernier auto-refresh de la page :</span> <b style="color:white;">{st.session_state.last_refresh}</b></div></div></div>', unsafe_allow_html=True)
 
 col_btn1, col_btn2 = st.columns(2)
 with col_btn1:
