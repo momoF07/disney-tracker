@@ -172,48 +172,99 @@ if not df_live.empty:
     st.query_params["fav"] = selected_options
 
     if selected_options:
+    # --- SÉLECTEUR DE TRI ---
+    sort_mode = st.segmented_control(
+        "Trier par :",
+        options=["🔠 Nom", "⏳ Attente", "⚠️ Incidents"],
+        default="🔠 Nom",
+        key="sort_selector"
+    )
+
+    # --- LOGIQUE DE TRI ---
+    if sort_mode == "⏳ Attente":
+        # 1. Ouvertes d'abord, 2. Temps croissant, 3. Nom
+        selected_options = sorted(
+            selected_options, 
+            key=lambda x: (
+                not df_live[df_live['ride_name'] == x]['is_open'].iloc[0], 
+                df_live[df_live['ride_name'] == x]['wait_time'].iloc[0],
+                x
+            )
+        )
+    elif sort_mode == "⚠️ Incidents":
+        # On trie pour mettre les is_open=False en haut
+        # On affine : Pannes > Retards > Rehab
+        def incident_priority(ride_name):
+            r_data = df_live[df_live['ride_name'] == ride_name].iloc[0]
+            r_info = status_map.get(ride_name, {})
+            if r_data['is_open']: return 4 # Ouvert (en bas)
+            if r_info.get('has_opened_today'): return 1 # Panne (Incident)
+            if not r_info.get('opened_yesterday'): return 3 # Rehab
+            return 2 # Ouverture retardée
+
+        selected_options = sorted(selected_options, key=lambda x: (incident_priority(x), x))
+    else:
+        # Tri Alphabétique
+        selected_options = sorted(selected_options)
+
+    st.write("") 
+
+    # --- BOUCLE D'AFFICHAGE ---
+    for ride in selected_options:
+        data = df_live[df_live['ride_name'] == ride].iloc[0]
+        info = status_map.get(ride, {})
+        panne_actuelle = next((p for p in all_pannes if p['ride'] == ride and p['statut'] == "EN_COURS"), None)
+        
+        is_daw = any(a.lower() in ride.lower() for a in RIDES_DAW)
+        h_o = EMT_OPENING if ride in EMT_EARLY_OPEN else PARK_OPENING
+        h_f = DAW_CLOSING if is_daw else DLP_CLOSING
+        if ride in ANTICIPATED_CLOSINGS: h_f = ANTICIPATED_CLOSINGS[ride]
+        elif ride in FANTASYLAND_EARLY_CLOSE: h_f = (datetime.combine(datetime.today(), DLP_CLOSING) - timedelta(minutes=65)).time()
+
+        rehab = not info.get('opened_yesterday', True) and not info.get('has_opened_today', False) and not data['is_open']
+        if data['is_open'] and data['wait_time'] > 0: rehab = False
+        
+        # --- LOGIQUE DE COULEUR & LABELS ---
+        if rehab: sub, wait, bg, card_style, pill = "🛠️ Travaux détectés", "REHAB", "bg-grey", "card-grey", "TRAVAUX"
+        elif heure_actuelle >= h_f and not data['is_open']: sub, wait, bg, card_style, pill = f"🏁 Fermé à {h_f.strftime('%H:%M')}", "- - -", "bg-bordeaux", "card-bordeaux", "FERMÉ"
+        elif heure_actuelle < h_o and not data['is_open']: sub, wait, bg, card_style, pill = "🕒 En attente d'ouverture", "- - -", "bg-blue", "card-blue", "ATTENTE"
+        elif not data['is_open']: sub, wait, bg, card_style, pill = f"⚠️ Panne ({max(0, int((maintenant - panne_actuelle['debut']).total_seconds() / 60))} min)" if panne_actuelle else "⚠️ Interruption", "- - -", "bg-orange", "card-orange", "INCIDENT"
+        else: sub, wait, bg, card_style, pill = "✅ Opérationnel", f"{int(data['wait_time'])}", "bg-green", "card-green", "OUVERT"
+
+        wait_html = f'<span class="wait-val">{wait}</span>' if wait in ["- - -", "REHAB"] else f'<span class="wait-val">{wait}</span><span class="wait-unit">min</span>'
+        
+        # Affichage du Badge principal
+        st.markdown(f"""
+            <div class="ride-row">
+                <div class="ride-left-card {card_style}">
+                    <div class="ride-info-meta">
+                        <span style="font-size: 24px;">{get_emoji(ride)}</span>
+                        <div class="ride-titles"><p class="ride-main-name">{ride}</p><p class="ride-sub-status">{sub}</p></div>
+                    </div>
+                    <div class="state-pill">{pill}</div>
+                </div>
+                <div class="ride-right-wait {bg}"><span style="font-size:10px; opacity:0.7;">ATTENTE</span>{wait_html}</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+        # Historique d'état dans l'expander (intégré sous la carte)
+        with st.expander("📜 Historique d'état"):
+            if rehab: st.write("• 🛠️ :grey[**Maintenance détectée**] (Fermé hier)")
+            else:
+                ride_pannes = [p for p in all_pannes if p['ride'] == ride]
+                h_p_clean = [p for p in ride_pannes if p['statut'] == "EN_COURS" or p['duree'] >= 3]
+                if h_p_clean:
+                    for idx, p in enumerate(sorted(h_p_clean, key=lambda x: x['debut'], reverse=True)):
+                        h_d = p['debut'].strftime('%H:%M')
+                        if idx == 0:
+                            if heure_actuelle >= h_f and not data['is_open']: st.write(f"• 🔴 :red[**Fermé pour la nuit**]")
+                            elif h_o <= heure_actuelle < h_f and not info.get('has_opened_today', False) and not data['is_open']: st.write(f"• 🟣 :violet[**Ouverture retardée**]")
+                            elif p['statut'] == "EN_COURS": st.write(f"• 🟠 :orange[**En cours** depuis {h_d}]")
+                            else: st.write(f"• 🟢 :green[**Opérationnel** à {p['fin'].strftime('%H:%M')}]")
+                        else:
+                            if p['statut'] == "TERMINEE": st.caption(f"• 🟢 :green[**Ope à {p['fin'].strftime('%H:%M')}**] | 🔴 :red[**Panne à {h_d}**] ({p['duree']} min)")
+                else: st.write("✅ **Aucun incident signalé aujourd'hui**")
         st.write("")
-        for ride in selected_options:
-            data = df_live[df_live['ride_name'] == ride].iloc[0]
-            info = status_map.get(ride, {})
-            panne_actuelle = next((p for p in all_pannes if p['ride'] == ride and p['statut'] == "EN_COURS"), None)
-            
-            is_daw = any(a.lower() in ride.lower() for a in RIDES_DAW)
-            h_o = EMT_OPENING if ride in EMT_EARLY_OPEN else PARK_OPENING
-            h_f = DAW_CLOSING if is_daw else DLP_CLOSING
-            if ride in ANTICIPATED_CLOSINGS: h_f = ANTICIPATED_CLOSINGS[ride]
-            elif ride in FANTASYLAND_EARLY_CLOSE: h_f = (datetime.combine(datetime.today(), DLP_CLOSING) - timedelta(minutes=65)).time()
-
-            rehab = not info.get('opened_yesterday', True) and not info.get('has_opened_today', False) and not data['is_open']
-            if data['is_open'] and data['wait_time'] > 0: rehab = False
-            
-            if rehab: sub, wait, bg, card_style, pill = "🛠️ Travaux détectés", "REHAB", "bg-grey", "card-grey", "TRAVAUX"
-            elif heure_actuelle >= h_f and not data['is_open']: sub, wait, bg, card_style, pill = f"🏁 Fermé à {h_f.strftime('%H:%M')}", "- - -", "bg-bordeaux", "card-bordeaux", "FERMÉ"
-            elif heure_actuelle < h_o and not data['is_open']: sub, wait, bg, card_style, pill = "🕒 En attente d'ouverture", "- - -", "bg-blue", "card-blue", "ATTENTE"
-            elif not data['is_open']: sub, wait, bg, card_style, pill = f"⚠️ Panne ({max(0, int((maintenant - panne_actuelle['debut']).total_seconds() / 60))} min)" if panne_actuelle else "⚠️ Interruption", "- - -", "bg-orange", "card-orange", "INCIDENT"
-            else: sub, wait, bg, card_style, pill = "✅ Opérationnel", f"{int(data['wait_time'])}", "bg-green", "card-green", "OUVERT"
-
-            wait_html = f'<span class="wait-val">{wait}</span>' if wait in ["- - -", "REHAB"] else f'<span class="wait-val">{wait}</span><span class="wait-unit">min</span>'
-            
-            st.markdown(f"""<div class="ride-row"><div class="ride-left-card {card_style}"><div class="ride-info-meta"><span style="font-size: 24px;">{get_emoji(ride)}</span><div class="ride-titles"><p class="ride-main-name">{ride}</p><p class="ride-sub-status">{sub}</p></div></div><div class="state-pill">{pill}</div></div><div class="ride-right-wait {bg}"><span style="font-size:10px; opacity:0.7;">ATTENTE</span>{wait_html}</div></div>""", unsafe_allow_html=True)
-
-            with st.expander("📜 Historique d'état"):
-                if rehab: st.write("• 🛠️ :grey[**Maintenance détectée**] (Fermé hier)")
-                else:
-                    h_p_clean = [p for p in all_pannes if p['ride'] == ride and (p['statut'] == "EN_COURS" or p['duree'] >= 3)]
-                    if h_p_clean:
-                        for idx, p in enumerate(sorted(h_p_clean, key=lambda x: x['debut'], reverse=True)):
-                            h_d = p['debut'].strftime('%H:%M')
-                            if idx == 0:
-                                if heure_actuelle >= h_f and not data['is_open']: st.write(f"• 🔴 :red[**Fermé pour la nuit**]")
-                                elif h_o <= heure_actuelle < h_f and not info.get('has_opened_today', False) and not data['is_open']: st.write(f"• 🟣 :violet[**Ouverture retardée**]")
-                                elif p['statut'] == "EN_COURS": st.write(f"• 🟠 :orange[**En cours** depuis {h_d}]")
-                                else: st.write(f"• 🟢 :green[**Opérationnel** à {p['fin'].strftime('%H:%M')}]")
-                            else:
-                                if p['statut'] == "TERMINEE": st.caption(f"• 🟢 :green[**Ope à {p['fin'].strftime('%H:%M')}**] | 🔴 :red[**Panne à {h_d}**] ({p['duree']} min)")
-                    else: st.write("✅ **Aucun incident signalé aujourd'hui**")
-            st.caption("")
-
 # --- DERNIÈRES INTERRUPTIONS ---
 st.subheader("🚨 Dernières interruptions")
 if not df_pannes_brutes.empty:
