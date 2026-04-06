@@ -295,17 +295,21 @@ if not df_live.empty:
                     else:
                         st.markdown('<div style="background-color: rgba(46, 204, 113, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(46, 204, 113, 0.5); margin-bottom: 8px;"><span style="color: #2ecc71; font-weight: 600; font-size: 15px;">🟢 OUVERT</span></div>', unsafe_allow_html=True)
                         c2.metric("Attente", f"{int(current['wait_time'])} min")
-
-                with st.expander("📜 Historique d'état"):
-                    h_pannes = [p for p in all_pannes if p['ride'] == ride]
-                    if h_pannes:
-                        # FILTRE : On ignore les micro-pannes (durée < 3 min) sauf si elles sont EN_COURS
-                        h_pannes = [p for p in h_pannes if p['statut'] == "EN_COURS" or p['duree'] >= 3]
                         
-                        pannes_triees = sorted(h_pannes, key=lambda x: x['debut'], reverse=True)
+                with st.expander("📜 Historique d'état"):
+                    # 1. On récupère les pannes de l'attraction
+                    h_pannes_brutes = [p for p in all_pannes if p['ride'] == ride]
+                    
+                    # 2. On applique le filtre anti-bruit (on garde si EN_COURS ou si durée >= 3 min)
+                    h_pannes_clean = [p for p in h_pannes_brutes if p['statut'] == "EN_COURS" or p['duree'] >= 3]
+                    
+                    # 3. On vérifie si la liste est vide APRÈS filtrage
+                    if h_pannes_clean:
+                        pannes_triees = sorted(h_pannes_clean, key=lambda x: x['debut'], reverse=True)
                         for idx, p in enumerate(pannes_triees):
                             h_debut = p['debut'].strftime('%H:%M')
                             
+                            # --- ÉVÉNEMENT LE PLUS RÉCENT (ACTUEL) ---
                             if idx == 0:
                                 if est_definitivement_ferme:
                                     if p['statut'] == "EN_COURS":
@@ -314,21 +318,32 @@ if not df_live.empty:
                                     else:
                                         st.write(f"• 🟢 :green[**Opérationnel jusqu'à la fermeture**]")
                                         st.caption(f"• 🔴 :red[**Fermé à {heure_fermeture_constatee}**]")
+                                
                                 elif p['statut'] == "EN_COURS":
                                     st.write(f"• 🟠 :orange[**En cours** depuis {h_debut}]")
+                                    st.caption("• ⚠️ Incident technique signalé")
+                                
                                 elif p['statut'] == "TERMINEE":
                                     st.write(f"• 🟢 :green[**Opérationnel** depuis {p['fin'].strftime('%H:%M')}]")
                                     st.caption(f"• 🔴 :red[**En panne** à {h_debut}] ({p['duree']} min)")
+
+                            # --- ÉVÉNEMENTS ANCIENS ---
                             else:
                                 if p['statut'] == "TERMINEE":
                                     h_fin = p['fin'].strftime('%H:%M')
                                     st.caption(f"• 🟢 :green[**Opérationnel à {h_fin}**] ({p['duree']} min)")
                                     st.caption(f"• 🔴 :red[**En panne à {h_debut}**]")
-                            
+                                    
                             if idx < len(pannes_triees) - 1: 
                                 st.markdown("<hr style='margin: 5px 0px 5px 0px; opacity: 0.2;'>", unsafe_allow_html=True)
-                    else:
-                        st.write("✅ **Aucun incident signalé**")
+                    
+                    else: 
+                        # --- AUCUN INCIDENT (OU SEULEMENT DU BRUIT FILTRÉ) ---
+                        if est_definitivement_ferme:
+                            st.write(f"• 🔴 :red[**Fermé à {heure_fermeture_constatee}**]")
+                            st.caption("• ✅ Aucun incident signalé aujourd'hui")
+                        else:
+                            st.write("✅ **Aucun incident signalé**")
             st.divider()
 
 st.subheader("🚨 Dernières interruptions")
