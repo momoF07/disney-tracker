@@ -187,7 +187,6 @@ if not df_live.empty:
             rehab = not info.get('opened_yesterday', True) and not info.get('has_opened_today', False) and not data['is_open']
             if data['is_open'] and data['wait_time'] > 0: rehab = False
             
-            # --- LOGIQUE DE COULEUR ---
             if rehab: sub, wait, bg, card_style, pill = "🛠️ Travaux détectés", "REHAB", "bg-grey", "card-grey", "TRAVAUX"
             elif heure_actuelle >= h_f and not data['is_open']: sub, wait, bg, card_style, pill = f"🏁 Fermé à {h_f.strftime('%H:%M')}", "- - -", "bg-bordeaux", "card-bordeaux", "FERMÉ"
             elif heure_actuelle < h_o and not data['is_open']: sub, wait, bg, card_style, pill = "🕒 En attente d'ouverture", "- - -", "bg-blue", "card-blue", "ATTENTE"
@@ -196,29 +195,10 @@ if not df_live.empty:
 
             wait_html = f'<span class="wait-val">{wait}</span>' if wait in ["- - -", "REHAB"] else f'<span class="wait-val">{wait}</span><span class="wait-unit">min</span>'
             
-            # --- RENDU DE LA CARTE ---
-            st.markdown(f"""
-                <div class="ride-row" style="margin-bottom: 0px;">
-                    <div class="ride-left-card {card_style}" style="border-bottom-left-radius: 0px; border-bottom-right-radius: 0px; border-bottom: none;">
-                        <div class="ride-info-meta">
-                            <span style="font-size: 24px;">{get_emoji(ride)}</span>
-                            <div class="ride-titles">
-                                <p class="ride-main-name">{ride}</p>
-                                <p class="ride-sub-status">{sub}</p>
-                            </div>
-                        </div>
-                        <div class="state-pill">{pill}</div>
-                    </div>
-                    <div class="ride-right-wait {bg}"><span style="font-size:10px; opacity:0.7;">ATTENTE</span>{wait_html}</div>
-                </div>
-            """, unsafe_allow_html=True)
+            st.markdown(f"""<div class="ride-row"><div class="ride-left-card {card_style}"><div class="ride-info-meta"><span style="font-size: 24px;">{get_emoji(ride)}</span><div class="ride-titles"><p class="ride-main-name">{ride}</p><p class="ride-sub-status">{sub}</p></div></div><div class="state-pill">{pill}</div></div><div class="ride-right-wait {bg}"><span style="font-size:10px; opacity:0.7;">ATTENTE</span>{wait_html}</div></div>""", unsafe_allow_html=True)
 
-            # --- L'EXPANDER "SOUDÉ" À LA CARTE ---
-            # On utilise un style personnalisé pour que l'expander ressemble à la suite de la carte
-            with st.expander("📜 Historique complet", expanded=False):
-                st.markdown(f'<div style="margin-top:-10px;">', unsafe_allow_html=True)
-                if rehab:
-                    st.write("• 🛠️ :grey[**Maintenance détectée**] (Fermé hier)")
+            with st.expander("📜 Historique d'état"):
+                if rehab: st.write("• 🛠️ :grey[**Maintenance détectée**] (Fermé hier)")
                 else:
                     h_p_clean = [p for p in all_pannes if p['ride'] == ride and (p['statut'] == "EN_COURS" or p['duree'] >= 3)]
                     if h_p_clean:
@@ -227,15 +207,12 @@ if not df_live.empty:
                             if idx == 0:
                                 if heure_actuelle >= h_f and not data['is_open']: st.write(f"• 🔴 :red[**Fermé pour la nuit**]")
                                 elif h_o <= heure_actuelle < h_f and not info.get('has_opened_today', False) and not data['is_open']: st.write(f"• 🟣 :violet[**Ouverture retardée**]")
-                                elif p['statut'] == "EN_COURS": st.write(f"• 🟠 :orange[**En cours** depuis {h_debut}]")
+                                elif p['statut'] == "EN_COURS": st.write(f"• 🟠 :orange[**En cours** depuis {h_d}]")
                                 else: st.write(f"• 🟢 :green[**Opérationnel** à {p['fin'].strftime('%H:%M')}]")
                             else:
                                 if p['statut'] == "TERMINEE": st.caption(f"• 🟢 :green[**Ope à {p['fin'].strftime('%H:%M')}**] | 🔴 :red[**Panne à {h_d}**] ({p['duree']} min)")
-                    else:
-                        st.write("✅ **Aucun incident signalé aujourd'hui**")
-                st.markdown('</div>', unsafe_allow_html=True)
-            
-            st.write("") # Espace entre chaque bloc attraction
+                    else: st.write("✅ **Aucun incident signalé aujourd'hui**")
+            st.write("")
 
 # --- DERNIÈRES INTERRUPTIONS ---
 st.subheader("🚨 Dernières interruptions")
