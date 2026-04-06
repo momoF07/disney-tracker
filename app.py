@@ -248,65 +248,58 @@ if not df_live.empty:
         """, unsafe_allow_html=True)
 
         # Historique d'état dans l'expander (intégré sous la carte)
-        # --- L'EXPANDER "SOUDÉ" À LA CARTE ---
-        # --- L'EXPANDER D'HISTORIQUE ---
         with st.expander("📜 Historique d'état"):
-            # Petit ajustement pour coller au bord haut
-            st.markdown('<div style="margin-top:-10px;">', unsafe_allow_html=True)
-            
-            if rehab:
+            if rehab: # Utilisation de ta variable 'rehab'
                 st.write(f"• 🛠️ :grey[**Maintenance en cours**]")
-                st.caption(f"&nbsp;&nbsp;&nbsp;&nbsp;└ {info.get('rehab_msg', 'Travaux de maintenance')}")
+                st.caption(f"• {info.get('rehab_msg', 'Travaux de maintenance')}")
             else:
-                # Filtrage et tri de l'historique
-                ride_pannes = [p for p in all_pannes if p['ride'] == ride]
-                h_p_clean = [p for p in ride_pannes if p['statut'] == "EN_COURS" or p.get('duree', 0) >= 3]
+                h_pannes_brutes = [p for p in all_pannes if p['ride'] == ride]
+                h_pannes_clean = [p for p in h_pannes_brutes if p['statut'] == "EN_COURS" or p.get('duree', 0) >= 3]
         
-                if h_p_clean:
-                    pannes_triees = sorted(h_p_clean, key=lambda x: x['debut'], reverse=True)
-                    
+                if h_pannes_clean:
+                    pannes_triees = sorted(h_pannes_clean, key=lambda x: x['debut'], reverse=True)
                     for idx, p in enumerate(pannes_triees):
                         h_debut = p['debut'].strftime('%H:%M')
                         
-                        # --- ÉLÉMENT 0 : ÉTAT ACTUEL ---
                         if idx == 0:
+                            # État Actuel (Priorité à l'affichage du statut live)
                             if heure_actuelle >= h_f and not data['is_open']:
                                 st.write(f"• 🔴 :red[**Fermé pour la nuit**]")
                             elif h_o <= heure_actuelle < h_f and not info.get('has_opened_today', False) and not data['is_open']:
                                 st.write(f"• 🟣 :violet[**Ouverture retardée**]")
-                                st.caption(f"&nbsp;&nbsp;&nbsp;&nbsp;└ Stand-by depuis {h_o.strftime('%H:%M')}")
+                                st.caption(f"• 🕒 Stand-by depuis {h_o.strftime('%H:%M')}")
                             
-                            # Détail de la panne la plus récente
+                            # Dernier événement enregistré
                             if p['statut'] == "EN_COURS":
                                 st.write(f"• 🟠 :orange[**En cours** depuis {h_debut}]")
                             elif p['statut'] == "TERMINEE":
                                 st.write(f"• 🟢 :green[**Opérationnel** depuis {p['fin'].strftime('%H:%M')}]")
                                 if p['debut'].time() <= h_o:
-                                    st.caption(f"&nbsp;&nbsp;&nbsp;&nbsp;└ 🟣 :violet[**Ouverture retardée**] (Prévue à {h_o.strftime('%H:%M')})")
+                                    st.caption(f"• 🟣 :violet[**Ouverture retardée**] (Prévue à {h_o.strftime('%H:%M')})")
                                 else:
-                                    st.caption(f"&nbsp;&nbsp;&nbsp;&nbsp;└ 🔴 :red[**Interruption**] à {h_debut} ({p['duree']} min)")
-                        
-                        # --- AUTRES ÉLÉMENTS : ARCHIVES ---
+                                    st.caption(f"• 🔴 :red[**En panne** à {h_debut}] ({p['duree']} min)")
                         else:
+                            # Historique précédent (idx > 0)
                             if p['statut'] == "TERMINEE":
                                 h_fin = p['fin'].strftime('%H:%M')
-                                st.write(f"• ⏳ :grey[**Précédent :**] Panne à {h_debut} ({p['duree']} min)")
-                                st.caption(f"&nbsp;&nbsp;&nbsp;&nbsp;└ 🟢 :green[**Réouverture à {h_fin}**]")
+                                if p['debut'].time() <= h_o:
+                                    st.write(f"• 🟢 :green[**Opérationnel à {h_fin}**]")
+                                    st.caption(f"• 🟣 :violet[**Ouverture retardée**]")
+                                else:
+                                    st.write(f"• 🟢 :green[**Opérationnel à {h_fin}**] ({p['duree']} min)")
+                                    st.caption(f"• 🔴 :red[**En panne à {h_debut}**]")
         
-                        # Ligne de séparation subtile entre les logs
-                        if idx < len(pannes_triees) - 1:
-                            st.markdown("<hr style='margin: 5px 0px; opacity: 0.1;'>", unsafe_allow_html=True)
-                
-                else:
-                    # Cas sans panne enregistrée
-                    if h_o <= heure_actuelle < h_f and not info.get('has_opened_today', False) and not data['is_open']:
-                        st.write(f"• 🟣 :violet[**Ouverture retardée**]")
-                    elif heure_actuelle >= h_f and not data['is_open']:
+                        if idx < len(pannes_triees) - 1: 
+                            st.markdown("<hr style='margin: 5px 0px 5px 0px; opacity: 0.2;'>", unsafe_allow_html=True)
+                else: 
+                    # Cas sans aucune panne enregistrée
+                    if heure_actuelle >= h_f and not data['is_open']:
                         st.write(f"• 🔴 :red[**Fermé pour la nuit**]")
+                    elif h_o <= heure_actuelle < h_f and not info.get('has_opened_today', False) and not data['is_open']:
+                        st.write(f"• 🟣 :violet[**Ouverture retardée**]")
+                        st.caption(f"• 🕒 Stand-by depuis {h_o.strftime('%H:%M')}")
                     else:
-                        st.write("✅ **Aucun incident signalé aujourd'hui**")
-        
-            st.markdown('</div>', unsafe_allow_html=True)
+                        st.write("✅ **Aucun incident signalé**")
         st.write("")
 # --- DERNIÈRES INTERRUPTIONS ---
 st.subheader("🚨 Dernières interruptions")
