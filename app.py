@@ -267,74 +267,51 @@ st.write("---")
 col_sc, col_help = st.columns([0.88, 0.12])
 
 with col_help:
-    with st.popover("❓", help="Index des raccourcis"):
+    with st.popover("❓"):
         st.markdown("""
         <style>
-            .main-title { 
-                text-align: center; 
-                background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%); 
-                -webkit-background-clip: text; 
-                -webkit-text-fill-color: transparent; 
-                font-weight: 800; font-size: 24px; margin-bottom: 20px; 
-            }
-            .cat-badge { 
-                padding: 6px 0px; border-radius: 10px; font-size: 14px; font-weight: 700; 
-                letter-spacing: 1.2px; display: block; text-align: center; margin: 15px 0 10px 0;
-                text-transform: uppercase;
-            }
-            .bg-blue { background: rgba(79, 172, 254, 0.1); color: #4facfe; border: 1px solid rgba(79, 172, 254, 0.2); }
-            .bg-green { background: rgba(74, 222, 128, 0.1); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.2); }
-            .bg-orange { background: rgba(251, 191, 36, 0.1); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.2); }
-            
-            .shortcut-card { 
-                background: rgba(255, 255, 255, 0.02); 
-                border: 1px solid rgba(255, 255, 255, 0.05); 
-                border-radius: 12px; padding: 12px; margin-bottom: 10px;
-                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            }
-            .shortcut-label { font-size: 13px; color: #94a3b8; font-weight: 500; margin-bottom: 8px; display: block; }
-            code { background: rgba(255,255,255,0.05) !important; color: #4facfe !important; border: 1px solid rgba(79,172,254,0.2) !important; }
+            .main-title { text-align: center; background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; font-size: 28px; margin-bottom: 25px; }
+            .cat-badge { padding: 5px 15px; border-radius: 12px; font-size: 18px; font-weight: 600; letter-spacing: 1px; display: block; text-align: center; margin: 20px 0 10px 0; }
+            .bg-blue { background: rgba(79, 172, 254, 0.15); color: #4facfe; border: 1px solid rgba(79, 172, 254, 0.3); }
+            .bg-green { background: rgba(74, 222, 128, 0.15); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.3); }
+            .bg-orange { background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); }
+            .shortcut-box { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 10px; margin-bottom: 8px; }
+            .shortcut-label { font-size: 15px; color: #94a3b8; text-transform: uppercase; margin-bottom: 5px; display: block; }
         </style>
         """, unsafe_allow_html=True)
-        
         st.markdown('<p class="main-title">🔍 INDEX DES CODES</p>', unsafe_allow_html=True)
-        
-        # --- PARCS ---
         st.markdown('<span class="cat-badge bg-blue">🎡 PARCS</span>', unsafe_allow_html=True)
-        c1, c2, c3 = st.columns(3)
-        c1.code("*ALL"); c2.code("*DLP"); c3.code("*DAW")
-        
-        # --- DISNEYLAND PARK ---
+        with st.container():
+            c1, c2, c3 = st.columns(3)
+            c1.code("*ALL"); c2.code("*DLP"); c3.code("*DAW")
         st.markdown('<span class="cat-badge bg-green">🏰 DISNEYLAND PARK</span>', unsafe_allow_html=True)
-        lands_dlp = {
-            "Main Street": "*MS", "Frontierland": "*FRONTIER",
-            "Adventureland": "*ADVENTURE", "Fantasyland": "*FANTASY", "Discoveryland": "*DISCO"
+        lands_dlp_map = {
+            "Main Street": ["*MS", "*MAINSTREET"], 
+            "Frontierland": ["*FRONTIER", "*FRONTIERLAND"], 
+            "Adventureland": ["*ADVENTURE", "*ADVENTURELAND"], 
+            "Fantasyland": ["*FANTASY", "*FANTASYLAND"], 
+            "Discoveryland": ["*DISCO", "*DISCOVERYLAND"]
         }
-        
-        # Affichage en grille 2 colonnes pour gagner de la place
-        cols = st.columns(2)
-        for i, (land, code) in enumerate(lands_dlp.items()):
-            with cols[i % 2]:
-                st.markdown(f'<div class="shortcut-card"><span class="shortcut-label">{land}</span>', unsafe_allow_html=True)
-                st.code(code)
-                st.markdown('</div>', unsafe_allow_html=True)
+        for land, codes in lands_dlp_map.items():
+            st.markdown(f'<div class="shortcut-box"><span class="shortcut-label">{land}</span>', unsafe_allow_html=True)
+            cl1, cl2 = st.columns(2); cl1.code(codes[0]); cl2.code(codes[1])
+            st.markdown('</div>', unsafe_allow_html=True)
             
-        # --- ADVENTURE WORLD ---
         st.markdown('<span class="cat-badge bg-orange">🎬 ADVENTURE WORLD</span>', unsafe_allow_html=True)
-        zones_daw = {
-            "Avengers Campus": "*CAMPUS", "Worlds of Pixar": "*PIXAR",
-            "World of Frozen": "*WOF", "Production C.": "*PROD3", "Adventure Way": "*WAY"
+        shortcut_zones_daw = {
+            "Avengers Campus": ["*CAMPUS", "*AVENGERS", "*AVENGERS-CAMPUS"], 
+            "Production Courtyard": ["*COURTYARD", "PRODUCTION3", "*PROD3"], 
+            "Worlds of Pixar": ["*WORLD-OF-PIXAR", "*PIXAR", "PRODUCTION4", "*PROD4"], 
+            "World of Frozen": ["*WORLD-OF-FROZEN", "*FROZEN", "*WOF"], 
+            "Adventure Way": ["*WAY", "*ADVENTURE-WAY"]
         }
-        
-        cols_daw = st.columns(2)
-        for i, (zone, code) in enumerate(zones_daw.items()):
-            with cols_daw[i % 2]:
-                st.markdown(f'<div class="shortcut-card"><span class="shortcut-label">{zone}</span>', unsafe_allow_html=True)
-                st.code(code)
-                st.markdown('</div>', unsafe_allow_html=True)
-
+        for zone, codes in shortcut_zones_daw.items():
+            st.markdown(f'<div class="shortcut-box"><span class="shortcut-label">{zone}</span>', unsafe_allow_html=True)
+            cols_z = st.columns(len(codes))
+            for idx, code in enumerate(codes): cols_z[idx].code(code)
+            st.markdown('</div>', unsafe_allow_html=True)
 with col_sc:
-    sc = st.text_input("Raccourci...", placeholder="Tapez un code (ex: *FANTASY)", label_visibility="collapsed")
+    sc = st.text_input("Raccourci...", placeholder="ex: *FANTASY", label_visibility="collapsed")
 
 # Logique de sélection (Inchangée mais intégrée)
 current_selection = st.query_params.get_all("fav")
