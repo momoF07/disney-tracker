@@ -14,7 +14,7 @@ from special_hours import ANTICIPATED_CLOSINGS, FANTASYLAND_EARLY_CLOSE, EMT_EAR
 # --- CONFIGURATION DE LA PAGE ---
 st.set_page_config(page_title="Disney Wait Time", page_icon="🏰", layout="centered")
 
-# --- STYLE CSS GLOBAL (DESIGN DYNAMIQUE) ---
+# --- STYLE CSS GLOBAL ---
 st.markdown("""
 <style>
     [data-testid="stPopoverBody"] {
@@ -26,54 +26,31 @@ st.markdown("""
         padding: 20px !important; overflow-y: auto !important;
     }
     
-    /* --- DESIGN DES BADGES --- */
-    .ride-row {
-        display: flex; justify-content: space-between; align-items: center;
-        margin-bottom: 12px; width: 100%; gap: 10px;
-    }
-    
-    .ride-left-card {
-        border-radius: 16px;
-        padding: 10px 15px; display: flex; align-items: center; 
-        justify-content: space-between; flex-grow: 1; height: 68px;
-        transition: all 0.3s ease;
-    }
-    
+    .ride-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; width: 100%; gap: 10px; }
+    .ride-left-card { border-radius: 16px; padding: 10px 15px; display: flex; align-items: center; justify-content: space-between; flex-grow: 1; height: 68px; }
     .ride-info-meta { display: flex; align-items: center; gap: 12px; }
     .ride-titles { display: flex; flex-direction: column; }
     .ride-main-name { color: white; font-size: 14px; font-weight: 600; margin: 0; }
     .ride-sub-status { color: rgba(255,255,255,0.7); font-size: 11px; margin: 0; }
-    
-    .state-pill {
-        background: rgba(0,0,0,0.3); color: white; font-size: 10px; font-weight: 700;
-        padding: 2px 8px; border-radius: 20px; text-transform: uppercase;
-        border: 1px solid rgba(255,255,255,0.1);
-    }
-    
-    .ride-right-wait {
-        min-width: 75px; height: 68px; border-radius: 16px;
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    }
-    
+    .state-pill { background: rgba(0,0,0,0.3); color: white; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; border: 1px solid rgba(255,255,255,0.1); }
+    .ride-right-wait { min-width: 75px; height: 68px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
     .wait-val { font-size: 20px; font-weight: 800; line-height: 1; }
     .wait-unit { font-size: 10px; font-weight: 400; opacity: 0.8; }
 
-    /* Couleurs de fond dynamiques pour les cartes */
     .card-green { background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); }
     .card-orange { background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); }
     .card-blue { background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); }
     .card-grey { background: rgba(107, 114, 128, 0.15); border: 1px solid rgba(107, 114, 128, 0.3); }
     .card-bordeaux { background: rgba(153, 27, 27, 0.15); border: 1px solid rgba(153, 27, 27, 0.3); }
 
-    /* Couleurs pleines pour les badges de droite */
     .bg-green { background: #10b981; }
     .bg-orange { background: #f59e0b; }
     .bg-blue { background: #3b82f6; }
     .bg-grey { background: #6b7280; }
     .bg-bordeaux { background: #991b1b; }
 
-    .applied-msg { font-size: 12px; color: #4ade80; margin-top: -15px; margin-bottom: 10px; font-weight: 500; }
+    .cat-badge { padding: 5px 15px; border-radius: 12px; font-size: 16px; font-weight: 600; display: block; text-align: center; margin: 15px 0 10px 0; }
+    .shortcut-box { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 10px; margin-bottom: 8px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -114,10 +91,13 @@ except: st.error("Erreur base de données")
 all_pannes = []
 if not df_live.empty and not df_pannes_brutes.empty:
     for _, row in df_pannes_brutes.iterrows():
-        all_pannes.append({"ride": row['ride_name'], "debut": pd.to_datetime(row['start_time']).astimezone(paris_tz), "fin": pd.to_datetime(row['end_time']).astimezone(paris_tz) if pd.notna(row['end_time']) else None, "statut": "EN_COURS" if pd.isna(row['end_time']) else "TERMINEE"})
+        d_p = pd.to_datetime(row['start_time']).astimezone(paris_tz)
+        f_p = pd.to_datetime(row['end_time']).astimezone(paris_tz) if pd.notna(row['end_time']) else None
+        duree = int((f_p - d_p).total_seconds() / 60) if f_p else 0
+        all_pannes.append({"ride": row['ride_name'], "debut": d_p, "fin": f_p, "statut": "EN_COURS" if f_p is None else "TERMINEE", "duree": duree})
 
 # --- ACTIONS PANEL ---
-st.markdown(f'<div style="background:rgba(255,255,255,0.05); padding:12px; border-radius:15px; border-left:4px solid #4facfe; margin-bottom:15px;"><div style="display:flex; justify-content:space-between; width:100%;"><div><span style="color:#94a3b8; font-size:12px;">Dernier envoi de données API :</span> <b style="color:white;">{derniere_maj}</b></div><div><span style="color:#94a3b8; font-size:12px;">Dernier auto-refresh de la page :</span> <b style="color:white;">{st.session_state.last_refresh}</b></div></div></div>', unsafe_allow_html=True)
+st.markdown(f'<div style="background:rgba(255,255,255,0.05); padding:12px; border-radius:15px; border-left:4px solid #4facfe; margin-bottom:15px;"><div style="display:flex; justify-content:space-between; width:100%;"><div><span style="color:#94a3b8; font-size:12px;">API:</span> <b style="color:white;">{derniere_maj}</b></div><div><span style="color:#94a3b8; font-size:12px;">Page:</span> <b style="color:white;">{st.session_state.last_refresh}</b></div></div></div>', unsafe_allow_html=True)
 
 col_btn1, col_btn2 = st.columns(2)
 with col_btn1:
@@ -181,7 +161,6 @@ with col_help:
 
 with col_sc:
     sc = st.text_input("Raccourci...", placeholder="ex: *FANTASY", label_visibility="collapsed")
-
 current_selection = st.query_params.get_all("fav")
 if sc.startswith("*"):
     res = get_rides_by_zone(sc, sorted(df_live['ride_name'].unique()) if not df_live.empty else [], all_pannes)
@@ -197,7 +176,7 @@ if not df_live.empty:
         for ride in selected_options:
             data = df_live[df_live['ride_name'] == ride].iloc[0]
             info = status_map.get(ride, {})
-            panne = next((p for p in all_pannes if p['ride'] == ride and p['statut'] == "EN_COURS"), None)
+            panne_actuelle = next((p for p in all_pannes if p['ride'] == ride and p['statut'] == "EN_COURS"), None)
             
             is_daw = any(a.lower() in ride.lower() for a in RIDES_DAW)
             h_o = EMT_OPENING if ride in EMT_EARLY_OPEN else PARK_OPENING
@@ -208,73 +187,45 @@ if not df_live.empty:
             rehab = not info.get('opened_yesterday', True) and not info.get('has_opened_today', False) and not data['is_open']
             if data['is_open'] and data['wait_time'] > 0: rehab = False
             
-            # --- LOGIQUE DE COULEUR ---
-            if rehab: 
-                sub, wait, bg, card_style, pill = "🛠️ Travaux détectés", "REHAB", "bg-grey", "card-grey", "TRAVAUX"
-            elif heure_actuelle >= h_f and not data['is_open']: 
-                sub, wait, bg, card_style, pill = f"🏁 Fermé à {h_f.strftime('%H:%M')}", "- - -", "bg-bordeaux", "card-bordeaux", "FERMÉ"
-            elif heure_actuelle < h_o and not data['is_open']: 
-                sub, wait, bg, card_style, pill = "🕒 En attente d'ouverture", "- - -", "bg-blue", "card-blue", "ATTENTE"
-            elif not data['is_open']: 
-                sub, wait, bg, card_style, pill = f"⚠️ Panne ({max(0, int((maintenant - panne['debut']).total_seconds() / 60))} min)" if panne else "⚠️ Interruption", "- - -", "bg-orange", "card-orange", "INCIDENT"
-            else: 
-                sub, wait, bg, card_style, pill = "✅ Opérationnel", f"{int(data['wait_time'])}", "bg-green", "card-green", "OUVERT"
+            if rehab: sub, wait, bg, card_style, pill = "🛠️ Travaux détectés", "REHAB", "bg-grey", "card-grey", "TRAVAUX"
+            elif heure_actuelle >= h_f and not data['is_open']: sub, wait, bg, card_style, pill = f"🏁 Fermé à {h_f.strftime('%H:%M')}", "- - -", "bg-bordeaux", "card-bordeaux", "FERMÉ"
+            elif heure_actuelle < h_o and not data['is_open']: sub, wait, bg, card_style, pill = "🕒 En attente d'ouverture", "- - -", "bg-blue", "card-blue", "ATTENTE"
+            elif not data['is_open']: sub, wait, bg, card_style, pill = f"⚠️ Panne ({max(0, int((maintenant - panne_actuelle['debut']).total_seconds() / 60))} min)" if panne_actuelle else "⚠️ Interruption", "- - -", "bg-orange", "card-orange", "INCIDENT"
+            else: sub, wait, bg, card_style, pill = "✅ Opérationnel", f"{int(data['wait_time'])}", "bg-green", "card-green", "OUVERT"
 
             wait_html = f'<span class="wait-val">{wait}</span>' if wait in ["- - -", "REHAB"] else f'<span class="wait-val">{wait}</span><span class="wait-unit">min</span>'
             
-            st.markdown(f"""
-                <div class="ride-row">
-                    <div class="ride-left-card {card_style}">
-                        <div class="ride-info-meta">
-                            <span style="font-size: 24px;">{get_emoji(ride)}</span>
-                            <div class="ride-titles"><p class="ride-main-name">{ride}</p><p class="ride-sub-status">{sub}</p></div>
-                        </div>
-                        <div class="state-pill">{pill}</div>
-                    </div>
-                    <div class="ride-right-wait {bg}"><span style="font-size:10px; opacity:0.7;">ATTENTE</span>{wait_html}</div>
-                </div>
-            """, unsafe_allow_html=True)
+            st.markdown(f"""<div class="ride-row"><div class="ride-left-card {card_style}"><div class="ride-info-meta"><span style="font-size: 24px;">{get_emoji(ride)}</span><div class="ride-titles"><p class="ride-main-name">{ride}</p><p class="ride-sub-status">{sub}</p></div></div><div class="state-pill">{pill}</div></div><div class="ride-right-wait {bg}"><span style="font-size:10px; opacity:0.7;">ATTENTE</span>{wait_html}</div></div>""", unsafe_allow_html=True)
 
-# --- HISTORIQUE D'ÉTAT (REMIS ICI) ---
             with st.expander("📜 Historique d'état"):
-                if rehab:
-                    st.write("• 🛠️ :grey[**Maintenance détectée**] (Fermé hier)")
+                if rehab: st.write("• 🛠️ :grey[**Maintenance détectée**] (Fermé hier)")
                 else:
-                    ride_pannes = [p for p in all_pannes if p['ride'] == ride]
-                    h_pannes_clean = [p for p in ride_pannes if p['statut'] == "EN_COURS" or p['duree'] >= 3]
-                    
-                    if h_pannes_clean:
-                        pannes_triees = sorted(h_pannes_clean, key=lambda x: x['debut'], reverse=True)
-                        for idx, p in enumerate(pannes_triees):
-                            h_debut = p['debut'].strftime('%H:%M')
+                    h_p_clean = [p for p in all_pannes if p['ride'] == ride and (p['statut'] == "EN_COURS" or p['duree'] >= 3)]
+                    if h_p_clean:
+                        for idx, p in enumerate(sorted(h_p_clean, key=lambda x: x['debut'], reverse=True)):
+                            h_d = p['debut'].strftime('%H:%M')
                             if idx == 0:
-                                if heure_actuelle >= h_f and not data['is_open']:
-                                    st.write(f"• 🔴 :red[**Fermé pour la nuit**]")
-                                elif h_o <= heure_actuelle < h_f and not info.get('has_opened_today', False) and not data['is_open']:
-                                    st.write(f"• 🟣 :violet[**Ouverture retardée**]")
-                                elif p['statut'] == "EN_COURS":
-                                    st.write(f"• 🟠 :orange[**En cours** depuis {h_debut}]")
-                                elif p['statut'] == "TERMINEE":
-                                    st.write(f"• 🟢 :green[**Opérationnel** depuis {p['fin'].strftime('%H:%M')}]")
+                                if heure_actuelle >= h_f and not data['is_open']: st.write(f"• 🔴 :red[**Fermé pour la nuit**]")
+                                elif h_o <= heure_actuelle < h_f and not info.get('has_opened_today', False) and not data['is_open']: st.write(f"• 🟣 :violet[**Ouverture retardée**]")
+                                elif p['statut'] == "EN_COURS": st.write(f"• 🟠 :orange[**En cours** depuis {h_d}]")
+                                else: st.write(f"• 🟢 :green[**Opérationnel** à {p['fin'].strftime('%H:%M')}]")
                             else:
-                                if p['statut'] == "TERMINEE":
-                                    st.caption(f"• 🟢 :green[**Ope à {p['fin'].strftime('%H:%M')}**] | 🔴 :red[**Panne à {h_debut}**] ({p['duree']} min)")
-                    else:
-                        st.write("✅ **Aucun incident signalé aujourd'hui**")
-            st.write("") # Espace entre attractions
+                                if p['statut'] == "TERMINEE": st.caption(f"• 🟢 :green[**Ope à {p['fin'].strftime('%H:%M')}**] | 🔴 :red[**Panne à {h_d}**] ({p['duree']} min)")
+                    else: st.write("✅ **Aucun incident signalé aujourd'hui**")
+            st.write("")
 
-# --- INTERRUPTIONS ---
+# --- DERNIÈRES INTERRUPTIONS ---
 st.subheader("🚨 Dernières interruptions")
 if not df_pannes_brutes.empty:
     flux = df_pannes_brutes[pd.to_datetime(df_pannes_brutes['start_time']).dt.tz_convert('Europe/Paris') >= debut_journee].copy()
     flux = flux.sort_values('start_time', ascending=False).drop_duplicates(subset=['ride_name']).head(5)
     for _, p in flux.iterrows():
         r_n, d_p = p['ride_name'], pd.to_datetime(p['start_time']).astimezone(paris_tz)
-        if pd.isna(p['end_time']):
+        h_f_p = pd.to_datetime(p['end_time']).astimezone(paris_tz).strftime("%H:%M") if pd.notna(p['end_time']) else None
+        if not h_f_p:
             st.markdown(f'<div class="ride-left-card card-orange" style="width:100%; margin-bottom:10px;"><div class="ride-info-meta"><span style="font-size:20px;">{get_emoji(r_n)}</span><div class="ride-titles"><p class="ride-main-name">{r_n}</p><p class="ride-sub-status">En panne depuis {d_p.strftime("%H:%M")}</p></div></div><div class="state-pill">101</div></div>', unsafe_allow_html=True)
         else:
-            f_p = pd.to_datetime(p['end_time']).astimezone(paris_tz)
-            st.markdown(f'<div class="ride-left-card card-green" style="width:100%; margin-bottom:10px;"><div class="ride-info-meta"><span style="font-size:20px;">{get_emoji(r_n)}</span><div class="ride-titles"><p class="ride-main-name">{r_n}</p><p class="ride-sub-status">Rétabli à {f_p.strftime("%H:%M")}</p></div></div><div class="state-pill">RETOUR</div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="ride-left-card card-green" style="width:100%; margin-bottom:10px;"><div class="ride-info-meta"><span style="font-size:20px;">{get_emoji(r_n)}</span><div class="ride-titles"><p class="ride-main-name">{r_n}</p><p class="ride-sub-status">Rétabli à {h_f_p}</p></div></div><div class="state-pill">RETOUR</div></div>', unsafe_allow_html=True)
 else: st.info("Aucun incident aujourd'hui.")
 
-st.caption("Disney Wait Time Tool | Dashboard v3.1")
+st.caption("Disney Wait Time Tool | Dashboard v3.3")
