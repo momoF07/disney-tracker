@@ -8,8 +8,10 @@ import time as time_sleep
 import random
 from streamlit_autorefresh import st_autorefresh 
 from emojis import get_emoji, get_rides_by_zone, RIDES_DLP, RIDES_DAW
-from config import PARK_OPENING, DLP_CLOSING, DAW_CLOSING
-from special_hours import ANTICIPATED_CLOSINGS, FANTASYLAND_EARLY_CLOSE
+# On importe les nouvelles variables de config
+from config import PARK_OPENING, DLP_CLOSING, DAW_CLOSING, EMT_OPENING
+# On ajoute EMT_EARLY_OPEN aux imports
+from special_hours import ANTICIPATED_CLOSINGS, FANTASYLAND_EARLY_CLOSE, EMT_EARLY_OPEN
 
 # --- CONFIGURATION DE LA PAGE ---
 st.set_page_config(page_title="Disney Wait Time", page_icon="🏰", layout="centered")
@@ -128,51 +130,25 @@ with st.sidebar.expander("🔐 Admin Panel"):
         
         if sim_mode and not df_live.empty:
             st.warning("⚠️ MODE TEST COHÉRENT ACTIF")
-            
-            # 1. TEMPS D'ATTENTE (Multiples de 5)
             df_live['wait_time'] = [random.randint(0, 12) * 5 for _ in range(len(df_live))]
-            
-            # 2. GÉNÉRATEUR DE SCÉNARIOS LOGIQUES
             for idx, row in df_live.iterrows():
                 ride_n = row['ride_name']
-                # On choisit UN SEUL état logique par attraction
                 etat_test = random.choice(["OUVERT", "INTERRUPTION", "FERME_DEPUIS_PANNE", "JAMAIS_OUVERT"])
-                
                 if etat_test == "OUVERT":
                     df_live.at[idx, 'is_open'] = True
                     status_map[ride_n] = True
-                    # Pas de panne en cours dans all_pannes pour celle-ci
-                    
                 elif etat_test == "INTERRUPTION":
                     df_live.at[idx, 'is_open'] = False
                     status_map[ride_n] = True 
-                    # L'attraction a déjà ouvert mais est tombée en panne
-                    all_pannes.append({
-                        "ride": ride_n, 
-                        "debut": maintenant - timedelta(minutes=random.randint(10, 30)), 
-                        "fin": None, 
-                        "statut": "EN_COURS"
-                    })
-                    
+                    all_pannes.append({"ride": ride_n, "debut": maintenant - timedelta(minutes=random.randint(10, 30)), "fin": None, "statut": "EN_COURS"})
                 elif etat_test == "FERME_DEPUIS_PANNE":
                     df_live.at[idx, 'is_open'] = False
                     status_map[ride_n] = True
-                    # Simulation : Fermée pour la soirée après une panne non résolue
-                    # (Apparaîtra en ROUGE si l'heure actuelle > heure de tolérance)
-                    all_pannes.append({
-                        "ride": ride_n, 
-                        "debut": maintenant - timedelta(hours=1), 
-                        "fin": None, 
-                        "statut": "EN_COURS"
-                    })
-                    
+                    all_pannes.append({"ride": ride_n, "debut": maintenant - timedelta(hours=1), "fin": None, "statut": "EN_COURS"})
                 elif etat_test == "JAMAIS_OUVERT":
                     df_live.at[idx, 'is_open'] = False
                     status_map[ride_n] = False 
-                    # Badge BLEU : N'a jamais envoyé de is_open=True aujourd'hui
-            
             st.info("✅ Données de test injectées proprement.")
-
 
 # --- SECTION ACTIONS ---
 col_btn1, col_btn2 = st.columns(2)
@@ -249,6 +225,7 @@ with col_help:
 
 with col_sc:
     sc = st.text_input("Raccourci...", placeholder="ex: *FANTASY", label_visibility="collapsed")
+    
 current_selection = st.query_params.get_all("fav")
 if sc.startswith("*"):
     shortcut_selection = get_rides_by_zone(sc, sorted(df_live['ride_name'].unique()) if not df_live.empty else [], all_pannes)
@@ -269,8 +246,11 @@ if not df_live.empty:
                 a_deja_ouvert = status_map.get(ride, False)
                 panne_actuelle = next((p for p in all_pannes if p['ride'] == ride and p['statut'] == "EN_COURS"), None)
                 
-                # --- RÉCUPÉRATION DE L'HEURE DE FERMETURE RÉELLE (via updated_at) ---
                 heure_fermeture_constatee = current['updated_at'].strftime("%H:%M")
+                
+                # --- LOGIQUE EMT / OUVERTURE THÉORIQUE ---
+                # Si l'attraction est dans EMT_EARLY_OPEN, elle ouvre à 8h30, sinon 9h30
+                h_ouverture_theorique = EMT_OPENING if ride in EMT_EARLY_OPEN else PARK_OPENING
                 
                 is_daw_ride = any(attr.lower() in ride.lower() for attr in RIDES_DAW)
                 h_f_theorique = DAW_CLOSING if is_daw_ride else DLP_CLOSING
@@ -282,11 +262,20 @@ if not df_live.empty:
                 h_tolerance = (datetime.combine(datetime.today(), h_f_theorique) - timedelta(minutes=30)).time()
                 is_open_api = current['is_open']
                 
+                # --- DÉTERMINATION DES ÉTATS ---
                 est_definitivement_ferme = (heure_actuelle >= h_tolerance or heure_actuelle >= h_f_theorique) and not is_open_api
-                est_en_interruption = heure_actuelle < h_tolerance and not is_open_api
                 
-                if (heure_actuelle < PARK_OPENING or heure_actuelle >= DLP_CLOSING) and not sim_mode:
-                    est_definitivement_ferme = True
+                # Une attraction est en attente seulement si l'heure d'ouverture n'est pas encore passée
+                est_en_attente = heure_actuelle < h_ouverture_theorique and not is_open_api
+                
+                # Une attraction est en interruption si l'heure d'ouverture est passée, 
+                # qu'elle n'est pas ouverte, et qu'on n'est pas encore en zone de fermeture
+                est_en_interruption = heure_actuelle >= h_ouverture_theorique and heure_actuelle < h_tolerance and not is_open_api
+                
+                if (heure_actuelle < h_ouverture_theorique and not is_open_api) and not sim_mode:
+                    # Sécurité : Si parc pas encore ouvert du tout (avant 8h30)
+                    if heure_actuelle < EMT_OPENING:
+                        est_en_attente = True
 
                 st.subheader(f"{get_emoji(ride)} {ride}")
                 c1, c2 = st.columns(2)
@@ -295,12 +284,13 @@ if not df_live.empty:
                     if est_definitivement_ferme:
                         st.markdown(f'<div style="background-color: rgba(255, 75, 75, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 75, 75, 0.5); margin-bottom: 8px;"><span style="color: #ff4b4b; font-weight: 600; font-size: 15px;">🔴 FERMÉ DEPUIS {heure_fermeture_constatee}</span></div>', unsafe_allow_html=True)
                         c2.metric("Attente", "- - -")
-                    elif not a_deja_ouvert:
+                    elif est_en_attente:
                         st.markdown('<div style="background-color: rgba(0, 123, 255, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(0, 123, 255, 0.5); margin-bottom: 8px;"><span style="color: #007bff; font-weight: 600; font-size: 15px;">🕒 EN ATTENTE</span></div>', unsafe_allow_html=True)
                         c2.metric("Attente", "- - -")
                     elif est_en_interruption:
                         st.markdown('<div style="background-color: rgba(255, 165, 0, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 165, 0, 0.5); margin-bottom: 8px;"><span style="color: #FF8C00; font-weight: 600; font-size: 15px;">🟠 INTERRUPTION DE SERVICE</span></div>', unsafe_allow_html=True)
                         if panne_actuelle: st.caption(f"⚠️ Depuis {max(0, int((maintenant - panne_actuelle['debut']).total_seconds() / 60))} min")
+                        else: st.caption(f"⏳ Ouverture prévue à {h_ouverture_theorique.strftime('%H:%M')}")
                         c2.metric("Attente", "- - -")
                     else:
                         st.markdown('<div style="background-color: rgba(46, 204, 113, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(46, 204, 113, 0.5); margin-bottom: 8px;"><span style="color: #2ecc71; font-weight: 600; font-size: 15px;">🟢 OUVERT</span></div>', unsafe_allow_html=True)
@@ -312,8 +302,6 @@ if not df_live.empty:
                         pannes_triees = sorted(h_pannes, key=lambda x: x['debut'], reverse=True)
                         for idx, p in enumerate(pannes_triees):
                             h_debut = p['debut'].strftime('%H:%M')
-                            
-                            # --- 1. ÉVÉNEMENT LE PLUS RÉCENT (ACTUEL) : AFFICHAGE EN WRITE ---
                             if idx == 0:
                                 if est_definitivement_ferme:
                                     if p['statut'] == "EN_COURS":
@@ -322,33 +310,21 @@ if not df_live.empty:
                                     else:
                                         st.write(f"• 🟢 :green[**Opérationnel jusqu'à la fermeture**]")
                                         st.caption(f"• 🔴 :red[**Fermé à {heure_fermeture_constatee}**]")
-                                        st.caption(f"• 🕒 Dernier incident à {h_debut}")
-                                
                                 elif p['statut'] == "EN_COURS":
                                     st.write(f"• 🟠 :orange[**En cours** depuis {h_debut}]")
-                                    st.caption("• ⚠️ Incident technique signalé")
-                                
                                 elif p['statut'] == "TERMINEE":
                                     st.write(f"• 🟢 :green[**Opérationnel** depuis {p['fin'].strftime('%H:%M')}]")
                                     st.caption(f"• 🔴 :red[**En panne** à {h_debut}] ({p['duree']} min)")
-
-                            # --- 2. ÉVÉNEMENTS ANCIENS : UNE LIGNE CHACUN DANS UN BLOC (CAPTION) ---
                             else:
                                 if p['statut'] == "TERMINEE":
                                     h_fin = p['fin'].strftime('%H:%M')
-                                    # Bloc duo vertical en caption
                                     st.caption(f"• 🟢 :green[**Opérationnel à {h_fin}**] ({p['duree']} min)")
                                     st.caption(f"• 🔴 :red[**En panne à {h_debut}**]")
-                                    
-                            # Filet de séparation entre les cycles de pannes
                             if idx < len(pannes_triees) - 1: 
                                 st.markdown("<hr style='margin: 5px 0px 5px 0px; opacity: 0.2;'>", unsafe_allow_html=True)
-                    
                     else: 
-                        # --- 3. AUCUN INCIDENT SIGNALÉ ---
                         if est_definitivement_ferme:
                             st.write(f"• 🔴 :red[**Fermé à {heure_fermeture_constatee}**]")
-                            st.caption("• ✅ Aucun incident signalé aujourd'hui")
                         else:
                             st.write("✅ **Aucun incident signalé**")
             st.divider()
