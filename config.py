@@ -31,5 +31,6 @@ DLP_CLOSING = get_park_schedule("dae968d5-630d-4719-8b06-3d107e944401") or DEFAU
 DAW_CLOSING = get_park_schedule("ca888437-ebb4-4d50-aed2-d227f7096968") or DEFAULT_DAW_CLOSE
 
 # On garde ces variables pour la compatibilité avec ton app
-PARK_OPENING = time(8, 30) 
+EMT_OPENING = time(8, 30)
+PARK_OPENING = time(9, 30) 
 PARK_CLOSING = DLP_CLOSING # Par défaut, on prend le plus tard pour l'affichage global
