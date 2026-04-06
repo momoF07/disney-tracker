@@ -328,13 +328,17 @@ if not df_live.empty:
                 elif ride in FANTASYLAND_EARLY_CLOSE:
                     h_f_theorique = (datetime.combine(datetime.today(), DLP_CLOSING) - timedelta(minutes=65)).time()
 
-                h_tolerance = (datetime.combine(datetime.today(), h_f_theorique) - timedelta(minutes=30)).time()
                 is_open_api = current['is_open']
                 
                 # --- DÉTERMINATION DES ÉTATS ---
-                est_definitivement_ferme = (heure_actuelle >= h_tolerance or heure_actuelle >= h_f_theorique) and not is_open_api
+                # 🔴 FERMÉ : Uniquement si l'heure actuelle a dépassé l'heure de fermeture théorique
+                est_definitivement_ferme = heure_actuelle >= h_f_theorique and not is_open_api
+                
+                # 🕒 EN ATTENTE : Avant l'ouverture (EMT ou Standard)
                 est_en_attente = heure_actuelle < h_ouverture_theorique and not is_open_api
-                est_en_interruption = heure_actuelle >= h_ouverture_theorique and heure_actuelle < h_tolerance and not is_open_api
+                
+                # 🟠/🟣 INTERRUPTION : Si fermé alors que le parc est ouvert (prioritaire sur le rouge avant h_f)
+                est_en_interruption = h_ouverture_theorique <= heure_actuelle < h_f_theorique and not is_open_api
                 
                 if (heure_actuelle < h_ouverture_theorique and not is_open_api) and not sim_mode:
                     if heure_actuelle < EMT_OPENING:
@@ -344,34 +348,35 @@ if not df_live.empty:
                 c1, c2 = st.columns(2)
                 
                 with c1:
-                    # CAS 0 : EN RÉHABILITATION
+                    # CAS 0 : EN RÉHABILITATION (Badge Gris)
                     if est_en_rehab:
                         st.markdown(f'<div style="background-color: rgba(128, 128, 128, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(128, 128, 128, 0.5); margin-bottom: 8px;"><span style="color: #808080; font-weight: 600; font-size: 15px;">🛠️ EN RÉHABILITATION</span></div>', unsafe_allow_html=True)
                         st.caption(f"⏳ Jusqu'au {datetime.strptime(infos_rehab['rehab_end'], '%Y-%m-%d').strftime('%d/%m')}")
-                        c2.metric("Attente", "- - -")
+                        c2.metric("Attente", "TRVX")
 
-                    # CAS 1 : Fermé pour la journée
+                    # CAS 1 : FERMETURE NOCTURNE (Badge Rouge) - Uniquement après h_f_theorique
                     elif est_definitivement_ferme:
-                        st.markdown(f'<div style="background-color: rgba(255, 75, 75, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 75, 75, 0.5); margin-bottom: 8px;"><span style="color: #ff4b4b; font-weight: 600; font-size: 15px;">🔴 FERMÉ DEPUIS {heure_fermeture_constatee}</span></div>', unsafe_allow_html=True)
+                        st.markdown(f'<div style="background-color: rgba(255, 75, 75, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 75, 75, 0.5); margin-bottom: 8px;"><span style="color: #ff4b4b; font-weight: 600; font-size: 15px;">🔴 FERMÉ</span></div>', unsafe_allow_html=True)
+                        st.caption(f"🏁 Journée terminée à {h_f_theorique.strftime('%H:%M')}")
                         c2.metric("Attente", "- - -")
                     
-                    # CAS 2 : En attente
+                    # CAS 2 : EN ATTENTE / MATIN (Badge Bleu)
                     elif est_en_attente:
                         st.markdown('<div style="background-color: rgba(0, 123, 255, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(0, 123, 255, 0.5); margin-bottom: 8px;"><span style="color: #007bff; font-weight: 600; font-size: 15px;">🕒 EN ATTENTE</span></div>', unsafe_allow_html=True)
                         c2.metric("Attente", "- - -")
                     
-                    # CAS 3 : OUVERTURE RETARDÉE
+                    # CAS 3 : OUVERTURE RETARDÉE (Badge Violet)
                     elif est_en_interruption and not a_deja_ouvert:
                         st.markdown('<div style="background-color: rgba(155, 89, 182, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(155, 89, 182, 0.5); margin-bottom: 8px;"><span style="color: #9b59b6; font-weight: 600; font-size: 15px;">🟣 OUVERTURE RETARDÉE</span></div>', unsafe_allow_html=True)
                         c2.metric("Attente", "- - -")
 
-                    # CAS 4 : INTERRUPTION
+                    # CAS 4 : INTERRUPTION / PANNE (Badge Orange)
                     elif est_en_interruption and a_deja_ouvert:
                         st.markdown('<div style="background-color: rgba(255, 165, 0, 0.1); padding: 10px; border-radius: 12px; border: 2.5px solid rgba(255, 165, 0, 0.5); margin-bottom: 8px;"><span style="color: #FF8C00; font-weight: 600; font-size: 15px;">🟠 INTERRUPTION DE SERVICE</span></div>', unsafe_allow_html=True)
                         if panne_actuelle: st.caption(f"⚠️ Depuis {max(0, int((maintenant - panne_actuelle['debut']).total_seconds() / 60))} min")
                         c2.metric("Attente", "- - -")
                     
-                    # CAS 5 : OUVERT
+                    # CAS 5 : OUVERT (Badge Vert)
                     else:
                         if est_bientot_rehab:
                              st.caption(f"⚠️ Maintenance le {datetime.strptime(infos_rehab['rehab_start'], '%Y-%m-%d').strftime('%d/%m')}")
@@ -392,8 +397,7 @@ if not df_live.empty:
                                 h_debut = p['debut'].strftime('%H:%M')
                                 if idx == 0:
                                     if est_definitivement_ferme:
-                                        st.write(f"• 🔴 :red[**Fermé à {heure_fermeture_constatee}**]")
-                                        if p['statut'] == "EN_COURS": st.caption(f"• 🟠 :orange[**En panne** depuis {h_debut}]")
+                                        st.write(f"• 🔴 :red[**Fermé pour la nuit**]")
                                     elif est_en_interruption and not a_deja_ouvert:
                                         st.write(f"• 🟣 :violet[**Ouverture retardée**]")
                                         st.caption(f"• 🕒 Stand-by depuis {h_ouverture_theorique.strftime('%H:%M')}")
@@ -417,7 +421,7 @@ if not df_live.empty:
                                     st.markdown("<hr style='margin: 5px 0px 5px 0px; opacity: 0.2;'>", unsafe_allow_html=True)
                         else: 
                             if est_definitivement_ferme:
-                                st.write(f"• 🔴 :red[**Fermé à {heure_fermeture_constatee}**]")
+                                st.write(f"• 🔴 :red[**Fermé pour la nuit**]")
                             elif est_en_interruption and not a_deja_ouvert:
                                 st.write(f"• 🟣 :violet[**Ouverture retardée**]")
                                 st.caption(f"• 🕒 Stand-by depuis {h_ouverture_theorique.strftime('%H:%M')}")
