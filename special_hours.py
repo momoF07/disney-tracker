@@ -16,6 +16,7 @@ ANTICIPATED_CLOSINGS = {
     "Le Pays des Contes de Fées, presented by Vittel": time(20, 0),
     "Discoveryland Theater": time(17, 30),
     "Thunder Mesa Riverboat Landing": time(17, 0),
+    "Main Street Vehicles": time(14, 45),
     
 }
 
