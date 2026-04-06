@@ -248,22 +248,55 @@ if not df_live.empty:
         """, unsafe_allow_html=True)
 
         # Historique d'état dans l'expander (intégré sous la carte)
-        with st.expander("📜 Historique d'état"):
-            if rehab: st.write("• 🛠️ :grey[**Maintenance détectée**] (Fermé hier)")
+        # --- L'EXPANDER "SOUDÉ" À LA CARTE ---
+        with st.expander("📜 Historique complet de la journée", expanded=False):
+            st.markdown('<div style="margin-top:-10px;">', unsafe_allow_html=True)
+            
+            if rehab:
+                st.write("• 🛠️ :grey[**Maintenance détectée**] (Fermé hier)")
             else:
+                # 1. On récupère toutes les pannes de l'attraction
                 ride_pannes = [p for p in all_pannes if p['ride'] == ride]
-                h_p_clean = [p for p in ride_pannes if p['statut'] == "EN_COURS" or p['duree'] >= 3]
+                
+                # 2. On filtre le "bruit" (micro-coupures < 3min) sauf si c'est en cours
+                h_p_clean = [p for p in ride_pannes if p['statut'] == "EN_COURS" or p.get('duree', 0) >= 3]
+                
                 if h_p_clean:
-                    for idx, p in enumerate(sorted(h_p_clean, key=lambda x: x['debut'], reverse=True)):
+                    # 3. On trie du plus récent au plus ancien
+                    pannes_triees = sorted(h_p_clean, key=lambda x: x['debut'], reverse=True)
+                    
+                    for idx, p in enumerate(pannes_triees):
                         h_d = p['debut'].strftime('%H:%M')
+                        h_f_p = p['fin'].strftime('%H:%M') if p['fin'] else None
+                        
+                        # Affichage du statut actuel (le premier de la liste)
                         if idx == 0:
-                            if heure_actuelle >= h_f and not data['is_open']: st.write(f"• 🔴 :red[**Fermé pour la nuit**]")
-                            elif h_o <= heure_actuelle < h_f and not info.get('has_opened_today', False) and not data['is_open']: st.write(f"• 🟣 :violet[**Ouverture retardée**]")
-                            elif p['statut'] == "EN_COURS": st.write(f"• 🟠 :orange[**En cours** depuis {h_d}]")
-                            else: st.write(f"• 🟢 :green[**Opérationnel** à {p['fin'].strftime('%H:%M')}]")
+                            if heure_actuelle >= h_f and not data['is_open']:
+                                st.write(f"• 🔴 :red[**Fermé pour la nuit**] (Dernier état)")
+                            elif h_o <= heure_actuelle < h_f and not info.get('has_opened_today', False) and not data['is_open']:
+                                st.write(f"• 🟣 :violet[**Ouverture retardée**] (Toujours en attente)")
+                            
+                            # Affichage de l'événement le plus récent
+                            if p['statut'] == "EN_COURS":
+                                st.write(f"• 🟠 :orange[**Interruption**] en cours depuis {h_d}")
+                            else:
+                                st.write(f"• 🟢 :green[**Opérationnel**] depuis {h_f_p}")
+                                st.caption(f"&nbsp;&nbsp;&nbsp;&nbsp;└ Panne de {h_d} à {h_f_p} ({p['duree']} min)")
+                        
+                        # Affichage des événements précédents (historique)
                         else:
-                            if p['statut'] == "TERMINEE": st.caption(f"• 🟢 :green[**Ope à {p['fin'].strftime('%H:%M')}**] | 🔴 :red[**Panne à {h_d}**] ({p['duree']} min)")
-                else: st.write("✅ **Aucun incident signalé aujourd'hui**")
+                            if p['statut'] == "TERMINEE":
+                                st.write(f"• ⏳ :grey[**Précédent :**] Panne à {h_d} pendant {p['duree']} min")
+                                st.caption(f"&nbsp;&nbsp;&nbsp;&nbsp;└ Réouverture à {h_f_p}")
+                
+                else:
+                    # Cas spécifique : Pas de panne mais pas encore ouvert
+                    if h_o <= heure_actuelle < h_f and not info.get('has_opened_today', False) and not data['is_open']:
+                        st.write(f"• 🟣 :violet[**Ouverture retardée**]")
+                    else:
+                        st.write("✅ **Aucun incident signalé aujourd'hui**")
+            
+            st.markdown('</div>', unsafe_allow_html=True)
         st.write("")
 # --- DERNIÈRES INTERRUPTIONS ---
 st.subheader("🚨 Dernières interruptions")
