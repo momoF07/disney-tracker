@@ -172,58 +172,58 @@ if not df_live.empty:
     st.query_params["fav"] = selected_options
 
     if selected_options:
-    # --- SÉLECTEUR DE TRI ---
-    sort_mode = st.segmented_control(
-        "Trier par :",
-        options=["🔠 Nom", "⏳ Attente", "⚠️ Incidents"],
-        default="🔠 Nom",
-        key="sort_selector"
-    )
-
-    # --- LOGIQUE DE TRI ---
-    if sort_mode == "⏳ Attente":
-        selected_options = sorted(
-            selected_options, 
-            key=lambda x: (
-                not df_live[df_live['ride_name'] == x]['is_open'].iloc[0], 
-                df_live[df_live['ride_name'] == x]['wait_time'].iloc[0],
-                x
-            )
+        # --- SÉLECTEUR DE TRI ---
+        sort_mode = st.segmented_control(
+            "Trier par :",
+            options=["🔠 Nom", "⏳ Attente", "⚠️ Incidents"],
+            default="🔠 Nom",
+            key="sort_selector"
         )
-    elif sort_mode == "⚠️ Incidents":
-        # 1. On filtre pour ne garder QUE les pannes en cours
-        # (Pas ouvert, pas en rehab, et pas encore l'heure de fermeture)
-        def is_real_incident(ride_name):
-            r_data = df_live[df_live['ride_name'] == ride_name].iloc[0]
-            r_info = status_map.get(ride_name, {})
+    
+        # --- LOGIQUE DE TRI ---
+        if sort_mode == "⏳ Attente":
+            selected_options = sorted(
+                selected_options, 
+                key=lambda x: (
+                    not df_live[df_live['ride_name'] == x]['is_open'].iloc[0], 
+                    df_live[df_live['ride_name'] == x]['wait_time'].iloc[0],
+                    x
+                )
+            )
+        elif sort_mode == "⚠️ Incidents":
+            # 1. On filtre pour ne garder QUE les pannes en cours
+            # (Pas ouvert, pas en rehab, et pas encore l'heure de fermeture)
+            def is_real_incident(ride_name):
+                r_data = df_live[df_live['ride_name'] == ride_name].iloc[0]
+                r_info = status_map.get(ride_name, {})
+                
+                # Calcul de l'heure de fermeture théorique pour ce ride
+                is_daw_check = any(a.lower() in ride_name.lower() for a in RIDES_DAW)
+                h_f_check = DAW_CLOSING if is_daw_check else DLP_CLOSING
+                if ride_name in ANTICIPATED_CLOSINGS: h_f_check = ANTICIPATED_CLOSINGS[ride_name]
+                elif ride_name in FANTASYLAND_EARLY_CLOSE: h_f_check = (datetime.combine(datetime.today(), DLP_CLOSING) - timedelta(minutes=65)).time()
+                
+                # Logique de filtrage :
+                est_ouvert = r_data['is_open']
+                est_en_rehab = not r_info.get('opened_yesterday', True) and not r_info.get('has_opened_today', False)
+                est_ferme_nuit = heure_actuelle >= h_f_check
+                
+                # On ne garde que si : pas ouvert ET pas en rehab ET pas fermé pour la nuit
+                return not est_ouvert and not est_en_rehab and not est_ferme_nuit
+    
+            # On applique le filtre
+            selected_options = [r for r in selected_options if is_real_incident(r)]
             
-            # Calcul de l'heure de fermeture théorique pour ce ride
-            is_daw_check = any(a.lower() in ride_name.lower() for a in RIDES_DAW)
-            h_f_check = DAW_CLOSING if is_daw_check else DLP_CLOSING
-            if ride_name in ANTICIPATED_CLOSINGS: h_f_check = ANTICIPATED_CLOSINGS[ride_name]
-            elif ride_name in FANTASYLAND_EARLY_CLOSE: h_f_check = (datetime.combine(datetime.today(), DLP_CLOSING) - timedelta(minutes=65)).time()
+            # On trie le résultat par nom
+            selected_options = sorted(selected_options)
             
-            # Logique de filtrage :
-            est_ouvert = r_data['is_open']
-            est_en_rehab = not r_info.get('opened_yesterday', True) and not r_info.get('has_opened_today', False)
-            est_ferme_nuit = heure_actuelle >= h_f_check
-            
-            # On ne garde que si : pas ouvert ET pas en rehab ET pas fermé pour la nuit
-            return not est_ouvert and not est_en_rehab and not est_ferme_nuit
-
-        # On applique le filtre
-        selected_options = [r for r in selected_options if is_real_incident(r)]
-        
-        # On trie le résultat par nom
-        selected_options = sorted(selected_options)
-        
-        # Message si aucune panne
-        if not selected_options:
-            st.info("✅ Aucune panne en cours sur votre sélection.")
-            
-    else:
-        # Tri Alphabétique
-        selected_options = sorted(selected_options)
+            # Message si aucune panne
+            if not selected_options:
+                st.info("✅ Aucune panne en cours sur votre sélection.")
+                
+        else:
+            # Tri Alphabétique
+            selected_options = sorted(selected_options)
 
     st.write("") 
 
