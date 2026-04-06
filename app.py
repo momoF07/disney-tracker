@@ -172,65 +172,61 @@ if not df_live.empty:
     st.query_params["fav"] = selected_options
 
     if selected_options:
-        # --- SÉLECTEUR DE MODE ET DIRECTION ---
-        col_mode, col_dir = st.columns([0.7, 0.3])
+        # --- BARRE DE TRI ÉLÉGANTE ---
+        col_sort, col_dir = st.columns([0.82, 0.18])
         
-        sort_mode = col_mode.segmented_control(
-            "Filtrer et Trier :",
-            options=["🔠 Nom", "⏳ Ouvertes", "⚠️ Incidents"],
-            default="🔠 Nom",
-            key="sort_selector"
-        )
+        with col_sort:
+            sort_mode = st.segmented_control(
+                "Affichage :",
+                options=["🔠 Nom", "⏳ Ouvertes", "⚠️ Incidents"],
+                default="🔠 Nom",
+                key="sort_selector",
+                label_visibility="collapsed" # On cache le label pour gagner de la place
+            )
         
-        sort_desc = col_dir.checkbox("Inverser", value=False)
+        with col_dir:
+            # On utilise un toggle avec une icône de direction
+            descending = st.toggle("↕️", value=False, help="Inverser l'ordre")
     
         # --- LOGIQUE DE TRI ---
         if sort_mode == "⏳ Ouvertes":
-            # 1. On ne garde QUE les attractions ouvertes (is_open = True)
-            # Cela exclut d'office les pannes, rehabs et fermetures de nuit.
+            # Filtrer uniquement les attractions ouvertes
             selected_options = [
                 r for r in selected_options 
                 if df_live[df_live['ride_name'] == r]['is_open'].iloc[0]
             ]
-            
-            # 2. On trie par temps d'attente
+            # Trier par temps d'attente
             selected_options = sorted(
                 selected_options, 
                 key=lambda x: df_live[df_live['ride_name'] == x]['wait_time'].iloc[0],
-                reverse=sort_desc
+                reverse=descending
             )
-            
             if not selected_options:
-                st.info("🕒 Aucune attraction n'est ouverte actuellement dans votre sélection.")
+                st.info("🕒 Aucune attraction ouverte dans votre sélection.")
     
         elif sort_mode == "⚠️ Incidents":
-            # On garde uniquement les pannes (pas les fermés de nuit ni les rehabs)
+            # Fonction de filtrage des incidents réels (pas de rehab, pas de fermeture nuit)
             def is_real_incident(ride_name):
                 r_data = df_live[df_live['ride_name'] == ride_name].iloc[0]
                 r_info = status_map.get(ride_name, {})
-                
                 is_daw_check = any(a.lower() in ride_name.lower() for a in RIDES_DAW)
-                h_f_check = DAW_CLOSING if is_daw_check else DLP_CLOSING
-                if ride_name in ANTICIPATED_CLOSINGS: h_f_check = ANTICIPATED_CLOSINGS[ride_name]
-                elif ride_name in FANTASYLAND_EARLY_CLOSE: h_f_check = (datetime.combine(datetime.today(), DLP_CLOSING) - timedelta(minutes=65)).time()
+                h_f_check = (ANTICIPATED_CLOSINGS.get(ride_name) or 
+                            (DAW_CLOSING if is_daw_check else DLP_CLOSING))
                 
-                # Incident = Pas ouvert ET pas en rehab ET parc encore ouvert
                 est_en_rehab = not r_info.get('opened_yesterday', True) and not r_info.get('has_opened_today', False)
                 est_ferme_nuit = heure_actuelle >= h_f_check
-                
                 return not r_data['is_open'] and not est_en_rehab and not est_ferme_nuit
     
             selected_options = [r for r in selected_options if is_real_incident(r)]
-            selected_options = sorted(selected_options, reverse=sort_desc)
-            
+            selected_options = sorted(selected_options, reverse=descending)
             if not selected_options:
                 st.success("✅ Aucune panne signalée sur votre sélection.")
     
         else:
-            # Tri Alphabétique classique (Garde toute la liste)
-            selected_options = sorted(selected_options, reverse=sort_desc)
+            # Tri Nom (Garde toute la liste)
+            selected_options = sorted(selected_options, reverse=descending)
     
-        st.write("")
+        st.write("") # Espace
 
     # --- BOUCLE D'AFFICHAGE ---
     for ride in selected_options:
