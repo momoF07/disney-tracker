@@ -362,9 +362,9 @@ if not df_pannes_brutes.empty:
                 st.markdown(f'<div class="ride-left-card card-bordeaux" style="width:100%; margin-bottom:10px;"><div class="ride-info-meta"><span style="font-size:20px;">{get_emoji(r_n)}</span><div class="ride-titles"><p class="ride-main-name">{r_n}</p><p class="ride-sub-status">{sub_txt}</p></div></div><div class="state-pill">{pill_txt}</div></div>', unsafe_allow_html=True)
             else:
                 # C'est une vraie panne 101
-                st.markdown(f'<div class="ride-left-card card-orange" style="width:100%; margin-bottom:10px;"><div class="ride-info-meta"><span style="font-size:20px;">{get_emoji(r_n)}</span><div class="ride-titles"><p class="ride-main-name">{r_n}</p><p class="ride-sub-status">En panne depuis {d_p.strftime("%H:%M")}</p></div></div><div class="state-pill">101</div></div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="ride-left-card card-orange" style="width:100%; margin-bottom:10px;"><div class="ride-info-meta"><span style="font-size:20px;">{get_emoji(r_n)}</span><div class="ride-titles"><p class="ride-main-name">{r_n}</p><p class="ride-sub-status">En panne depuis {d_p.strftime("%H:%M")}</p></div></div><div class="state-pill">INTERRUPTION</div></div>', unsafe_allow_html=True)
         else:
             # C'est un rétablissement
-            st.markdown(f'<div class="ride-left-card card-green" style="width:100%; margin-bottom:10px;"><div class="ride-info-meta"><span style="font-size:20px;">{get_emoji(r_n)}</span><div class="ride-titles"><p class="ride-main-name">{r_n}</p><p class="ride-sub-status">Réouverture à {h_f_p}</p></div></div><div class="state-pill">RETOUR</div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="ride-left-card card-green" style="width:100%; margin-bottom:10px;"><div class="ride-info-meta"><span style="font-size:20px;">{get_emoji(r_n)}</span><div class="ride-titles"><p class="ride-main-name">{r_n}</p><p class="ride-sub-status">Réouverture à {h_f_p}</p></div></div><div class="state-pill">REOUVERTURE</div></div>', unsafe_allow_html=True)
 else: st.info("Aucun incident aujourd'hui.")
 st.caption("Disney Wait Time Tool | Dashboard v3.3")
