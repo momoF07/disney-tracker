@@ -249,7 +249,7 @@ if not df_live.empty:
                     # --- FILTRE : Minimum 5 minutes (ou en cours) ---
                     h_p_clean = [
                         p for p in all_pannes 
-                        if p['ride'] == ride and (p['statut'] == "EN_COURS" or p['duree'] >= 5)
+                        if p['ride'] == ride
                     ]
                     
                     if h_p_clean:
