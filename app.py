@@ -12,7 +12,7 @@ from config import PARK_OPENING, DLP_CLOSING, DAW_CLOSING, EMT_OPENING
 from special_hours import ANTICIPATED_CLOSINGS, FANTASYLAND_EARLY_CLOSE, EMT_EARLY_OPEN
 
 # --- CONFIGURATION DE LA PAGE ---
-st.set_page_config(page_title="\nDisney Wait Time", page_icon="🏰", layout="centered")
+st.set_page_config(page_title="Disney Wait Time", page_icon="🏰", layout="centered")
 
 # --- STYLE CSS GLOBAL & MAGIQUE ---
 st.markdown("""
@@ -98,6 +98,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- INITIALISATION ---
+st.write("")
 st.title("🏰 Disney Wait Time")
 paris_tz = pytz.timezone('Europe/Paris')
 if "last_refresh" not in st.session_state:
