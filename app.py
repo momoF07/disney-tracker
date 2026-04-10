@@ -246,41 +246,53 @@ if not df_live.empty:
                 if rehab: 
                     st.write("• 🛠️ :grey[**Maintenance en cours**]")
                 else:
-                    # --- FILTRE : Minimum 5 minutes (ou en cours) ---
+                    # --- SÉCURITÉ : 2 minutes (seuil entre deux appels API) ---
                     h_p_clean = [
                         p for p in all_pannes 
-                        if p['ride'] == ride
+                        if p['ride'] == ride and (p['statut'] == "EN_COURS" or p['duree'] >= 2)
                     ]
                     
-                    if h_p_clean:
+                    # Détection du "Delayed Opening" (Retard à l'ouverture)
+                    a_ouvert_aujourdhui = info.get('has_opened_today', False)
+                    est_en_retard_actuellement = (heure_actuelle > h_o) and (heure_actuelle < h_f) and not a_ouvert_aujourdhui and not data['is_open']
+                    
+                    if h_p_clean or est_en_retard_actuellement:
                         # Tri du plus récent au plus ancien
                         pannes_triees = sorted(h_p_clean, key=lambda x: x['debut'], reverse=True)
                         
-                        for idx, p in enumerate(pannes_triees):
+                        # --- 1. AFFICHAGE ÉTAT ACTUEL (Retard ou Panne en cours) ---
+                        if est_en_retard_actuellement:
+                            st.write(f"• 🟣 :violet[**Ouverture retardée**] (Prévue à {h_o.strftime('%H:%M')})")
+                            st.caption(f"&nbsp;&nbsp;&nbsp;&nbsp;└ 🕒 En attente de mise en service")
+                        
+                        elif pannes_triees:
+                            p = pannes_triees[0]
                             h_d = p['debut'].strftime('%H:%M')
                             
-                            if idx == 0:
-                                # GESTION DU STATUT ACTUEL
-                                if heure_actuelle >= h_f and not data['is_open']: 
-                                    st.write("• 🔴 :red[**Fermé pour la nuit**]")
-                                elif h_o <= heure_actuelle < h_f and not info.get('has_opened_today', False) and not data['is_open']: 
-                                    st.write("• 🟣 :violet[**Ouverture retardée**]")
-                                elif p['statut'] == "EN_COURS": 
-                                    st.write(f"• 🟠 :orange[**En cours** depuis {h_d}]")
-                                else: 
-                                    # L'attraction est réouverte
-                                    st.write(f"• 🟢 :green[**Opérationnel** à {p['fin'].strftime('%H:%M')}]")
-                                    # DÉTAIL DE LA PANNE QUI A PRÉCÉDÉ LA RÉOUVERTURE
-                                    if p['debut'].time() <= h_o:
-                                        st.caption(f"&nbsp;&nbsp;&nbsp;&nbsp;└ 🟣 :violet[**Ouverture retardée**] (Prévue à {h_o.strftime('%H:%M')})")
-                                    else:
-                                        st.caption(f"&nbsp;&nbsp;&nbsp;&nbsp;└ 🔴 :red[**Panne** à {h_d}] ({p['duree']} min)")
-                            else:
-                                # ÉVÉNEMENTS PRÉCÉDENTS (> 5 min)
+                            if heure_actuelle >= h_f and not data['is_open']: 
+                                st.write("• 🔴 :red[**Fermé pour la nuit**]")
+                            elif p['statut'] == "EN_COURS": 
+                                st.write(f"• 🟠 :orange[**En cours** depuis {h_d}]")
+                            else: 
+                                # L'attraction est réouverte
+                                st.write(f"• 🟢 :green[**Opérationnel** à {p['fin'].strftime('%H:%M')}]")
+                                
+                                # Détail de ce qui a causé la réouverture
+                                # On considère que c'est un DO si la panne commence à l'ouverture ou avant
+                                if p['debut'].time() <= h_o:
+                                    st.caption(f"&nbsp;&nbsp;&nbsp;&nbsp;└ 🟣 :violet[**Ouverture retardée**] (Prévue à {h_o.strftime('%H:%M')})")
+                                else:
+                                    st.caption(f"&nbsp;&nbsp;&nbsp;&nbsp;└ 🔴 :red[**En panne** à {h_d}] ({p['duree']} min)")
+
+                        # --- 2. AFFICHAGE DU RESTE DE L'HISTORIQUE ---
+                        if len(pannes_triees) > 1:
+                            # On boucle sur le reste
+                            for p in pannes_triees[1:]:
+                                h_d = p['debut'].strftime('%H:%M')
                                 if p['statut'] == "TERMINEE": 
                                     st.caption(f"• 🟢 :green[**Ope à {p['fin'].strftime('%H:%M')}**] | 🔴 :red[**Panne à {h_d}**] ({p['duree']} min)")
                     else: 
-                        st.write("✅ Aucun incident notable aujourd'hui (+5 min)")
+                        st.write("✅ Aucun incident aujourd'hui.")
 st.subheader("🚨 Dernières interruptions")
 if not df_pannes_brutes.empty:
     flux = df_pannes_brutes[pd.to_datetime(df_pannes_brutes['start_time']).dt.tz_convert('Europe/Paris') >= debut_journee].copy()
