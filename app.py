@@ -229,62 +229,62 @@ if not df_live.empty:
     st.query_params["fav"] = selected_options
 
     if selected_options:
-    # --- BARRE DE TRI ÉLÉGANTE ---
-    st.write("")
-    col_sort, col_dir = st.columns([0.82, 0.18])
+        # --- BARRE DE TRI ÉLÉGANTE ---
+        st.write("")
+        col_sort, col_dir = st.columns([0.82, 0.18])
+        
+        with col_sort:
+            sort_mode = st.segmented_control(
+                "Affichage :",
+                # Ajout de l'option Réhabilitations
+                options=["🔠 Nom", "⏳ Temps d'Attente", "⚠️ Incidents", "🛠️ Réhabilitations"],
+                default="🔠 Nom",
+                key="sort_selector",
+                label_visibility="collapsed"
+            )
+        
+        with col_dir:
+            descending = st.toggle("↕️", value=False, help="Inverser l'ordre")
     
-    with col_sort:
-        sort_mode = st.segmented_control(
-            "Affichage :",
-            # Ajout de l'option Réhabilitations
-            options=["🔠 Nom", "⏳ Temps d'Attente", "⚠️ Incidents", "🛠️ Réhabilitations"],
-            default="🔠 Nom",
-            key="sort_selector",
-            label_visibility="collapsed"
-        )
+        # --- LOGIQUE DE TRI ET FILTRAGE ---
+        
+        # 1. Filtre Temps d'Attente (Uniquement les ouvertes)
+        if sort_mode == "⏳ Temps d'Attente":
+            selected_options = [r for r in selected_options if df_live[df_live['ride_name'] == r]['is_open'].iloc[0]]
+            selected_options = sorted(selected_options, key=lambda x: df_live[df_live['ride_name'] == x]['wait_time'].iloc[0], reverse=descending)
+            if not selected_options: st.info("🕒 Aucune attraction ouverte dans cette sélection.")
+        
+        # 2. Filtre Incidents (Pannes et retards, hors rehabs et fermetures nuit)
+        elif sort_mode == "⚠️ Incidents":
+            def is_real_incident(r_n):
+                r_d = df_live[df_live['ride_name'] == r_n].iloc[0]
+                r_i = status_map.get(r_n, {})
+                h_f_c = ANTICIPATED_CLOSINGS.get(r_n) or (DAW_CLOSING if any(a.lower() in r_n.lower() for a in RIDES_DAW) else DLP_CLOSING)
+                # Pas ouvert ET pas en rehab ET parc encore ouvert
+                est_en_rehab = not r_i.get('opened_yesterday', True) and not r_i.get('has_opened_today', False)
+                return not r_d['is_open'] and not est_en_rehab and heure_actuelle < h_f_c
+                
+            selected_options = [r for r in selected_options if is_real_incident(r)]
+            selected_options = sorted(selected_options, reverse=descending)
+            if not selected_options: st.success("🌟 Aucun incident à signaler sur cette sélection.")
     
-    with col_dir:
-        descending = st.toggle("↕️", value=False, help="Inverser l'ordre")
-
-    # --- LOGIQUE DE TRI ET FILTRAGE ---
+        # 3. NOUVEAU : Filtre Réhabilitations
+        elif sort_mode == "🛠️ Réhabilitations":
+            def is_in_rehab(r_n):
+                r_i = status_map.get(r_n, {})
+                r_d = df_live[df_live['ride_name'] == r_n].iloc[0]
+                # Logique : Pas ouvert hier ET pas ouvert aujourd'hui ET actuellement fermé
+                return not r_i.get('opened_yesterday', True) and not r_i.get('has_opened_today', False) and not r_d['is_open']
+                
+            selected_options = [r for r in selected_options if is_in_rehab(r)]
+            selected_options = sorted(selected_options, reverse=descending)
+            if not selected_options: st.info("✅ Aucune réhabilitation en cours sur cette sélection.")
+        
+        # 4. Tri par Nom (Par défaut)
+        else:
+            selected_options = sorted(selected_options, reverse=descending)
     
-    # 1. Filtre Temps d'Attente (Uniquement les ouvertes)
-    if sort_mode == "⏳ Temps d'Attente":
-        selected_options = [r for r in selected_options if df_live[df_live['ride_name'] == r]['is_open'].iloc[0]]
-        selected_options = sorted(selected_options, key=lambda x: df_live[df_live['ride_name'] == x]['wait_time'].iloc[0], reverse=descending)
-        if not selected_options: st.info("🕒 Aucune attraction ouverte dans cette sélection.")
-    
-    # 2. Filtre Incidents (Pannes et retards, hors rehabs et fermetures nuit)
-    elif sort_mode == "⚠️ Incidents":
-        def is_real_incident(r_n):
-            r_d = df_live[df_live['ride_name'] == r_n].iloc[0]
-            r_i = status_map.get(r_n, {})
-            h_f_c = ANTICIPATED_CLOSINGS.get(r_n) or (DAW_CLOSING if any(a.lower() in r_n.lower() for a in RIDES_DAW) else DLP_CLOSING)
-            # Pas ouvert ET pas en rehab ET parc encore ouvert
-            est_en_rehab = not r_i.get('opened_yesterday', True) and not r_i.get('has_opened_today', False)
-            return not r_d['is_open'] and not est_en_rehab and heure_actuelle < h_f_c
-            
-        selected_options = [r for r in selected_options if is_real_incident(r)]
-        selected_options = sorted(selected_options, reverse=descending)
-        if not selected_options: st.success("🌟 Aucun incident à signaler sur cette sélection.")
-
-    # 3. NOUVEAU : Filtre Réhabilitations
-    elif sort_mode == "🛠️ Réhabilitations":
-        def is_in_rehab(r_n):
-            r_i = status_map.get(r_n, {})
-            r_d = df_live[df_live['ride_name'] == r_n].iloc[0]
-            # Logique : Pas ouvert hier ET pas ouvert aujourd'hui ET actuellement fermé
-            return not r_i.get('opened_yesterday', True) and not r_i.get('has_opened_today', False) and not r_d['is_open']
-            
-        selected_options = [r for r in selected_options if is_in_rehab(r)]
-        selected_options = sorted(selected_options, reverse=descending)
-        if not selected_options: st.info("✅ Aucune réhabilitation en cours sur cette sélection.")
-    
-    # 4. Tri par Nom (Par défaut)
-    else:
-        selected_options = sorted(selected_options, reverse=descending)
-
-    st.write("") # Espace final avant les cartes
+        st.write("") # Espace final avant les cartes
 
         for ride in selected_options:
             data = df_live[df_live['ride_name'] == ride].iloc[0]
