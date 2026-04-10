@@ -17,19 +17,46 @@ st.set_page_config(page_title="Disney Wait Time", page_icon="🏰", layout="cent
 # --- STYLE CSS GLOBAL & MAGIQUE ---
 st.markdown("""
 <style>
-    /* Design des badges de la boucle d'affichage */
+    /* --- OPTIMISATION DU LAYOUT (ANTI-SAUT) --- */
+    .block-container {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+        padding-left: 2rem;
+        padding-right: 2rem;
+        max-width: 100% !important; /* Force le Full Width immédiatement */
+    }
+
+    /* --- RESPONSIVE : CARTES ET COLONNES --- */
+    @media (max-width: 768px) {
+        .block-container {
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+        }
+        .ride-left-card {
+            padding: 8px 10px;
+            height: 60px; /* Un peu plus compact sur mobile */
+        }
+        .ride-right-wait {
+            min-width: 65px;
+            height: 60px;
+        }
+        .ride-main-name { font-size: 12px; }
+        .wait-val { font-size: 18px; }
+    }
+
+    /* --- DESIGN DES BADGES ET CARTES --- */
     .ride-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; width: 100%; gap: 10px; }
     .ride-left-card { border-radius: 16px; padding: 10px 15px; display: flex; align-items: center; justify-content: space-between; flex-grow: 1; height: 68px; }
     .ride-info-meta { display: flex; align-items: center; gap: 12px; }
     .ride-titles { display: flex; flex-direction: column; }
-    .ride-main-name { color: white; font-size: 14px; font-weight: 600; margin: 0; }
+    .ride-main-name { color: white; font-size: 14px; font-weight: 600; margin: 0; line-height: 1.2; }
     .ride-sub-status { color: rgba(255,255,255,0.7); font-size: 11px; margin: 0; }
     .state-pill { background: rgba(0,0,0,0.3); color: white; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; border: 1px solid rgba(255,255,255,0.1); }
     .ride-right-wait { min-width: 75px; height: 68px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
     .wait-val { font-size: 20px; font-weight: 800; line-height: 1; }
     .wait-unit { font-size: 10px; font-weight: 400; opacity: 0.8; }
 
-    /* Couleurs de cartes */
+    /* --- COULEURS DES CARTES --- */
     .card-green { background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); }
     .card-orange { background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); }
     .card-blue { background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); }
@@ -41,7 +68,7 @@ st.markdown("""
     .bg-grey { background: #6b7280; }
     .bg-bordeaux { background: #991b1b; }
 
-    /* Animations Magiques pour le Popover */
+    /* --- ANIMATIONS ET POPOVER --- */
     @keyframes shine { to { background-position: 200% center; } }
     .magic-title {
         text-align: center;
@@ -64,6 +91,9 @@ st.markdown("""
         backdrop-filter: blur(10px); border-radius: 15px; padding: 12px; margin-bottom: 10px; transition: 0.3s;
     }
     .shortcut-card:hover { transform: translateY(-3px); background: rgba(255, 255, 255, 0.08); }
+    
+    /* Harmonisation des codes dans le popover */
+    code { color: #4facfe !important; background: rgba(79, 172, 254, 0.1) !important; }
 </style>
 """, unsafe_allow_html=True)
 
