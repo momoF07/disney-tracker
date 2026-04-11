@@ -10,6 +10,7 @@ from streamlit_autorefresh import st_autorefresh
 from emojis import get_emoji, get_rides_by_zone, RIDES_DLP, RIDES_DAW
 from config import PARK_OPENING, DLP_CLOSING, DAW_CLOSING, EMT_OPENING
 from special_hours import ANTICIPATED_CLOSINGS, FANTASYLAND_EARLY_CLOSE, EMT_EARLY_OPEN
+from weather import get_disney_weather
 
 # --- CONFIGURATION DE LA PAGE ---
 st.set_page_config(page_title="Disney Wait Time", page_icon="🏰", layout="centered")
@@ -138,6 +139,27 @@ if not df_live.empty and not df_pannes_brutes.empty:
         d_p = pd.to_datetime(row['start_time']).astimezone(paris_tz)
         f_p = pd.to_datetime(row['end_time']).astimezone(paris_tz) if pd.notna(row['end_time']) else None
         all_pannes.append({"ride": row['ride_name'], "debut": d_p, "fin": f_p, "statut": "EN_COURS" if f_p is None else "TERMINEE", "duree": int((f_p - d_p).total_seconds() / 60) if f_p else 0})
+
+# --- BLOC METEO ---
+weather = get_disney_weather() # À appeler au début de ton app.py
+
+if weather:
+    st.markdown(f"""
+    <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; display: flex; align-items: center; justify-content: space-between; border: 1px solid rgba(255,255,255,0.1);">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <span style="font-size: 30px;">{weather['emoji']}</span>
+            <div>
+                <b style="color: white; font-size: 16px;">{weather['desc']}</b><br>
+                <span style="color: #94a3b8; font-size: 12px;">Marne-la-Vallée</span>
+            </div>
+        </div>
+        <div style="text-align: right;">
+            <b style="color: white; font-size: 18px;">{weather['temp']}</b><br>
+            <span style="color: #94a3b8; font-size: 12px;">💨 {weather['wind']}</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
 
 # --- HEADER INFO ---
 header_html = f"""
