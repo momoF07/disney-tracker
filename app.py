@@ -186,19 +186,44 @@ if not df_live.empty:
                 do_live = (heure_actuelle > h_o) and (heure_actuelle < h_f) and not info.get('has_opened_today', False) and not data['is_open']
                 render_history_expander(ride, rehab_flag, h_p_clean, p_triees, do_live, h_o, h_f, data['is_open'])
 
-# --- DERNIÈRES INTERRUPTIONS (Sortie de la boucle de sélection) ---
+# --- DERNIÈRES INTERRUPTIONS ---
 st.write("---")
 st.subheader("🚨 Dernières interruptions")
+
 if not df_pannes_brutes.empty:
+    # On prépare les données (Tri par date, retrait des doublons pour ne garder que le dernier état)
     flux = df_pannes_brutes.copy()
     flux['dt'] = pd.to_datetime(flux['start_time'])
-    flux = flux[flux['dt'].dt.tz_convert('Europe/Paris') >= debut_journee].sort_values('dt', ascending=False).drop_duplicates(subset=['ride_name']).head(5)
+    flux = flux[flux['dt'].dt.tz_convert('Europe/Paris') >= debut_journee]
+    flux = flux.sort_values('dt', ascending=False).drop_duplicates(subset=['ride_name']).head(5)
+    
     for _, p in flux.iterrows():
-        r_n, d_p = p['ride_name'], pd.to_datetime(p['start_time']).astimezone(paris_tz)
+        r_n = p['ride_name']
+        d_p = pd.to_datetime(p['start_time']).astimezone(paris_tz)
+        # On vérifie si la panne est finie (end_time n'est pas NULL)
         h_f_p = pd.to_datetime(p['end_time']).astimezone(paris_tz).strftime("%H:%M") if pd.notna(p['end_time']) else None
+        
         if not h_f_p:
-            render_ride_card(r_n, f"En panne à {d_p.strftime('%H:%M')}", "bg-orange", "card-orange", "INTERRUPTION")
+            # Cas : Panne en cours (INTERRUPTION) - On force show_wait=False
+            render_ride_card(
+                ride=r_n, 
+                sub=f"En panne à {d_p.strftime('%H:%M')}", 
+                wait="101", 
+                bg="bg-orange", 
+                card_style="card-orange", 
+                pill="INTERRUPTION", 
+                show_wait=False
+            )
         else:
-            render_ride_card(r_n, f"Réouvert à {h_f_p}", "bg-green", "card-green", "REOUVERTURE")
+            # Cas : Panne terminée (REOUVERTURE) - On force show_wait=False
+            render_ride_card(
+                ride=r_n, 
+                sub=f"Réouvert à {h_f_p}", 
+                wait="OK", 
+                bg="bg-green", 
+                card_style="card-green", 
+                pill="REOUVERTURE", 
+                show_wait=False
+            )
 
 st.caption(f"Disney Wait Time Tool | v4.0 | Refresh: {st.session_state.last_refresh}")

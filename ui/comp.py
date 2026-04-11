@@ -30,27 +30,33 @@ def render_api_info(api_time, refresh_time):
     </div>
     """, unsafe_allow_html=True)
 
-def render_ride_card(ride, sub, wait, bg, card_style, pill):
-    # Gestion de l'affichage du temps (ajoute 'min' si c'est un chiffre)
-    wait_html = f'<span class="wait-val">{wait}</span>'
-    if str(wait).isdigit():
-        wait_html += '<span class="wait-unit">min</span>'
+def render_ride_card(ride, sub, wait, bg, card_style, pill, show_wait=True):
+    """Affiche la carte avec ou sans le carré de droite."""
+    wait_section = ""
+    if show_wait:
+        wait_html = f'<span class="wait-val">{wait}</span>'
+        if str(wait).isdigit():
+            wait_html += '<span class="wait-unit">min</span>'
         
-    st.markdown(f"""
-    <div class="ride-row">
-        <div class="ride-left-card {card_style}">
-            <div class="ride-info-meta">
-                <span style="font-size:24px;">{get_emoji(ride)}</span>
-                <div class="ride-titles">
-                    <p class="ride-main-name">{ride}</p>
-                    <p class="ride-sub-status">{sub}</p>
-                </div>
+        wait_section = f"""
+            <div class="ride-right-wait {bg}">
+                <span style="font-size:10px; opacity:0.7;">ATTENTE</span>
+                {wait_html}
             </div>
-            <div class="state-pill">{pill}</div>
+        """
+
+    st.markdown(f"""
+        <div class="ride-row">
+            <div class="ride-left-card {card_style}" style="flex-grow: 1;">
+                <div class="ride-info-meta">
+                    <span style="font-size:24px;">{get_emoji(ride)}</span>
+                    <div class="ride-titles">
+                        <p class="ride-main-name">{ride}</p>
+                        <p class="ride-sub-status">{sub}</p>
+                    </div>
+                </div>
+                <div class="state-pill">{pill}</div>
+            </div>
+            {wait_section}
         </div>
-        <div class="ride-right-wait {bg}">
-            <span style="font-size:10px; opacity:0.7;">ATTENTE</span>
-            {wait_html}
-        </div>
-    </div>
     """, unsafe_allow_html=True)
