@@ -31,8 +31,10 @@ def render_api_info(api_time, refresh_time):
     """, unsafe_allow_html=True)
 
 def render_ride_card(ride, sub, wait, bg, card_style, pill, show_wait=True):
-    """Affiche la carte avec ou sans le carré de droite."""
+    """Affiche la carte. Si show_wait=False, le carré de droite disparaît."""
+    
     wait_section = ""
+    # Si show_wait est True, on génère le carré de droite
     if show_wait:
         wait_html = f'<span class="wait-val">{wait}</span>'
         if str(wait).isdigit():
@@ -45,18 +47,19 @@ def render_ride_card(ride, sub, wait, bg, card_style, pill, show_wait=True):
             </div>
         """
 
+    # flex-grow: 1 assure que la carte prend toute la place si le carré est absent
     st.markdown(f"""
-        <div class="ride-row">
-            <div class="ride-left-card {card_style}" style="flex-grow: 1;">
-                <div class="ride-info-meta">
-                    <span style="font-size:24px;">{get_emoji(ride)}</span>
-                    <div class="ride-titles">
-                        <p class="ride-main-name">{ride}</p>
-                        <p class="ride-sub-status">{sub}</p>
-                    </div>
+    <div class="ride-row">
+        <div class="ride-left-card {card_style}" style="flex-grow: 1;">
+            <div class="ride-info-meta">
+                <span style="font-size:24px;">{get_emoji(ride)}</span>
+                <div class="ride-titles">
+                    <p class="ride-main-name">{ride}</p>
+                    <p class="ride-sub-status">{sub}</p>
                 </div>
-                <div class="state-pill">{pill}</div>
             </div>
-            {wait_section}
+            <div class="state-pill">{pill}</div>
         </div>
+        {wait_section}
+    </div>
     """, unsafe_allow_html=True)

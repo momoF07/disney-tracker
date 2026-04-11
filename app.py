@@ -41,12 +41,14 @@ if "last_refresh" not in st.session_state:
 # --- CONNEXION SUPABASE ---
 @st.cache_resource
 def init_connection():
+    """Initialise et met en cache la connexion Supabase"""
     return create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 
 supabase = init_connection()
 
 # --- FONCTION GITHUB ACTION ---
 def trigger_github_action():
+    """Déclenche le workflow de scraping sur GitHub Actions"""
     REPO = "momoF07/disney-tracker"
     WORKFLOW_ID = "check.yml"
     TOKEN = st.secrets["GITHUB_TOKEN"]
@@ -141,7 +143,7 @@ if not df_live.empty:
         with col_dir:
             descending = st.toggle("↕️", value=False)
 
-        # Logique de tri
+        # --- LOGIQUE DE TRI ---
         if sort_mode == "⏳ Temps d'Attente":
             selected_options = [r for r in selected_options if df_live[df_live['ride_name'] == r]['is_open'].iloc[0]]
             selected_options = sorted(selected_options, key=lambda x: df_live[df_live['ride_name'] == x]['wait_time'].iloc[0], reverse=descending)
@@ -162,6 +164,7 @@ if not df_live.empty:
             selected_options = sorted(selected_options, reverse=descending)
 
         st.write("")
+        # --- BOUCLE D'AFFICHAGE DES CARTES ---
         for ride in selected_options:
             data = df_live[df_live['ride_name'] == ride].iloc[0]
             info = status_map.get(ride, {})
@@ -179,7 +182,9 @@ if not df_live.empty:
             elif not data['is_open']: sub, wait, bg, style, pill = f"⚠️ Panne depuis {panne_act['debut'].strftime('%H:%M')}" if panne_act else "⚠️ Interruption", "- - -", "bg-orange", "card-orange", "INCIDENT"
             else: sub, wait, bg, style, pill = "✅ Opérationnel", int(data['wait_time']), "bg-green", "card-green", "OUVERT"
 
+            # Rendu de la carte principale (avec le carré de temps)
             render_ride_card(ride, sub, wait, bg, style, pill)
+            
             with st.expander("📜 Historique"):
                 h_p_clean = [p for p in all_pannes if p['ride'] == ride and (p['statut'] == "EN_COURS" or p['duree'] >= 2)]
                 p_triees = sorted(h_p_clean, key=lambda x: x['debut'], reverse=True)
@@ -191,7 +196,6 @@ st.write("---")
 st.subheader("🚨 Dernières interruptions")
 
 if not df_pannes_brutes.empty:
-    # On prépare les données (Tri par date, retrait des doublons pour ne garder que le dernier état)
     flux = df_pannes_brutes.copy()
     flux['dt'] = pd.to_datetime(flux['start_time'])
     flux = flux[flux['dt'].dt.tz_convert('Europe/Paris') >= debut_journee]
@@ -200,11 +204,10 @@ if not df_pannes_brutes.empty:
     for _, p in flux.iterrows():
         r_n = p['ride_name']
         d_p = pd.to_datetime(p['start_time']).astimezone(paris_tz)
-        # On vérifie si la panne est finie (end_time n'est pas NULL)
         h_f_p = pd.to_datetime(p['end_time']).astimezone(paris_tz).strftime("%H:%M") if pd.notna(p['end_time']) else None
         
         if not h_f_p:
-            # Cas : Panne en cours (INTERRUPTION) - On force show_wait=False
+            # Cas Panne : On désactive le carré de droite avec show_wait=False
             render_ride_card(
                 ride=r_n, 
                 sub=f"En panne à {d_p.strftime('%H:%M')}", 
@@ -215,7 +218,7 @@ if not df_pannes_brutes.empty:
                 show_wait=False
             )
         else:
-            # Cas : Panne terminée (REOUVERTURE) - On force show_wait=False
+            # Cas Réouverture : On désactive le carré de droite avec show_wait=False
             render_ride_card(
                 ride=r_n, 
                 sub=f"Réouvert à {h_f_p}", 
