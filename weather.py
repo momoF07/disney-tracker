@@ -1,0 +1,42 @@
+import requests
+
+def get_disney_weather():
+    # Coordonnées de Chessy (Marne-la-Vallée)
+    lat, lon = 48.8675, 2.7841
+    
+    url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,weather_code,wind_speed_10m&timezone=Europe%2FParis"
+    
+    try:
+        response = requests.get(url)
+        data = response.json().get('current', {})
+        
+        temp = data.get('temperature_2m')
+        wind = data.get('wind_speed_10m')
+        code = data.get('weather_code')
+        
+        # Mapping simplifié du code météo vers des emojis/textes
+        weather_map = {
+            0: ("☀️", "Ciel dégagé"),
+            1: ("🌤️", "Plutôt beau"),
+            3: ("☁️", "Couvert"),
+            45: ("🌫️", "Brouillard"),
+            61: ("🌧️", "Pluie faible"),
+            63: ("🌧️", "Pluie modérée"),
+            71: ("❄️", "Neige"),
+            80: ("🌦️", "Averses"),
+            95: ("⛈️", "Orage")
+        }
+        
+        emoji, desc = weather_map.get(code, ("❓", "Inconnu"))
+        
+        return {
+            "temp": f"{temp}°C",
+            "wind": f"{wind} km/h",
+            "desc": desc,
+            "emoji": emoji
+        }
+    except:
+        return None
+
+# Test
+print(get_disney_weather())
