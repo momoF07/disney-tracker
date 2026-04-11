@@ -34,6 +34,7 @@ def render_ride_card(ride, sub, wait, bg, card_style, pill, show_wait=True):
     """Affiche la carte d'attraction."""
     
     wait_section = ""
+    # On permet à la carte de gauche de prendre toute la place si le carré est masqué
     flex_style = "flex-grow: 1;" if not show_wait else ""
 
     if show_wait:
@@ -48,7 +49,6 @@ def render_ride_card(ride, sub, wait, bg, card_style, pill, show_wait=True):
             </div>
         """
 
-    # Utilisation impérative de st.markdown avec unsafe_allow_html=True
     st.markdown(f"""
     <div class="ride-row">
         <div class="ride-left-card {card_style}" style="{flex_style}">
@@ -63,4 +63,4 @@ def render_ride_card(ride, sub, wait, bg, card_style, pill, show_wait=True):
         </div>
         {wait_section}
     </div>
-    """, unsafe_allow_html=True) # <-- CETTE LIGNE EST INDISPENSABLE
+    """, unsafe_allow_html=True)
