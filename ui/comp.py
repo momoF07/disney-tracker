@@ -31,10 +31,11 @@ def render_api_info(api_time, refresh_time):
     """, unsafe_allow_html=True)
 
 def render_ride_card(ride, sub, wait, bg, card_style, pill, show_wait=True):
-    """Affiche la carte. Si show_wait=False, le carré de droite disparaît."""
+    """Affiche la carte d'attraction."""
     
     wait_section = ""
-    # Si show_wait est True, on génère le carré de droite
+    flex_style = "flex-grow: 1;" if not show_wait else ""
+
     if show_wait:
         wait_html = f'<span class="wait-val">{wait}</span>'
         if str(wait).isdigit():
@@ -47,10 +48,10 @@ def render_ride_card(ride, sub, wait, bg, card_style, pill, show_wait=True):
             </div>
         """
 
-    # flex-grow: 1 assure que la carte prend toute la place si le carré est absent
+    # Utilisation impérative de st.markdown avec unsafe_allow_html=True
     st.markdown(f"""
     <div class="ride-row">
-        <div class="ride-left-card {card_style}" style="flex-grow: 1;">
+        <div class="ride-left-card {card_style}" style="{flex_style}">
             <div class="ride-info-meta">
                 <span style="font-size:24px;">{get_emoji(ride)}</span>
                 <div class="ride-titles">
@@ -62,4 +63,4 @@ def render_ride_card(ride, sub, wait, bg, card_style, pill, show_wait=True):
         </div>
         {wait_section}
     </div>
-    """, unsafe_allow_html=True)
+    """, unsafe_allow_html=True) # <-- CETTE LIGNE EST INDISPENSABLE
