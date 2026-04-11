@@ -197,8 +197,8 @@ if not df_pannes_brutes.empty:
         r_n, d_p = p['ride_name'], pd.to_datetime(p['start_time']).astimezone(paris_tz)
         h_f_p = pd.to_datetime(p['end_time']).astimezone(paris_tz).strftime("%H:%M") if pd.notna(p['end_time']) else None
         if not h_f_p:
-            render_ride_card(r_n, f"En panne à {d_p.strftime('%H:%M')}", "101", "bg-orange", "card-orange", "INTERRUPTION")
+            render_ride_card(r_n, f"En panne à {d_p.strftime('%H:%M')}", "INTERRUPTION")
         else:
-            render_ride_card(r_n, f"Réouvert à {h_f_p}", "OK", "bg-green", "card-green", "REOUVERTURE")
+            render_ride_card(r_n, f"Réouvert à {h_f_p}", "REOUVERTURE")
 
 st.caption(f"Disney Wait Time Tool | v4.0 | Refresh: {st.session_state.last_refresh}")
