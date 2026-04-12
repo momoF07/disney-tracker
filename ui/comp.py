@@ -36,10 +36,8 @@ def render_weather_card(weather):
                 <b style="color: white; font-size: 18px;">{weather['temp']}°C</b><br>
                 <span style="color: white; font-size: 13px; opacity: 0.8;">Ressenti : {ressenti}°C</span>
             </div>
-        </div>
-        {alert_html}
-        {msc_html}
-    </div>
+        </div>{alert_html}</br>{msc_html}
+</div>
     """, unsafe_allow_html=True)
 
 def render_api_info(api_time, refresh_time):
