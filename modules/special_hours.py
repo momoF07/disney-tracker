@@ -20,8 +20,6 @@ ANTICIPATED_CLOSINGS = {
     
 }
 
-# Liste des attractions qui ferment TOUJOURS 1h05 avant le show nocturne (Fantasyland)
-# On pourra calculer cela dynamiquement dans l'app
 FANTASYLAND_EARLY_CLOSE = [
     "Dumbo the Flying Elephant",
     "Mad Hatter's Tea Cups",
