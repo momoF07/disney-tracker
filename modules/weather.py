@@ -54,7 +54,7 @@ def info_weather(feels_like):
                 "msg": "🌡️ ALERTE CHALEUR EXTRÊME : CODE 77+",
                 "sub": "Hydratation prioritaire. Cherchez l'ombre."
             }
-        elif val >= 25:
+        elif val >= 10:
             return {
                 "code": "77",
                 "color": "#FFA500",

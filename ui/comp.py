@@ -23,7 +23,7 @@ def render_weather_card(weather):
 def render_weather_info_card(weather_info):
     """Affiche la boîte d'alerte météo si une info est présente."""
     if not weather_info:
-        return {"Pas d'alerte en cours."}
+        return 
 
     st.markdown(f"""
         <div style="

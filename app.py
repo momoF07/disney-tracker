@@ -101,9 +101,6 @@ weather_data = get_disney_weather()
 if weather_data:
     # Affiche la carte météo standard (Temp, vent, etc.)
     render_weather_card(weather_data)
-    
-    # Calcule et affiche le bloc Code 77 uniquement si nécessaire
-    # On passe le ressenti récupéré juste au-dessus
     alert_info = info_weather(weather_data.get('feels_like'))
     render_weather_info_card(alert_info)
 
