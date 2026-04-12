@@ -222,5 +222,94 @@ def apply_custom_style():
         
         /* Harmonisation des codes dans le popover */
         code { color: #4facfe !important; background: rgba(79, 172, 254, 0.1) !important; }
+        
+        /* --- BOUTONS DE RACCOURCIS RAPIDES (GRID) --- */
+        div[data-testid="stColumn"] button {
+            background-color: rgba(255, 255, 255, 0.03) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            color: #94a3b8 !important;
+            border-radius: 10px !important;
+            font-size: 10px !important;
+            font-weight: 700 !important;
+            height: 32px !important;
+            padding: 0px !important;
+            text-transform: uppercase !important;
+            transition: all 0.2s ease-in-out !important;
+        }
+
+        div[data-testid="stColumn"] button:hover {
+            border-color: #4facfe !important;
+            color: #4facfe !important;
+            background-color: rgba(79, 172, 254, 0.1) !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(79, 172, 254, 0.1);
+        }
+
+        /* Accentuation par Parc (Bordure latérale) */
+        /* DLP (Vert) */
+        div[data-testid="column"]:nth-child(2) button, 
+        div[data-testid="column"]:nth-child(7) button, 
+        div[data-testid="column"]:nth-child(8) button,
+        div[data-testid="column"]:nth-child(9) button,
+        div[data-testid="column"]:nth-child(10) button,
+        div[data-testid="column"]:nth-child(11) button {
+            border-left: 3px solid #4ade80 !important;
+        }
+
+        /* DAW (Orange) */
+        div[data-testid="column"]:nth-child(3) button,
+        div[data-testid="column"]:nth-child(12) button,
+        div[data-testid="column"]:nth-child(13) button,
+        div[data-testid="column"]:nth-child(14) button,
+        div[data-testid="column"]:nth-child(15) button,
+        div[data-testid="column"]:nth-child(16) button {
+            border-left: 3px solid #fbbf24 !important;
+        }
+
+        /* Alertes (Rouge/Bordeaux) pour 101, 102, Fermé et Vider */
+        div[data-testid="column"]:nth-child(4) button,
+        div[data-testid="column"]:nth-child(5) button,
+        div[data-testid="column"]:nth-child(6) button,
+        button:contains("VIDER") {
+            border-left: 3px solid #ff4b4b !important;
+        }
+
+        /* --- MULTISELECT MAGIQUE --- */
+        span[data-baseweb="tag"] {
+            background-color: rgba(79, 172, 254, 0.1) !important;
+            border: 1px solid rgba(79, 172, 254, 0.3) !important;
+            border-radius: 6px !important;
+            padding: 2px 6px !important;
+        }
+
+        span[data-baseweb="tag"] span {
+            color: #e0e0e0 !important;
+            font-size: 12px !important;
+        }
+
+        span[data-baseweb="tag"] svg {
+            fill: #4facfe !important;
+        }
+
+        /* --- LABELS DES SECTIONS --- */
+        .order-label, .sort-label {
+            font-size: 10px !important;
+            color: #64748b !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.15em !important;
+            font-weight: 700 !important;
+            margin-top: 15px !important;
+            margin-bottom: 8px !important;
+            display: block;
+        }
+
+        /* --- CONTENEUR DE TRI --- */
+        .sort-container {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
     </style>
     """, unsafe_allow_html=True)
