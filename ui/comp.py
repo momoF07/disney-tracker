@@ -1,49 +1,41 @@
 import streamlit as st
 from modules.emojis import get_emoji
 
-def render_weather_card(weather):
-    if weather:
-        st.markdown(f"""
-        <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; display: flex; align-items: center; justify-content: space-between; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;">
-            <div style="display: flex; align-items: center; gap: 15px;">
-                <span style="font-size: 30px;">{weather['emoji']}</span>
-                <div>
-                    <b style="color: white; font-size: 16px;">{weather['desc']}</b><br>
-                    <span style="color: #94a3b8; font-size: 12px;">Marne-la-Vallée - Parc Disneyland</span>
+def render_weather_card(w):
+    if not w:
+        st.warning("⚠️ Météo indisponible")
+        return
+
+    # On récupère l'alerte à l'intérieur de la fonction
+    from modules.weather import info_weather
+    alert = info_weather(w['feels_like'])
+
+    # Conteneur principal pour la météo
+    with st.container(border=True):
+        col1, col2, col3 = st.columns([1, 1, 1.5])
+        
+        col1.metric("Température", f"{w['temp']}°C")
+        col2.metric("Ressenti", f"{w['feels_like']}°C")
+        
+        with col3:
+            st.markdown(f"**{w['emoji']} {w['desc']}**")
+            st.caption(f"💨 Vent : {w['wind']}")
+
+        # SI une alerte existe, on l'ajoute EN BAS de la même boîte
+        if alert:
+            st.markdown(f"""
+                <div style="
+                    background-color: {alert['color']};
+                    color: white;
+                    padding: 8px;
+                    border-radius: 8px;
+                    text-align: center;
+                    margin-top: 10px;
+                    font-size: 14px;
+                ">
+                    <b>⚠️ CODE {alert['msg']}</b> : {alert['sub']}
                 </div>
-            </div>
-            <div style="text-align: right;">
-                <b style="color: white; font-size: 18px;">Température : {weather['temp']}°C</b><br>
-                <b style="color: white; font-size: 15px;">Ressenti : {weather['feels_like']}°C</b><br>
-                <span style="color: #94a3b8; font-size: 12px;">💨 {weather['wind']}</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-def render_weather_info_card(weather_info):
-    """Affiche la boîte d'alerte météo si une info est présente."""
-    if not weather_info:
-        return 
-
-    st.markdown(f"""
-        <div style="
-            background-color: {weather_info['color']};
-            color: white;
-            padding: 15px;
-            border-radius: 12px;
-            text-align: center;
-            margin: 10px 0;
-            border: 1px solid rgba(255,255,255,0.2);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        ">
-            <div style="font-size: 18px; font-weight: bold; margin-bottom: 4px;">
-                {weather_info['msg']}
-            </div>
-            <div style="font-size: 14px; opacity: 0.9;">
-                {weather_info['sub']}
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
 
 def render_api_info(api_time, refresh_time):
     """Affiche le bandeau d'état de l'API et du dernier refresh"""

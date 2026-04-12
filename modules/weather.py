@@ -41,33 +41,13 @@ def get_disney_weather():
         return None
 
 def info_weather(feels_like):
-    if feels_like is None:
-        return None
+    """Calcule le code 77/77+ sans affichage."""
     try:
-        # Maintenant float() fonctionnera car feels_like est un nombre ou une string numérique
         val = float(feels_like)
-        
         if val >= 30:
-            return {
-                "code": "77+",
-                "color": "#FF4B4B",
-                "msg": "🌡️ ALERTE CHALEUR EXTRÊME : CODE 77+",
-                "sub": "Hydratation prioritaire. Cherchez l'ombre."
-            }
-        elif val >= 10:
-            return {
-                "code": "77",
-                "color": "#FFA500",
-                "msg": "⚠️ ALERTE CHALEUR : CODE 77",
-                "sub": "Pensez à boire régulièrement de l'eau."
-            }
-        elif val >=50:
-            return {
-                "code": "Test",
-                "color": "#3B82F6",
-                "msg": "🌟 ALERTE CHALEUR DE TEST : CODE TEST",
-                "sub": "Pensez à désactiver."
-            }
+            return {"color": "#FF4B4B", "msg": "77+", "sub": "Chaleur extrême : Hydratez-vous !"}
+        elif val >= 25:
+            return {"color": "#FFA500", "msg": "77", "sub": "Chaleur : Buvez de l'eau."}
     except:
-        return None
+        pass
     return None

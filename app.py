@@ -97,12 +97,7 @@ if not df_live.empty and not df_pannes_brutes.empty:
         })
 
 # --- BLOC METEO ---
-weather_data = get_disney_weather()
-if weather_data:
-    # Affiche la carte météo standard (Temp, vent, etc.)
-    render_weather_card(weather_data)
-    alert_info = info_weather(weather_data.get('feels_like'))
-    render_weather_info_card(alert_info)
+render_weather_card(get_disney_weather())
 
 # --- HEADER INFO ---
 render_api_info(derniere_maj, st.session_state.last_refresh)
