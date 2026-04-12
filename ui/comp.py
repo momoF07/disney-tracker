@@ -21,19 +21,15 @@ def render_weather_card(weather):
     if msc or dsp:
         def get_box(title, data):
             if not data: return ""
-            return f"""
-            <div style="flex: 1; min-width: 160px; padding: 10px; background: {data['bg']}; border-radius: 10px; border: 1px solid {data['color']}; color: {data['color']}; font-size: 11px; line-height: 1.3;">
+            return f"""<div style="flex: 1; min-width: 160px; padding: 10px; background: {data['bg']}; border-radius: 10px; border: 1px solid {data['color']}; color: {data['color']}; font-size: 11px; line-height: 1.3;">
                 <b style="font-size: 12px; display: block; margin-bottom: 2px;">🎭 {title} : {data['t']}</b>
                 {data['msg']}
-            </div>
-            """
+            </div>"""
         
-        shows_html = f"""
-        <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
+        shows_html = f"""<div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
             {get_box("MSC", msc)}
             {get_box("DSP", dsp)}
-        </div>
-        """
+        </div>"""
 
     st.markdown(f"""
 <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;">
@@ -49,8 +45,7 @@ def render_weather_card(weather):
 <b style="color: white; font-size: 18px;">{weather['temp']}°C</b><br>
 <span style="color: white; font-size: 13px; opacity: 0.8;">Ressenti : {ressenti}°C</span>
 </div>
-</div>
-{alert_html}{shows_html}
+</div>{alert_html}{shows_html}
 </div>
 """, unsafe_allow_html=True)
 
