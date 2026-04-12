@@ -10,7 +10,7 @@ from streamlit_autorefresh import st_autorefresh
 
 # --- IMPORTS DES MODULES ---
 from ui.styles import apply_custom_style
-from ui.comp import render_weather_card, render_ride_card, render_api_info, render_weather_info_card
+from ui.comp import render_weather_card, render_ride_card, render_api_info
 from ui.popup import render_shortcuts_popover, render_history_expander
 from modules.weather import get_disney_weather, info_weather
 from modules.emojis import get_emoji, get_rides_by_zone, RIDES_DLP, RIDES_DAW
