@@ -4,6 +4,52 @@ def apply_custom_style():
     """Injecte le CSS personnalisé dans l'application Streamlit"""
     st.markdown("""
     <style>
+
+        /* --- BARRE DE TRI PREMIUM (AJOUT) --- */
+        .sort-container {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+            padding: 12px 18px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin: 15px 0 25px 0;
+        }
+        .sort-label {
+            color: #94a3b8;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 10px;
+        }
+
+        /* --- STYLISATION DES WIDGETS DANS LE TRI --- */
+        /* Bouton Segmenté */
+        div[data-baseweb="segmented-control"] {
+            background-color: rgba(255, 255, 255, 0.03) !important;
+            border-radius: 12px !important;
+            padding: 4px !important;
+        }
+        div[data-baseweb="segmented-control"] button {
+            border: none !important;
+            background: transparent !important;
+            color: #94a3b8 !important;
+            transition: all 0.3s ease !important;
+        }
+        div[data-baseweb="segmented-control"] button[aria-selected="true"] {
+            background: rgba(255, 255, 255, 0.1) !important;
+            color: white !important;
+            border-radius: 8px !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
+        }
+        
+        /* Toggle Inverse */
+        div[data-testid="stWidgetLabel"] p {
+            font-size: 13px !important;
+            color: #94a3b8 !important;
+        }
+
+
         /* --- OPTIMISATION DU LAYOUT (ANTI-SAUT) --- */
         .block-container {
             padding-top: 1rem;
