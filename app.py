@@ -10,9 +10,9 @@ from streamlit_autorefresh import st_autorefresh
 
 # --- IMPORTS DES MODULES ---
 from ui.styles import apply_custom_style
-from ui.comp import render_weather_card, render_ride_card, render_api_info
+from ui.comp import render_weather_card, render_ride_card, render_api_info, render_weather_info_card
 from ui.popup import render_shortcuts_popover, render_history_expander
-from modules.weather import get_disney_weather
+from modules.weather import get_disney_weather, info_weather
 from modules.emojis import get_emoji, get_rides_by_zone, RIDES_DLP, RIDES_DAW
 from modules.special_hours import ANTICIPATED_CLOSINGS, FANTASYLAND_EARLY_CLOSE, EMT_EARLY_OPEN
 from config import PARK_OPENING, DLP_CLOSING, DAW_CLOSING, EMT_OPENING
@@ -97,7 +97,15 @@ if not df_live.empty and not df_pannes_brutes.empty:
         })
 
 # --- BLOC METEO ---
-render_weather_card(get_disney_weather())
+weather_data = get_disney_weather()
+if weather_data:
+    # Affiche la carte météo standard (Temp, vent, etc.)
+    render_weather_card(weather_data)
+    
+    # Calcule et affiche le bloc Code 77 uniquement si nécessaire
+    # On passe le ressenti récupéré juste au-dessus
+    alert_info = info_weather(weather_data.get('feels_like'))
+    render_weather_info_card(alert_info)
 
 # --- HEADER INFO ---
 render_api_info(derniere_maj, st.session_state.last_refresh)

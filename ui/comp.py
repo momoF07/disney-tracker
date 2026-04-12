@@ -19,9 +19,31 @@ def render_weather_card(weather):
             </div>
         </div>
         """, unsafe_allow_html=True)
-
+        
 def render_weather_info_card(weather_info):
-    return none
+    """Affiche la boîte d'alerte météo si une info est présente."""
+    if not weather_info:
+        return # Ne rien afficher si pas d'alerte
+
+    st.markdown(f"""
+        <div style="
+            background-color: {weather_info['color']};
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 10px 0;
+            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        ">
+            <div style="font-size: 18px; font-weight: bold; margin-bottom: 4px;">
+                {weather_info['msg']}
+            </div>
+            <div style="font-size: 14px; opacity: 0.9;">
+                {weather_info['sub']}
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
 
 def render_api_info(api_time, refresh_time):
     """Affiche le bandeau d'état de l'API et du dernier refresh"""
