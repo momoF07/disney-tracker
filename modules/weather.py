@@ -51,19 +51,31 @@ if weather:
 
 
 def info_weather(feels_like):
-    """Génère les infos d'alerte basées sur le ressenti."""
-    if feels_like >= 30:
-        return {
-            "code": "77+",
-            "color": "#FF4B4B", # Rouge
-            "msg": "🌡️ ALERTE CHALEUR EXTRÊME : CODE 77+",
-            "sub": "Hydratation prioritaire. Cherchez l'ombre et la clim."
-        }
-    elif feels_like >= 25:
-        return {
-            "code": "77",
-            "color": "#FFA500", # Orange
-            "msg": "⚠️ ALERTE CHALEUR : CODE 77",
-            "sub": "Pensez à boire régulièrement de l'eau."
-        }
+    """Génère les infos d'alerte basées sur le ressenti avec sécurité."""
+    # Sécurité : si feels_like est None ou n'est pas un nombre, on s'arrête
+    if feels_like is None:
+        return None
+        
+    try:
+        # On force la conversion en float au cas où c'est une chaîne
+        val = float(feels_like)
+        
+        if val >= 30:
+            return {
+                "code": "77+",
+                "color": "#FF4B4B",
+                "msg": "🌡️ ALERTE CHALEUR EXTRÊME : CODE 77+",
+                "sub": "Hydratation prioritaire. Cherchez l'ombre et la clim."
+            }
+        elif val >= 25:
+            return {
+                "code": "77",
+                "color": "#FFA500",
+                "msg": "⚠️ ALERTE CHALEUR : CODE 77",
+                "sub": "Pensez à boire régulièrement de l'eau."
+            }
+    except ValueError:
+        # Si la conversion échoue (ex: feels_like est du texte bizarre)
+        return None
+        
     return None
