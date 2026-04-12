@@ -70,38 +70,44 @@ def apply_custom_style():
             margin: 15px 0 8px 5px;
         }
 
-        /* Base commune pour les boutons d'ordre */
-        div[data-testid="stColumn"] .btn-active button, 
-        div[data-testid="stColumn"] .btn-inactive button {
-            height: 34px !important;
-            min-height: 34px !important;
-            padding: 0px !important;
+        /* --- BOUTONS D'ORDRE HARMONISÉS --- */
+
+        /* 1. Base commune (Taille et Forme) */
+        .btn-active div[data-testid="stButton"] button, 
+        .btn-inactive div[data-testid="stButton"] button {
+            height: 32px !important;
+            min-height: 32px !important;
             border-radius: 10px !important;
-            font-size: 12px !important;
-            font-weight: 600 !important;
-            transition: all 0.2s ease-in-out !important;
+            transition: all 0.3s ease !important;
         }
 
-        /* Bouton Inactif : discret et plat */
-        .btn-inactive button {
-            background-color: rgba(255, 255, 255, 0.03) !important;
-            border: 1px solid rgba(255, 255, 255, 0.08) !important;
-            color: rgba(255, 255, 255, 0.3) !important;
+        /* 2. Style BOUTON ACTIF (Le Bleu) */
+        .btn-active div[data-testid="stButton"] button {
+            background-color: rgba(79, 172, 254, 0.15) !important;
+            border: 1px solid #4facfe !important;
+            box-shadow: 0 0 12px rgba(79, 172, 254, 0.2) !important;
         }
 
-        /* Bouton Actif : Effet néon bleu discret */
-        .btn-active button {
-            background-color: rgba(79, 172, 254, 0.12) !important;
-            border: 1px solid rgba(79, 172, 254, 0.6) !important;
+        /* Forcer la couleur du texte/émoji à l'intérieur du bouton actif */
+        .btn-active div[data-testid="stButton"] button p {
             color: #4facfe !important;
-            box-shadow: 0 0 15px rgba(79, 172, 254, 0.15) !important;
+            font-weight: 700 !important;
         }
 
-        /* Hover effect */
-        .btn-inactive button:hover {
-            border-color: rgba(255, 255, 255, 0.2) !important;
-            color: rgba(255, 255, 255, 0.6) !important;
-            background-color: rgba(255, 255, 255, 0.05) !important;
+        /* 3. Style BOUTON INACTIF (Le Gris) */
+        .btn-inactive div[data-testid="stButton"] button {
+            background-color: rgba(255, 255, 255, 0.03) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        }
+
+        .btn-inactive div[data-testid="stButton"] button p {
+            color: #64748b !important;
+        }
+
+        /* 4. Hover sur bouton inactif */
+        .btn-inactive div[data-testid="stButton"] button:hover {
+            border-color: rgba(255, 255, 255, 0.3) !important;
+            background-color: rgba(255, 255, 255, 0.08) !important;
         }
 
         /* --- OPTIMISATION DU LAYOUT (ANTI-SAUT) --- */
