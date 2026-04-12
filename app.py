@@ -205,19 +205,48 @@ if not df_live.empty:
         info = status_map.get(ride, {})
         panne_act = next((p for p in all_pannes if p['ride'] == ride and p['statut'] == "EN_COURS"), None)
         
+        # --- 1. CALCUL DE L'HEURE DE FERMETURE (h_f) ---
         is_daw = any(a.lower() in ride.lower() for a in RIDES_DAW)
-        h_o = EMT_OPENING if ride in EMT_EARLY_OPEN else PARK_OPENING
-        h_f = ANTICIPATED_CLOSINGS.get(ride) or (DAW_CLOSING if is_daw else DLP_CLOSING)
         
+        if ride in ANTICIPATED_CLOSINGS:
+            h_f = ANTICIPATED_CLOSINGS[ride]
+        elif ride in FANTASYLAND_EARLY_CLOSE:
+            # Calcul : DLP_CLOSING - 1 heure
+            base_h = DLP_CLOSING.hour
+            base_m = DLP_CLOSING.minute
+            # On recrée l'heure avec une heure en moins
+            h_f = datetime.time(base_h - 1, base_m)
+        else:
+            h_f = DAW_CLOSING if is_daw else DLP_CLOSING
+        
+        h_o = EMT_OPENING if ride in EMT_EARLY_OPEN else PARK_OPENING
+        
+        # --- 2. DÉTERMINATION DU STATUT (LOGIQUE PRIORISÉE) ---
         rehab_flag = not info.get('opened_yesterday', True) and not info.get('has_opened_today', False) and not data['is_open']
         
-        if rehab_flag: sub, wait, bg, style, pill = "🛠️ Travaux détectés", "REHAB", "bg-grey", "card-grey", "TRAVAUX"
-        elif heure_actuelle >= h_f and not data['is_open']: sub, wait, bg, style, pill = f"🏁 Fermé à {h_f.strftime('%H:%M')}", "- - -", "bg-bordeaux", "card-bordeaux", "FERMÉ"
-        elif heure_actuelle < h_o and not data['is_open']: sub, wait, bg, style, pill = "🕒 En attente", "- - -", "bg-blue", "card-blue", "ATTENTE"
-        elif not data['is_open']: sub, wait, bg, style, pill = f"⚠️ Panne depuis {panne_act['debut'].strftime('%H:%M')}" if panne_act else "⚠️ Interruption", "- - -", "bg-orange", "card-orange", "INCIDENT"
-        else: sub, wait, bg, style, pill = "✅ Opérationnel", int(data['wait_time']), "bg-green", "card-green", "OUVERT"
+        # PRIORITÉ 1 : Travaux
+        if rehab_flag: 
+            sub, wait, bg, style, pill = "🛠️ Travaux détectés", "REHAB", "bg-grey", "card-grey", "TRAVAUX"
+        
+        # PRIORITÉ 2 : Fermeture (On retire le "and not data['is_open']" pour plus de fiabilité)
+        # Si l'heure actuelle dépasse h_f, c'est FERMÉ (même si l'API n'est pas encore à jour)
+        elif heure_actuelle >= h_f: 
+            sub, wait, bg, style, pill = f"🏁 Fermé à {h_f.strftime('%H:%M')}", "- - -", "bg-bordeaux", "card-bordeaux", "FERMÉ"
+        
+        # PRIORITÉ 3 : Avant l'ouverture
+        elif heure_actuelle < h_o and not data['is_open']: 
+            sub, wait, bg, style, pill = "🕒 En attente", "- - -", "bg-blue", "card-blue", "ATTENTE"
+        
+        # PRIORITÉ 4 : Incident (Seulement si on est dans les horaires d'ouverture)
+        elif not data['is_open']: 
+            sub, wait, bg, style, pill = f"⚠️ Panne depuis {panne_act['debut'].strftime('%H:%M')}" if panne_act else "⚠️ Interruption", "- - -", "bg-orange", "card-orange", "INCIDENT"
+        
+        # PAR DÉFAUT : Ouvert
+        else: 
+            sub, wait, bg, style, pill = "✅ Opérationnel", int(data['wait_time']), "bg-green", "card-green", "OUVERT"
 
-        render_ride_card(ride, sub, wait, bg, style, pill) 
+        # --- 3. AFFICHAGE ---
+        render_ride_card(ride, sub, wait, bg, style, pill)
         
         with st.expander("📜 Historique"):
             h_p_clean = [p for p in all_pannes if p['ride'] == ride and (p['statut'] == "EN_COURS" or p['duree'] >= 2)]
