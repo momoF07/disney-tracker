@@ -101,7 +101,7 @@ render_weather_card(get_disney_weather())
 # --- HEADER INFO ---
 render_api_info(derniere_maj, st.session_state.last_refresh)
 
-st.markdown('<div class="action-buttons-container">', unsafe_allow_html=True)
+st.markdown(f'<div class="action-buttons-container">', unsafe_allow_html=True)
 
 col_btn1, col_btn2 = st.columns(2)
 with col_btn1:
@@ -114,7 +114,7 @@ with col_btn2:
             time_sleep.sleep(40)
             st.rerun()
 
-st.markdown('</div>', unsafe_allow_html=True)
+st.markdown(f'</div>', unsafe_allow_html=True)
 # --- 1. DÉFINITION DES VARIABLES DE BASE ---
 current_selection = st.query_params.get_all("fav")
 
