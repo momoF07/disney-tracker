@@ -13,7 +13,7 @@ def render_weather_card(weather):
                 </div>
             </div>
             <div style="text-align: right;">
-                <b style="color: white; font-size: 18px;">{weather['temp']}°C / {weather['apparent_temp']}°C</b><br>
+                <b style="color: white; font-size: 18px;">{weather['temp']}°C / {weather['feels_like']}°C</b><br>
                 <span style="color: #94a3b8; font-size: 12px;">💨 {weather['wind']}</span>
             </div>
         </div>
