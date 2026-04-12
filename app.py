@@ -215,7 +215,7 @@ if not df_live.empty:
             base_h = DLP_CLOSING.hour
             base_m = DLP_CLOSING.minute
             # On recrée l'heure avec une heure en moins
-            h_f = datetime.time(base_h - 1, base_m)
+            h_f = time(base_h - 1, base_m)
         else:
             h_f = DAW_CLOSING if is_daw else DLP_CLOSING
         
