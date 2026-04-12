@@ -31,22 +31,31 @@ def render_api_info(api_time, refresh_time):
     """, unsafe_allow_html=True)
 
 def render_ride_card(ride, sub, wait, bg, card_style, pill, show_wait=True):
-    """Affiche la carte d'attraction. Le carré de droite est optionnel."""
+    """Affiche la carte d'attraction. Le carré de droite est rendu conditionnellement."""
     
-    # Initialisation de la section de droite
+    # 1. On initialise les variables pour éviter les erreurs UnboundLocalError
+    wait_section_html = ""
     flex_style = ""
 
+    # 2. On construit le bloc de droite UNIQUEMENT si show_wait est True
     if show_wait:
-        # Construction du HTML pour le carré de droite (Temps d'attente)
         wait_html = f'<span class="wait-val">{wait}</span>'
         if str(wait).isdigit():
             wait_html += '<span class="wait-unit">min</span>'
         
+        # On stocke tout le carré HTML dans cette variable
+        wait_section_html = f"""
+            <div class="ride-right-wait {bg}">
+                <span style="font-size:10px; opacity:0.7;">ATTENTE</span>
+                {wait_html}
+            </div>
+        """
     else:
-        # Si pas de carré, la carte de gauche prend toute la largeur
+        # Si on cache le carré, on demande à la partie gauche de s'étendre
         flex_style = "flex-grow: 1;"
 
-    # Rendu final assemblé
+    # 3. Rendu final : on injecte {wait_section_html}
+    # Si show_wait=False, cette variable est vide (""), donc rien ne s'affiche et rien ne plante
     st.markdown(f"""
     <div class="ride-row">
         <div class="ride-left-card {card_style}" style="{flex_style}">
@@ -59,9 +68,6 @@ def render_ride_card(ride, sub, wait, bg, card_style, pill, show_wait=True):
             </div>
             <div class="state-pill">{pill}</div>
         </div>
-            <div class="ride-right-wait {bg}">
-                <span style="font-size:10px; opacity:0.7;">ATTENTE</span>
-                {wait_html}
-            </div>
+        {wait_section_html}
     </div>
     """, unsafe_allow_html=True)
