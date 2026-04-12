@@ -143,8 +143,6 @@ if not df_live.empty:
             label_visibility="collapsed"
         )
 
-        st.write("") # Petit espacement
-
         st.markdown('<p class="order-label">Ordre d\'affichage</p>', unsafe_allow_html=True)
 
         # Colonnes optimisées pour mobile et desktop
@@ -154,20 +152,19 @@ if not df_live.empty:
             st.session_state.desc_order = False
 
         with col_asc:
-            active = "btn-active" if not st.session_state.desc_order else "btn-inactive"
+            active = "btn-active" if st.session_state.desc_order == False else "btn-inactive"
             st.markdown(f'<div class="{active}">', unsafe_allow_html=True)
             if st.button("🔼", key="order_asc", use_container_width=True):
                 st.session_state.desc_order = False
-                st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
 
         with col_desc:
-            active = "btn-active" if st.session_state.desc_order else "btn-inactive"
+            active = "btn-active" if st.session_state.desc_order == True else "btn-inactive"
             st.markdown(f'<div class="{active}">', unsafe_allow_html=True)
             if st.button("🔽", key="order_desc", use_container_width=True):
                 st.session_state.desc_order = True
-                st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
+
         # --- LOGIQUE DE TRI ---
         is_desc = st.session_state.desc_order
         
