@@ -60,28 +60,48 @@ def apply_custom_style():
             border-radius: 8px !important;
         }
 
-        /* --- 4. PETITS BOUTONS D'ORDRE (ASC / DESC) --- */
-        /* On cible les boutons par leur clé spécifiée dans app.py */
-        .btn-inactive > div > button {
-            background: rgba(255, 255, 255, 0.03) !important;
-            border: 1px solid rgba(255, 255, 255, 0.05) !important;
-            color: #475569 !important;
-            height: 20px !important;
-            min-height: 20px !important;
-            font-size: 14px !important;
-            border-radius: 8px !important;
-            transition: all 0.3s ease !important;
+        /* Label de l'ordre plus élégant */
+.order-label {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.4);
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    margin: 15px 0 8px 5px;
+}
+
+/* Base commune pour les boutons d'ordre */
+div[data-testid="stColumn"] .btn-active button, 
+div[data-testid="stColumn"] .btn-inactive button {
+    height: 34px !important;
+    min-height: 34px !important;
+    padding: 0px !important;
+    border-radius: 10px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease-in-out !important;
+}
+
+        /* Bouton Inactif : discret et plat */
+        .btn-inactive button {
+            background-color: rgba(255, 255, 255, 0.03) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            color: rgba(255, 255, 255, 0.3) !important;
         }
 
-        .btn-active > div > button {
-            background: rgba(79, 172, 254, 0.15) !important;
-            border: 1px solid #4facfe !important;
+        /* Bouton Actif : Effet néon bleu discret */
+        .btn-active button {
+            background-color: rgba(79, 172, 254, 0.12) !important;
+            border: 1px solid rgba(79, 172, 254, 0.6) !important;
             color: #4facfe !important;
-            height: 20px !important;
-            min-height: 20px !important;
-            font-size: 14px !important;
-            border-radius: 8px !important;
-            box-shadow: 0 0 12px rgba(79, 172, 254, 0.2) !important;
+            box-shadow: 0 0 15px rgba(79, 172, 254, 0.15) !important;
+        }
+
+        /* Hover effect */
+        .btn-inactive button:hover {
+            border-color: rgba(255, 255, 255, 0.2) !important;
+            color: rgba(255, 255, 255, 0.6) !important;
+            background-color: rgba(255, 255, 255, 0.05) !important;
         }
 
         /* --- OPTIMISATION DU LAYOUT (ANTI-SAUT) --- */

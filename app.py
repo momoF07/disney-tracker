@@ -148,25 +148,33 @@ if not df_live.empty:
 
         st.write("") # Petit espacement
 
-        # Ligne 2 : Les petits boutons d'ordre
-        st.markdown('<p class="order-label">Ordre</p>', unsafe_allow_html=True)
-        col_asc, col_desc, col_spacer = st.columns([0.2, 0.2, 0.6]) # On laisse du vide à droite
+        # --- SECTION ORDRE DE TRI ---
+        st.markdown('<p class="order-label">Ordre d\'affichage</p>', unsafe_allow_html=True)
+
+        # On utilise des colonnes plus serrées pour un look "boutons groupés"
+        col_asc, col_desc, col_spacer = st.columns([0.18, 0.18, 0.64])
 
         if 'desc_order' not in st.session_state:
             st.session_state.desc_order = False
 
         with col_asc:
-            css_asc = "btn-active" if not st.session_state.desc_order else "btn-inactive"
-            st.markdown(f'<div class="{css_asc}">', unsafe_allow_html=True)
-            if st.button("🔼", key="order_asc", use_container_width=True):
+            # État Croissant
+            is_active = not st.session_state.desc_order
+            css_class = "btn-active" if is_active else "btn-inactive"
+            st.markdown(f'<div class="{css_class}">', unsafe_allow_html=True)
+            if st.button("A-Z 🔼", key="order_asc", use_container_width=True):
                 st.session_state.desc_order = False
+                st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
 
         with col_desc:
-            css_desc = "btn-active" if st.session_state.desc_order else "btn-inactive"
-            st.markdown(f'<div class="{css_desc}">', unsafe_allow_html=True)
-            if st.button("🔽", key="order_desc", use_container_width=True):
+            # État Décroissant
+            is_active = st.session_state.desc_order
+            css_class = "btn-active" if is_active else "btn-inactive"
+            st.markdown(f'<div class="{css_class}">', unsafe_allow_html=True)
+            if st.button("Z-A 🔽", key="order_desc", use_container_width=True):
                 st.session_state.desc_order = True
+                st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
 
         st.markdown('</div>', unsafe_allow_html=True)
