@@ -47,7 +47,7 @@ def info_weather_code(feels_like):
         val = float(feels_like)
         
         # 1. TEST
-        if val >= 999:
+        if val >= 10:
             return {
                 "code": "Test",
                 "color": "#3B82F6", # Ton bleu aléatoire
