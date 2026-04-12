@@ -119,9 +119,6 @@ with col_sc:
 current_selection = st.query_params.get_all("fav")
 if sc.startswith("*") and not df_live.empty:
     res = get_rides_by_zone(sc, sorted(df_live['ride_name'].unique()), all_pannes)
-    if res: 
-        current_selection = res
-        st.toast(f"🪄 Sortilège **{sc}** activé !", icon="✨")
 
 if not df_live.empty:
     options = sorted(df_live['ride_name'].unique())
@@ -162,9 +159,8 @@ if not df_live.empty:
             is_active = not st.session_state.desc_order
             css_class = "btn-active" if is_active else "btn-inactive"
             st.markdown(f'<div class="{css_class}">', unsafe_allow_html=True)
-            if st.button("A-Z 🔼", key="order_asc", use_container_width=True):
+            if st.button("🔼", key="order_asc", use_container_width=True):
                 st.session_state.desc_order = False
-                st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
 
         with col_desc:
@@ -172,9 +168,8 @@ if not df_live.empty:
             is_active = st.session_state.desc_order
             css_class = "btn-active" if is_active else "btn-inactive"
             st.markdown(f'<div class="{css_class}">', unsafe_allow_html=True)
-            if st.button("Z-A 🔽", key="order_desc", use_container_width=True):
+            if st.button("🔽", key="order_desc", use_container_width=True):
                 st.session_state.desc_order = True
-                st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
 
         st.markdown('</div>', unsafe_allow_html=True)
