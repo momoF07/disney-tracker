@@ -164,36 +164,43 @@ if not df_live.empty:
 
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # --- LOGIQUE DE TRI ---
-    # On définit si c'est descendant basé sur la sélection du 2ème control
-    is_desc = order_selection in ["+ Attente", "Z → A"]
-    
-    if sort_mode == "⏳ Attente":
-        opened = [r for r in selected_options if df_live[df_live['ride_name'] == r]['is_open'].iloc[0]]
-        closed = [r for r in selected_options if not df_live[df_live['ride_name'] == r]['is_open'].iloc[0]]
-        selected_options = sorted(opened, key=lambda x: df_live[df_live['ride_name'] == x]['wait_time'].iloc[0], reverse=is_desc) + closed
-    elif sort_mode == "⚠️ Incidents":
-        selected_options = sorted(selected_options, key=lambda r: any(p['ride'] == r and p['statut'] == "EN_COURS" for p in all_pannes), reverse=True)
-    elif sort_mode == "🛠️ Rehab":
-        selected_options = sorted(selected_options, key=lambda r: not status_map.get(r, {}).get('opened_yesterday', True), reverse=True)
-    else:
-        selected_options = sorted(selected_options, reverse=is_desc)
+    # --- LOGIQUE DE TRI (A placer après les segmented_control) ---
 
-    # --- APPLICATION DE LA LOGIQUE DE TRI ---
-    is_desc = st.session_state.desc_order
-    
+    # On définit is_desc en fonction de la sélection textuelle du second contrôle
+    is_desc = order_selection in ["+ Attente", "Z → A"]
+
+    # On sauvegarde dans le session_state pour garder une trace si besoin ailleurs
+    st.session_state.desc_order = is_desc
+
     if sort_mode == "⏳ Attente":
+        # On sépare pour éviter que les attractions fermées (0 min) polluent le haut du tri
         opened = [r for r in selected_options if df_live[df_live['ride_name'] == r]['is_open'].iloc[0]]
         closed = [r for r in selected_options if not df_live[df_live['ride_name'] == r]['is_open'].iloc[0]]
-        # Tri des ouverts, puis on colle les fermés à la fin
-        selected_options = sorted(opened, key=lambda x: df_live[df_live['ride_name'] == x]['wait_time'].iloc[0], reverse=is_desc) + closed
+        
+        # Tri des ouverts, puis ajout des fermés à la fin
+        selected_options = sorted(
+            opened, 
+            key=lambda x: df_live[df_live['ride_name'] == x]['wait_time'].iloc[0], 
+            reverse=is_desc
+        ) + closed
+
     elif sort_mode == "⚠️ Incidents":
-        # On utilise une fonction lambda pour checker l'incident (True en haut si desc)
-        selected_options = sorted(selected_options, key=lambda r: any(p['ride'] == r and p['statut'] == "EN_COURS" for p in all_pannes), reverse=True)
+        # On met les incidents en haut (True > False), l'ordre Z->A n'influe pas ici par défaut
+        selected_options = sorted(
+            selected_options, 
+            key=lambda r: any(p['ride'] == r and p['statut'] == "EN_COURS" for p in all_pannes), 
+            reverse=True
+        )
+
     elif sort_mode == "🛠️ Rehab":
-        # Logique Rehab (les drapeaux rehab en haut)
-        selected_options = sorted(selected_options, key=lambda r: not status_map.get(r, {}).get('opened_yesterday', True), reverse=True)
-    else:
+        # On met les travaux en haut
+        selected_options = sorted(
+            selected_options, 
+            key=lambda r: not status_map.get(r, {}).get('opened_yesterday', True), 
+            reverse=True
+        )
+
+    else: # Mode 🔠 Nom
         selected_options = sorted(selected_options, reverse=is_desc)
 
         # --- BOUCLE D'AFFICHAGE DES CARTES ---
