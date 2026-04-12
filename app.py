@@ -254,9 +254,9 @@ if not df_live.empty:
             do_live = (heure_actuelle > h_o) and (heure_actuelle < h_f) and not info.get('has_opened_today', False) and not data['is_open']
             render_history_expander(ride, rehab_flag, h_p_clean, p_triees, do_live, h_o, h_f, data['is_open'])
 
-# --- DERNIÈRES INTERRUPTIONS ---
+# --- DERNIÈRES INTERRUPTIONS & ACTUALITÉS ---
 st.write("---")
-st.subheader("🚨 Dernières interruptions")
+st.subheader("🚨 Flux des activités")
 
 if not df_pannes_brutes.empty:
     flux = df_pannes_brutes.copy()
@@ -269,8 +269,26 @@ if not df_pannes_brutes.empty:
         d_p = pd.to_datetime(p['start_time']).astimezone(paris_tz)
         h_f_p = pd.to_datetime(p['end_time']).astimezone(paris_tz).strftime("%H:%M") if pd.notna(p['end_time']) else None
         
-        if not h_f_p:
-            # Cas Panne : On désactive le carré de droite avec show_wait=False
+        # --- CALCUL DE L'HEURE DE FERMETURE (pour filtrage actu) ---
+        is_daw_p = any(a.lower() in r_n.lower() for a in RIDES_DAW)
+        if r_n in ANTICIPATED_CLOSINGS: h_f_limit = ANTICIPATED_CLOSINGS[r_n]
+        elif r_n in FANTASYLAND_EARLY_CLOSE: h_f_limit = time(DLP_CLOSING.hour - 1, DLP_CLOSING.minute)
+        else: h_f_limit = DAW_CLOSING if is_daw_p else DLP_CLOSING
+
+        # 1. CAS FERMETURE DÉFINITIVE (Si l'heure actuelle a dépassé l'heure de fermeture)
+        if heure_actuelle >= h_f_limit:
+            render_ride_card(
+                ride=r_n, 
+                sub=f"Fermeture journalière à {h_f_limit.strftime('%H:%M')}", 
+                wait="FIN", 
+                bg="bg-bordeaux", 
+                card_style="card-bordeaux", 
+                pill="TERMINÉ", 
+                show_wait=False
+            )
+
+        # 2. CAS PANNE EN COURS
+        elif not h_f_p:
             render_ride_card(
                 ride=r_n, 
                 sub=f"En panne à {d_p.strftime('%H:%M')}", 
@@ -280,8 +298,9 @@ if not df_pannes_brutes.empty:
                 pill="INTERRUPTION", 
                 show_wait=False
             )
+
+        # 3. CAS RÉOUVERTURE
         else:
-            # Cas Réouverture : On désactive le carré de droite avec show_wait=False
             render_ride_card(
                 ride=r_n, 
                 sub=f"Réouvert à {h_f_p}", 
@@ -291,5 +310,4 @@ if not df_pannes_brutes.empty:
                 pill="REOUVERTURE", 
                 show_wait=False
             )
-
 st.caption(f"Disney Wait Time Tool | v4.0 | Refresh: {st.session_state.last_refresh}")
