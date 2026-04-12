@@ -143,46 +143,61 @@ if not df_live.empty:
             label_visibility="collapsed"
         )
 
-        # --- LIGNE 2 : ORDRE DE TRI (DYNAMIQUE) ---
-        # On définit les options selon le choix du dessus
-        if sort_mode == "⏳ Attente":
-            order_options = ["- Attente", "+ Attente"]
-        elif sort_mode == "🔠 Nom":
-            order_options = ["A → Z", "Z → A"]
+        # --- LIGNE 2 : ORDRE DE TRI (CONDITIONNEL) ---
+        # On ne l'affiche que si on est en mode Nom ou Attente
+        if sort_mode in ["🔠 Nom", "⏳ Attente"]:
+            if sort_mode == "⏳ Attente":
+                order_options = ["- Attente", "+ Attente"]
+            else:
+                order_options = ["A → Z", "Z → A"]
 
-        st.markdown('<p class="order-label">Ordre d\'affichage</p>', unsafe_allow_html=True)
-        order_selection = st.segmented_control(
-            "Ordre",
-            options=order_options,
-            default=order_options[0],
-            key="order_selector_dynamic",
-            label_visibility="collapsed"
-        )
+            st.markdown('<p class="order-label">Ordre d\'affichage</p>', unsafe_allow_html=True)
+            order_selection = st.segmented_control(
+                "Ordre",
+                options=order_options,
+                default=order_options[0],
+                key="order_selector_dynamic",
+                label_visibility="collapsed"
+            )
+            # Définition de is_desc basée sur le widget
+            is_desc = order_selection in ["+ Attente", "Z → A"]
+        else:
+            # Valeur par défaut pour Incidents et Rehab (toujours True pour mettre en haut)
+            is_desc = True 
+            # On définit order_selection à None pour éviter les erreurs de variable inexistante
+            order_selection = None
 
         st.markdown('</div>', unsafe_allow_html=True)
 
-# --- LOGIQUE DE TRI ---
-    is_desc = order_selection in ["+ Attente", "Z → A"]
-    st.session_state.desc_order = is_desc
+        # --- LOGIQUE DE TRI ---
+        st.session_state.desc_order = is_desc
 
-    if sort_mode == "⏳ Attente":
-        opened = [r for r in selected_options if df_live[df_live['ride_name'] == r]['is_open'].iloc[0]]
-        closed = [r for r in selected_options if not df_live[df_live['ride_name'] == r]['is_open'].iloc[0]]
-        selected_options = sorted(opened, key=lambda x: df_live[df_live['ride_name'] == x]['wait_time'].iloc[0], reverse=is_desc) + closed
+        if sort_mode == "⏳ Attente":
+            opened = [r for r in selected_options if df_live[df_live['ride_name'] == r]['is_open'].iloc[0]]
+            closed = [r for r in selected_options if not df_live[df_live['ride_name'] == r]['is_open'].iloc[0]]
+            selected_options = sorted(opened, key=lambda x: df_live[df_live['ride_name'] == x]['wait_time'].iloc[0], reverse=is_desc) + closed
 
-    elif sort_mode == "⚠️ Incidents":
-        selected_options = sorted(selected_options, key=lambda r: any(p['ride'] == r and p['statut'] == "EN_COURS" for p in all_pannes), reverse=True)
+        elif sort_mode == "⚠️ Incidents":
+            # Tri : Incidents en haut, puis alphabétique pour le reste
+            selected_options = sorted(
+                selected_options, 
+                key=lambda r: (any(p['ride'] == r and p['statut'] == "EN_COURS" for p in all_pannes), r), 
+                reverse=is_desc # True (en panne) sera en haut
+            )
 
-    elif sort_mode == "🛠️ Rehab":
-        selected_options = sorted(selected_options, key=lambda r: not status_map.get(r, {}).get('opened_yesterday', True), reverse=True)
+        elif sort_mode == "🛠️ Rehab":
+            # Tri : Rehab en haut, puis alphabétique
+            selected_options = sorted(
+                selected_options, 
+                key=lambda r: (not status_map.get(r, {}).get('opened_yesterday', True), r), 
+                reverse=is_desc
+            )
 
-    else: # Mode 🔠 Nom
-        selected_options = sorted(selected_options, reverse=is_desc)
+        else: # Mode Nom
+            selected_options = sorted(selected_options, reverse=is_desc)
 
-    # --- BOUCLE D'AFFICHAGE (Sortie du bloc ELSE) ---
-    # Aligné sur le "if" de départ pour s'exécuter TOUT LE TEMPS
+    # --- BOUCLE D'AFFICHAGE ---
     for ride in selected_options:
-        # On vérifie si l'attraction existe bien dans le DataFrame pour éviter les crashs
         ride_data = df_live[df_live['ride_name'] == ride]
         if ride_data.empty: continue
         
