@@ -164,70 +164,54 @@ if not df_live.empty:
 
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # --- LOGIQUE DE TRI (A placer après les segmented_control) ---
-
-    # On définit is_desc en fonction de la sélection textuelle du second contrôle
+# --- LOGIQUE DE TRI ---
     is_desc = order_selection in ["+ Attente", "Z → A"]
-
-    # On sauvegarde dans le session_state pour garder une trace si besoin ailleurs
     st.session_state.desc_order = is_desc
 
     if sort_mode == "⏳ Attente":
-        # On sépare pour éviter que les attractions fermées (0 min) polluent le haut du tri
         opened = [r for r in selected_options if df_live[df_live['ride_name'] == r]['is_open'].iloc[0]]
         closed = [r for r in selected_options if not df_live[df_live['ride_name'] == r]['is_open'].iloc[0]]
-        
-        # Tri des ouverts, puis ajout des fermés à la fin
-        selected_options = sorted(
-            opened, 
-            key=lambda x: df_live[df_live['ride_name'] == x]['wait_time'].iloc[0], 
-            reverse=is_desc
-        ) + closed
+        selected_options = sorted(opened, key=lambda x: df_live[df_live['ride_name'] == x]['wait_time'].iloc[0], reverse=is_desc) + closed
 
     elif sort_mode == "⚠️ Incidents":
-        # On met les incidents en haut (True > False), l'ordre Z->A n'influe pas ici par défaut
-        selected_options = sorted(
-            selected_options, 
-            key=lambda r: any(p['ride'] == r and p['statut'] == "EN_COURS" for p in all_pannes), 
-            reverse=True
-        )
+        selected_options = sorted(selected_options, key=lambda r: any(p['ride'] == r and p['statut'] == "EN_COURS" for p in all_pannes), reverse=True)
 
     elif sort_mode == "🛠️ Rehab":
-        # On met les travaux en haut
-        selected_options = sorted(
-            selected_options, 
-            key=lambda r: not status_map.get(r, {}).get('opened_yesterday', True), 
-            reverse=True
-        )
+        selected_options = sorted(selected_options, key=lambda r: not status_map.get(r, {}).get('opened_yesterday', True), reverse=True)
 
     else: # Mode 🔠 Nom
         selected_options = sorted(selected_options, reverse=is_desc)
 
-        # --- BOUCLE D'AFFICHAGE DES CARTES ---
-        for ride in selected_options:
-            data = df_live[df_live['ride_name'] == ride].iloc[0]
-            info = status_map.get(ride, {})
-            panne_act = next((p for p in all_pannes if p['ride'] == ride and p['statut'] == "EN_COURS"), None)
-            
-            is_daw = any(a.lower() in ride.lower() for a in RIDES_DAW)
-            h_o = EMT_OPENING if ride in EMT_EARLY_OPEN else PARK_OPENING
-            h_f = ANTICIPATED_CLOSINGS.get(ride) or (DAW_CLOSING if is_daw else DLP_CLOSING)
-            
-            rehab_flag = not info.get('opened_yesterday', True) and not info.get('has_opened_today', False) and not data['is_open']
-            
-            if rehab_flag: sub, wait, bg, style, pill = "🛠️ Travaux détectés", "REHAB", "bg-grey", "card-grey", "TRAVAUX"
-            elif heure_actuelle >= h_f and not data['is_open']: sub, wait, bg, style, pill = f"🏁 Fermé à {h_f.strftime('%H:%M')}", "- - -", "bg-bordeaux", "card-bordeaux", "FERMÉ"
-            elif heure_actuelle < h_o and not data['is_open']: sub, wait, bg, style, pill = "🕒 En attente", "- - -", "bg-blue", "card-blue", "ATTENTE"
-            elif not data['is_open']: sub, wait, bg, style, pill = f"⚠️ Panne depuis {panne_act['debut'].strftime('%H:%M')}" if panne_act else "⚠️ Interruption", "- - -", "bg-orange", "card-orange", "INCIDENT"
-            else: sub, wait, bg, style, pill = "✅ Opérationnel", int(data['wait_time']), "bg-green", "card-green", "OUVERT"
+    # --- BOUCLE D'AFFICHAGE (Sortie du bloc ELSE) ---
+    # Aligné sur le "if" de départ pour s'exécuter TOUT LE TEMPS
+    for ride in selected_options:
+        # On vérifie si l'attraction existe bien dans le DataFrame pour éviter les crashs
+        ride_data = df_live[df_live['ride_name'] == ride]
+        if ride_data.empty: continue
+        
+        data = ride_data.iloc[0]
+        info = status_map.get(ride, {})
+        panne_act = next((p for p in all_pannes if p['ride'] == ride and p['statut'] == "EN_COURS"), None)
+        
+        is_daw = any(a.lower() in ride.lower() for a in RIDES_DAW)
+        h_o = EMT_OPENING if ride in EMT_EARLY_OPEN else PARK_OPENING
+        h_f = ANTICIPATED_CLOSINGS.get(ride) or (DAW_CLOSING if is_daw else DLP_CLOSING)
+        
+        rehab_flag = not info.get('opened_yesterday', True) and not info.get('has_opened_today', False) and not data['is_open']
+        
+        if rehab_flag: sub, wait, bg, style, pill = "🛠️ Travaux détectés", "REHAB", "bg-grey", "card-grey", "TRAVAUX"
+        elif heure_actuelle >= h_f and not data['is_open']: sub, wait, bg, style, pill = f"🏁 Fermé à {h_f.strftime('%H:%M')}", "- - -", "bg-bordeaux", "card-bordeaux", "FERMÉ"
+        elif heure_actuelle < h_o and not data['is_open']: sub, wait, bg, style, pill = "🕒 En attente", "- - -", "bg-blue", "card-blue", "ATTENTE"
+        elif not data['is_open']: sub, wait, bg, style, pill = f"⚠️ Panne depuis {panne_act['debut'].strftime('%H:%M')}" if panne_act else "⚠️ Interruption", "- - -", "bg-orange", "card-orange", "INCIDENT"
+        else: sub, wait, bg, style, pill = "✅ Opérationnel", int(data['wait_time']), "bg-green", "card-green", "OUVERT"
 
-            render_ride_card(ride, sub, wait, bg, style, pill) 
-            
-            with st.expander("📜 Historique"):
-                h_p_clean = [p for p in all_pannes if p['ride'] == ride and (p['statut'] == "EN_COURS" or p['duree'] >= 2)]
-                p_triees = sorted(h_p_clean, key=lambda x: x['debut'], reverse=True)
-                do_live = (heure_actuelle > h_o) and (heure_actuelle < h_f) and not info.get('has_opened_today', False) and not data['is_open']
-                render_history_expander(ride, rehab_flag, h_p_clean, p_triees, do_live, h_o, h_f, data['is_open'])
+        render_ride_card(ride, sub, wait, bg, style, pill) 
+        
+        with st.expander("📜 Historique"):
+            h_p_clean = [p for p in all_pannes if p['ride'] == ride and (p['statut'] == "EN_COURS" or p['duree'] >= 2)]
+            p_triees = sorted(h_p_clean, key=lambda x: x['debut'], reverse=True)
+            do_live = (heure_actuelle > h_o) and (heure_actuelle < h_f) and not info.get('has_opened_today', False) and not data['is_open']
+            render_history_expander(ride, rehab_flag, h_p_clean, p_triees, do_live, h_o, h_f, data['is_open'])
 
 # --- DERNIÈRES INTERRUPTIONS ---
 st.write("---")
