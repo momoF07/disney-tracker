@@ -42,9 +42,11 @@ def render_weather_card(weather):
 </div>
 </div>
 <div style="text-align: right;">
-<b style="color: white; font-size: 18px;">{weather['temp']}°C</b><br>
-<span style="color: white; font-size: 13px; opacity: 0.8;">Ressenti : {ressenti}°C</span>
-</div>
+                <b style="color: white; font-size: 18px;">Température : {weather['temp']}°C --</b>
+                <span style="color: white; font-size: 18px; opacity: 0.8;">Ressenti : {ressenti}°C</span><br>
+                <span style="color: white; font-size: 14px;">Vent : {weather['wind']} --</span>
+                <span style="color: white; font-size: 14px; opacity: 0.8;">Rafale : {weather['gusts']}</span>
+            </div>
 </div>{alert_html}{shows_html}
 </div>
 """, unsafe_allow_html=True)
