@@ -2,26 +2,22 @@ import streamlit as st
 from modules.emojis import get_emoji
 
 def render_weather_card(weather):
-    """Affiche la carte météo avec alerte intégrée."""
     if not weather:
         return
 
-    # L'import doit rester ICI, à l'intérieur de la fonction
     from modules.weather import info_weather
+    alert = info_weather(weather.get('feels_like'))
     
-    # On récupère les données
-    feels_like = weather.get('feels_like')
-    alert = info_weather(feels_like)
-    
-    # Préparation du bloc Alerte
     alert_html = ""
     if alert:
+        # On construit le HTML de l'alerte
         alert_html = f"""
         <div style="margin-top: 12px; padding: 10px; background: {alert['color']}; border-radius: 10px; text-align: center; color: white; font-size: 13px; border: 1px solid rgba(255,255,255,0.2);">
             <b>⚠️ CODE {alert['code']}</b> : {alert['msg']}
         </div>
         """
 
+    # Rendu global
     st.markdown(f"""
     <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;">
         <div style="display: flex; align-items: center; justify-content: space-between;">
