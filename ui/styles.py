@@ -14,6 +14,7 @@ def apply_custom_style():
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             margin: 15px 0 25px 0;
         }
+    
         .sort-label {
             color: #94a3b8;
             font-size: 0.75rem;
@@ -21,6 +22,27 @@ def apply_custom_style():
             text-transform: uppercase;
             letter-spacing: 0.1em;
             margin-bottom: 10px;
+        }
+
+        /* --- BOUTON D'ORDRE CUSTOM --- */
+        .stButton > button[key="order_btn"] {
+            background: rgba(255, 255, 255, 0.05) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 12px !important;
+            color: #94a3b8 !important;
+            height: 42px !important;
+            font-size: 14px !important;
+            transition: all 0.3s ease !important;
+            width: 100% !important;
+        }
+        .stButton > button[key="order_btn"]:hover {
+            border-color: #4facfe !important;
+            color: white !important;
+            background: rgba(79, 172, 254, 0.1) !important;
+            transform: translateY(-1px);
+        }
+        .stButton > button[key="order_btn"]:active {
+            transform: translateY(1px);
         }
 
         /* --- STYLISATION DES WIDGETS DANS LE TRI --- */
@@ -42,7 +64,7 @@ def apply_custom_style():
             border-radius: 8px !important;
             box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
         }
-        
+
         /* Toggle Inverse */
         div[data-testid="stWidgetLabel"] p {
             font-size: 13px !important;
