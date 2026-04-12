@@ -215,7 +215,6 @@ if not df_pannes_brutes.empty:
                 bg="bg-orange", 
                 card_style="card-orange", 
                 pill="INTERRUPTION", 
-                show_wait=False
             )
         else:
             # Cas Réouverture : On désactive le carré de droite avec show_wait=False
@@ -226,7 +225,6 @@ if not df_pannes_brutes.empty:
                 bg="bg-green", 
                 card_style="card-green", 
                 pill="REOUVERTURE", 
-                show_wait=False
             )
 
 st.caption(f"Disney Wait Time Tool | v4.0 | Refresh: {st.session_state.last_refresh}")
