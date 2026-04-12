@@ -20,6 +20,9 @@ def render_weather_card(weather):
         </div>
         """, unsafe_allow_html=True)
 
+def render_weather_info_card(weather_info):
+    return none
+
 def render_api_info(api_time, refresh_time):
     """Affiche le bandeau d'état de l'API et du dernier refresh"""
     st.markdown(f"""
