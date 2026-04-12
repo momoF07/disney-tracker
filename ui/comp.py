@@ -13,13 +13,13 @@ def render_weather_card(weather):
                 </div>
             </div>
             <div style="text-align: right;">
-                <b style="color: white; font-size: 18px;">{weather['temp']}°C</b><br>
-                <b style="color: white; font-size: 15px;">{weather['feels_like']}°C</b><br>
+                <b style="color: white; font-size: 18px;">Température : {weather['temp']}°C</b><br>
+                <b style="color: white; font-size: 15px;">Ressenti : {weather['feels_like']}°C</b><br>
                 <span style="color: #94a3b8; font-size: 12px;">💨 {weather['wind']}</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
-        
+
 def render_weather_info_card(weather_info):
     """Affiche la boîte d'alerte météo si une info est présente."""
     if not weather_info:
