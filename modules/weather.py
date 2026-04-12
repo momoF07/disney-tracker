@@ -41,13 +41,35 @@ def get_disney_weather():
         return None
 
 def info_weather(feels_like):
-    """Calcule le code 77/77+ sans affichage."""
+    if feels_like is None:
+        return None
     try:
         val = float(feels_like)
-        if val >= 30:
-            return {"color": "#FF4B4B", "msg": "77+", "sub": "Chaleur extrême : Hydratez-vous !"}
-        elif val >= 25:
-            return {"color": "#FFA500", "msg": "77", "sub": "Chaleur : Buvez de l'eau."}
+        
+        # 1. On teste d'abord la valeur la plus haute
+        if val >= 50:
+            return {
+                "code": "Test",
+                "color": "#3B82F6", # Ton bleu aléatoire
+                "msg": "🌟 ALERTE CHALEUR DE TEST : CODE TEST",
+                "sub": "Pensez à désactiver."
+            }
+        # 2. Puis la chaleur extrême
+        elif val >= 30:
+            return {
+                "code": "77+",
+                "color": "#FF4B4B",
+                "msg": "🌡️ ALERTE CHALEUR EXTRÊME : CODE 77+",
+                "sub": "Hydratation prioritaire. Cherchez l'ombre."
+            }
+        # 3. Enfin la chaleur standard (ton test à 10 pour vérifier si ça marche)
+        elif val >= 10:
+            return {
+                "code": "77",
+                "color": "#FFA500",
+                "msg": "⚠️ ALERTE CHALEUR : CODE 77",
+                "sub": "Pensez à boire régulièrement de l'eau."
+            }
     except:
-        pass
+        return None
     return None
