@@ -34,6 +34,7 @@ def render_ride_card(ride, sub, wait, bg, card_style, pill, show_wait=True):
     """Affiche la carte d'attraction. Le carré de droite est rendu conditionnellement."""
     
     # 1. On initialise les variables pour éviter les erreurs UnboundLocalError
+    wait_section = ""
     flex_style = ""
 
     # 2. On construit le bloc de droite UNIQUEMENT si show_wait est True
@@ -42,12 +43,12 @@ def render_ride_card(ride, sub, wait, bg, card_style, pill, show_wait=True):
         if str(wait).isdigit():
             wait_html += '<span class="wait-unit">min</span>'
 
+        # On stocke tout le carré HTML dans cette variable
         wait_section = f"""<div class="ride-right-wait {bg}">
                 <span style="font-size:10px; opacity:0.7;">ATTENTE</span>
                 {wait_html}
             </div>"""
         
-        # On stocke tout le carré HTML dans cette variable
     else:
         # Si on cache le carré, on demande à la partie gauche de s'étendre
         flex_style = "flex-grow: 1;"
