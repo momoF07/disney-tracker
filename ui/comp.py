@@ -47,12 +47,12 @@ def render_ride_card(ride, sub, wait, bg, card_style, pill, show_wait=True):
             wait_html += '<span class="wait-unit">min</span>'
         
         # On utilise les triple guillemets pour ne pas se soucier des doubles quotes du HTML
-        wait_section = f"""
+        wait_section = {f"""
             <div class="ride-right-wait {bg}">
                 <span style="font-size:10px; opacity:0.7;">ATTENTE</span>
                 {wait_html}
             </div>
-        """
+        """}
     else:
         # On force la carte de gauche à s'étendre s'il n'y a pas de carré à droite
         flex_style = "flex-grow: 1;"
