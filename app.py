@@ -148,9 +148,20 @@ if not df_live.empty:
             )
         
         with col_order:
-            is_desc = st.toggle("Ordre Inverse", value=False)
+        # Initialisation de l'ordre si inexistant
+            if 'desc_order' not in st.session_state:
+                st.session_state.desc_order = False
+                
+            # Définition de l'icône et du texte selon l'état
+            label_btn = "🔽 Décroissant" if st.session_state.desc_order else "🔼 Croissant"
+            
+            # Le bouton qui bascule l'état
+            if st.button(label_btn, key="order_btn", use_container_width=True):
+                st.session_state.desc_order = not st.session_state.desc_order
+                st.rerun() # On relance pour appliquer le tri immédiatement
             
         st.markdown('</div>', unsafe_allow_html=True)
+        is_desc = st.session_state.desc_order
         # --- BOUCLE D'AFFICHAGE DES CARTES ---
         for ride in selected_options:
             data = df_live[df_live['ride_name'] == ride].iloc[0]
