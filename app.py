@@ -114,7 +114,6 @@ current_selection = st.query_params.get_all("fav")
 
 options = sorted(df_live['ride_name'].unique()) if not df_live.empty else []
 
-st.markdown('<div class="sort-container">', unsafe_allow_html=True)
 render_quick_filters(options, all_pannes, heure_actuelle)
 
 # --- 3. SÉLECTION MULTIPLE ---

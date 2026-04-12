@@ -35,6 +35,7 @@ def render_quick_filters(options, all_pannes, heure_actuelle):
         </style>
     """, unsafe_allow_html=True)
 
+    st.markdown('<div class="sort-container">', unsafe_allow_html=True)
     st.markdown('<p class="order-label">Accès Rapide</p>', unsafe_allow_html=True)
 
     # --- LIGNE 1 : FILTRES GLOBAUX & ÉTATS ---
