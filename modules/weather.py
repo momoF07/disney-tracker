@@ -47,7 +47,7 @@ def info_weather(feels_like):
         val = float(feels_like)
         
         # 1. On teste d'abord la valeur la plus haute
-        if val >= 10:
+        if val >= 999:
             return {
                 "code": "Test",
                 "color": "#3B82F6", # Ton bleu aléatoire
@@ -63,7 +63,7 @@ def info_weather(feels_like):
                 "sub": "Hydratation prioritaire. Cherchez l'ombre."
             }
         # 3. Enfin la chaleur standard (ton test à 10 pour vérifier si ça marche)
-        elif val >= 25:
+        elif val >= 10:
             return {
                 "code": "77",
                 "color": "#FFA500",
