@@ -37,7 +37,6 @@ def render_weather_card(weather):
                 <span style="color: white; font-size: 13px; opacity: 0.8;">Ressenti : {ressenti}°C</span>
             </div>
         </div>
-        
         {alert_html}
         {msc_html}
     </div>
