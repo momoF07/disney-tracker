@@ -134,8 +134,7 @@ if not df_live.empty:
     st.query_params["fav"] = selected_options
 
     if selected_options:
-        st.markdown('<div class="sort-container">', unsafe_allow_html=True)
-        st.markdown('<p class="sort-label">Configuration de l\'affichage</p>', unsafe_allow_html=True)
+        st.markdown('<p class="sort-label">Tri de l\'affichage</p>', unsafe_allow_html=True)
         
         col_mode, col_order = st.columns([0.7, 0.3], vertical_alignment="center")
         
