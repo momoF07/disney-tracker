@@ -110,3 +110,6 @@ def info_msc(feels_like):
         return {"t": "Temps 5 (Froid)", "msg": "Show Annulée", "color": "#721c24", "bg": "#f8d7da"}
     
     return None
+
+def info_dsp(feels_like, wind):
+    return none

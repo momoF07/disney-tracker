@@ -34,7 +34,8 @@ def render_weather_card(weather):
             </div>
             <div style="text-align: right;">
                 <b style="color: white; font-size: 18px;">{weather['temp']}°C</b><br>
-                <span style="color: white; font-size: 13px; opacity: 0.8;">Ressenti : {ressenti}°C</span>
+                <span style="color: white; font-size: 15px; opacity: 0.8;">Ressenti : {ressenti}°C</span>
+                <span style="color: white; font-size: 12px; opacity: 0.8;">Vent : {weather['wind']}</span>
             </div>
         </div>{alert_html}{msc_html}
 </div>
