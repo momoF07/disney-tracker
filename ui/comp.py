@@ -9,11 +9,11 @@ def render_weather_card(weather):
                 <span style="font-size: 30px;">{weather['emoji']}</span>
                 <div>
                     <b style="color: white; font-size: 16px;">{weather['desc']}</b><br>
-                    <span style="color: #94a3b8; font-size: 12px;">Marne-la-Vallée</span>
+                    <span style="color: #94a3b8; font-size: 12px;">Marne-la-Vallée - Parc Disneyland</span>
                 </div>
             </div>
             <div style="text-align: right;">
-                <b style="color: white; font-size: 18px;">{weather['temp']}°C</b><br>
+                <b style="color: white; font-size: 18px;">{weather['temp']}°C / {weather['apparent_temp']}°C</b><br>
                 <span style="color: #94a3b8; font-size: 12px;">💨 {weather['wind']}</span>
             </div>
         </div>
