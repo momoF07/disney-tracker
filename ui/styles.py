@@ -195,33 +195,6 @@ def apply_custom_style():
         .bg-blue { background: #3b82f6; }
         .bg-grey { background: #6b7280; }
         .bg-bordeaux { background: #991b1b; }
-
-        /* --- ANIMATIONS ET POPOVER --- */
-        @keyframes shine { to { background-position: 200% center; } }
-        .magic-title {
-            text-align: center;
-            background: linear-gradient(120deg, #4facfe 0%, #00f2fe 50%, #4facfe 100%);
-            background-size: 200% auto;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-weight: 800; font-size: 28px; margin-bottom: 25px;
-            animation: shine 3s linear infinite;
-        }
-        .cat-badge-magic {
-            padding: 8px 20px; border-radius: 50px; font-size: 14px; font-weight: 700;
-            display: block; text-align: center; margin: 20px 0 10px 0; text-transform: uppercase;
-        }
-        .bg-blue-magic { background: linear-gradient(45deg, #4facfe, #00f2fe); color: white; }
-        .bg-green-magic { background: linear-gradient(45deg, #43e97b, #38f9d7); color: white; }
-        .bg-orange-magic { background: linear-gradient(45deg, #f9d423, #ff4e50); color: white; }
-        .shortcut-card {
-            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px); border-radius: 15px; padding: 12px; margin-bottom: 10px; transition: 0.3s;
-        }
-        .shortcut-card:hover { transform: translateY(-3px); background: rgba(255, 255, 255, 0.08); }
-        
-        /* Harmonisation des codes dans le popover */
-        code { color: #4facfe !important; background: rgba(79, 172, 254, 0.1) !important; }
         
         /* --- BOUTONS DE RACCOURCIS RAPIDES (GRID) --- */
         div[data-testid="stColumn"] button {
@@ -243,35 +216,6 @@ def apply_custom_style():
             background-color: rgba(79, 172, 254, 0.1) !important;
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(79, 172, 254, 0.1);
-        }
-
-        /* Accentuation par Parc (Bordure latérale) */
-        /* DLP (Vert) */
-        div[data-testid="column"]:nth-child(2) button, 
-        div[data-testid="column"]:nth-child(7) button, 
-        div[data-testid="column"]:nth-child(8) button,
-        div[data-testid="column"]:nth-child(9) button,
-        div[data-testid="column"]:nth-child(10) button,
-        div[data-testid="column"]:nth-child(11) button {
-            border-left: 3px solid #4ade80 !important;
-        }
-
-        /* DAW (Orange) */
-        div[data-testid="column"]:nth-child(3) button,
-        div[data-testid="column"]:nth-child(12) button,
-        div[data-testid="column"]:nth-child(13) button,
-        div[data-testid="column"]:nth-child(14) button,
-        div[data-testid="column"]:nth-child(15) button,
-        div[data-testid="column"]:nth-child(16) button {
-            border-left: 3px solid #fbbf24 !important;
-        }
-
-        /* Alertes (Rouge/Bordeaux) pour 101, 102, Fermé et Vider */
-        div[data-testid="column"]:nth-child(4) button,
-        div[data-testid="column"]:nth-child(5) button,
-        div[data-testid="column"]:nth-child(6) button,
-        button:contains("VIDER") {
-            border-left: 3px solid #ff4b4b !important;
         }
 
         /* --- MULTISELECT MAGIQUE --- */
