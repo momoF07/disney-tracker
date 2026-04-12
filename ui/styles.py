@@ -70,7 +70,36 @@ def apply_custom_style():
             font-size: 13px !important;
             color: #94a3b8 !important;
         }
+        
+        /* --- BOUTONS DE TRI (CROISSANT/DÉCROISSANT) --- */
+        .sort-btn-container {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+        }
 
+        /* Style de base pour les deux boutons */
+        .stButton > button[key^="order_"] {
+            border-radius: 12px !important;
+            height: 40px !important;
+            font-size: 16px !important;
+            transition: all 0.3s ease !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        }
+
+        /* État inactif */
+        .btn-inactive > div > button {
+            background: rgba(255, 255, 255, 0.05) !important;
+            color: #64748b !important;
+        }
+
+        /* État actif (Bleu Magic) */
+        .btn-active > div > button {
+            background: rgba(79, 172, 254, 0.2) !important;
+            border-color: #4facfe !important;
+            color: #4facfe !important;
+            box-shadow: 0 0 10px rgba(79, 172, 254, 0.2) !important;
+        }
 
         /* --- OPTIMISATION DU LAYOUT (ANTI-SAUT) --- */
         .block-container {

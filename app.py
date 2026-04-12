@@ -134,11 +134,10 @@ if not df_live.empty:
     st.query_params["fav"] = selected_options
 
     if selected_options:
-        # --- DÉBUT DU CONTENEUR STYLISÉ ---
         st.markdown('<div class="sort-container">', unsafe_allow_html=True)
         st.markdown('<p class="sort-label">Configuration de l\'affichage</p>', unsafe_allow_html=True)
         
-        col_mode, col_order = st.columns([0.65, 0.35], vertical_alignment="center")
+        col_mode, col_asc, col_desc = st.columns([0.6, 0.2, 0.2], vertical_alignment="center")
         
         with col_mode:
             sort_mode = st.segmented_control(
@@ -149,18 +148,29 @@ if not df_live.empty:
                 label_visibility="collapsed"
             )
         
-        with col_order:
-            if 'desc_order' not in st.session_state:
+        # Gestion de l'état
+        if 'desc_order' not in st.session_state:
+            st.session_state.desc_order = False
+
+        with col_asc:
+            # Applique la classe 'btn-active' si desc_order est False
+            css_class = "btn-active" if not st.session_state.desc_order else "btn-inactive"
+            st.markdown(f'<div class="{css_class}">', unsafe_allow_html=True)
+            if st.button("🔼", key="order_asc", use_container_width=True):
                 st.session_state.desc_order = False
-                
-            # Libellé plus "user-friendly"
-            label_btn = "🔽 Décroissant" if st.session_state.desc_order else "🔼 Croissant"
-            
-            if st.button(label_btn, key="order_btn", use_container_width=True):
-                st.session_state.desc_order = not st.session_state.desc_order
-                #st.rerun() # On relance pour appliquer le tri immédiatement
-            
-        st.markdown('</div>', unsafe_allow_html=True) # FERMETURE PROPRE DU CONTAINER
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with col_desc:
+            # Applique la classe 'btn-active' si desc_order est True
+            css_class = "btn-active" if st.session_state.desc_order else "btn-inactive"
+            st.markdown(f'<div class="{css_class}">', unsafe_allow_html=True)
+            if st.button("🔽", key="order_desc", use_container_width=True):
+                st.session_state.desc_order = True
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown('</div>', unsafe_allow_html=True)
         
         # --- LOGIQUE DE TRI ---
         is_desc = st.session_state.desc_order
