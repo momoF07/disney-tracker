@@ -61,26 +61,26 @@ def apply_custom_style():
         }
 
         /* Label de l'ordre plus élégant */
-.order-label {
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.4);
-    text-transform: uppercase;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    margin: 15px 0 8px 5px;
-}
+        .order-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            margin: 15px 0 8px 5px;
+        }
 
-/* Base commune pour les boutons d'ordre */
-div[data-testid="stColumn"] .btn-active button, 
-div[data-testid="stColumn"] .btn-inactive button {
-    height: 34px !important;
-    min-height: 34px !important;
-    padding: 0px !important;
-    border-radius: 10px !important;
-    font-size: 12px !important;
-    font-weight: 600 !important;
-    transition: all 0.2s ease-in-out !important;
-}
+        /* Base commune pour les boutons d'ordre */
+        div[data-testid="stColumn"] .btn-active button, 
+        div[data-testid="stColumn"] .btn-inactive button {
+            height: 34px !important;
+            min-height: 34px !important;
+            padding: 0px !important;
+            border-radius: 10px !important;
+            font-size: 12px !important;
+            font-weight: 600 !important;
+            transition: all 0.2s ease-in-out !important;
+        }
 
         /* Bouton Inactif : discret et plat */
         .btn-inactive button {
