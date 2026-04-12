@@ -33,30 +33,85 @@ def render_api_info(api_time, refresh_time):
 def render_ride_card(ride, sub, wait, bg, card_style, pill, show_wait=True):
     """Affiche la carte d'attraction. Le carré de droite est rendu conditionnellement."""
     
-    # 1. On initialise les variables pour éviter les erreurs UnboundLocalError
     wait_section_html = ""
-    flex_style = ""
+    flex_style = "flex: 1;"  # Par défaut, la carte gauche prend tout l'espace
 
-    # 2. On construit le bloc de droite UNIQUEMENT si show_wait est True
     if show_wait:
         wait_html = f'<span class="wait-val">{wait}</span>'
         if str(wait).isdigit():
             wait_html += '<span class="wait-unit">min</span>'
         
-        # On stocke tout le carré HTML dans cette variable
         wait_section_html = f"""
             <div class="ride-right-wait {bg}">
                 <span style="font-size:10px; opacity:0.7;">ATTENTE</span>
                 {wait_html}
             </div>
         """
-    else:
-        # Si on cache le carré, on demande à la partie gauche de s'étendre
-        flex_style = "flex-grow: 1;"
-
-    # 3. Rendu final : on injecte {wait_section_html}
-    # Si show_wait=False, cette variable est vide (""), donc rien ne s'affiche et rien ne plante
+        flex_style = ""  # On retire le flex:1 pour laisser de la place au carré
+    
     st.markdown(f"""
+    <style>
+        .ride-row {{
+            display: flex;
+            align-items: stretch;
+            gap: 8px;
+            margin-bottom: 8px;
+        }}
+        .ride-left-card {{
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 12px;
+        }}
+        .ride-info-meta {{
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }}
+        .ride-titles {{
+            display: flex;
+            flex-direction: column;
+        }}
+        .ride-main-name {{
+            margin: 0;
+            font-weight: bold;
+            font-size: 15px;
+        }}
+        .ride-sub-status {{
+            margin: 0;
+            font-size: 12px;
+            opacity: 0.8;
+        }}
+        .state-pill {{
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+            background: rgba(255,255,255,0.15);
+        }}
+        .ride-right-wait {{
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-width: 80px;
+            width: 80px;
+            border-radius: 12px;
+            padding: 10px 8px;
+            gap: 2px;
+        }}
+        .wait-val {{
+            font-size: 22px;
+            font-weight: bold;
+            line-height: 1;
+        }}
+        .wait-unit {{
+            font-size: 11px;
+            opacity: 0.8;
+        }}
+    </style>
     <div class="ride-row">
         <div class="ride-left-card {card_style}" style="{flex_style}">
             <div class="ride-info-meta">
