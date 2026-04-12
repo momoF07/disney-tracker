@@ -6,7 +6,7 @@ def render_weather_card(weather):
         return
 
     from modules.weather import info_weather_code
-    alert = info_weather(weather.get('feels_like'))
+    alert = info_weather_code(weather.get('feels_like'))
     
     alert_html = ""
     if alert:
