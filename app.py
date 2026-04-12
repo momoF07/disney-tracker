@@ -149,9 +149,6 @@ if not df_live.empty:
             order_options = ["- Attente", "+ Attente"]
         elif sort_mode == "🔠 Nom":
             order_options = ["A → Z", "Z → A"]
-        else:
-            # Pour Incidents et Rehab, on peut mettre des labels explicites
-            order_options = ["Priorité", "Alphabétique"]
 
         st.markdown('<p class="order-label">Ordre d\'affichage</p>', unsafe_allow_html=True)
         order_selection = st.segmented_control(
