@@ -137,7 +137,7 @@ if not df_live.empty:
         st.markdown('<div class="sort-container">', unsafe_allow_html=True)
         st.markdown('<p class="sort-label">Configuration de l\'affichage</p>', unsafe_allow_html=True)
         
-        col_mode, col_asc, col_desc = st.columns([0.6, 0.2, 0.2], vertical_alignment="center")
+        col_mode, col_asc, col_desc = st.columns([1, 0.2, 0.2], vertical_alignment="center")
         
         with col_mode:
             sort_mode = st.segmented_control(
@@ -158,7 +158,6 @@ if not df_live.empty:
             st.markdown(f'<div class="{css_class}">', unsafe_allow_html=True)
             if st.button("🔼", key="order_asc", use_container_width=True):
                 st.session_state.desc_order = False
-                st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
 
         with col_desc:
@@ -167,7 +166,6 @@ if not df_live.empty:
             st.markdown(f'<div class="{css_class}">', unsafe_allow_html=True)
             if st.button("🔽", key="order_desc", use_container_width=True):
                 st.session_state.desc_order = True
-                st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
 
         st.markdown('</div>', unsafe_allow_html=True)
