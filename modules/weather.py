@@ -67,5 +67,3 @@ def info_weather(feels_like):
             "sub": "Pensez à boire régulièrement de l'eau."
         }
     return None
-
-weather_info = info_weather()
