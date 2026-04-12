@@ -1,4 +1,5 @@
 import requests
+import streamlit as st
 
 @st.cache_data(ttl=600)
 def get_disney_weather():
