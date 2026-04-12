@@ -120,15 +120,15 @@ def info_dsp(feels_like):
 
     # --- CHALEUR DSP ---
     if val >= 38.0:
-        return {"t": "Temps 5", "msg": "Parade Annulée", "color": "#721c24", "bg": "#f8d7da"}
+        return {"t": "Temps 5 (Chaleur)", "msg": "Parade Annulée", "color": "#721c24", "bg": "#f8d7da"}
     elif 35.0 <= val <= 37.9:
-        return {"t": "Temps 4", "msg": "Characters remplacés par Faces/Performers sans têtes sculptées. Mickey/Minnie en standard.", "color": "#856404", "bg": "#fff3cd"}
+        return {"t": "Temps 4 (Chaleur)", "msg": "Characters remplacés par Faces/Performers sans têtes sculptées. Mickey/Minnie en standard.", "color": "#856404", "bg": "#fff3cd"}
     elif 32.0 <= val <= 34.9:
-        return {"t": "Temps 3", "msg": "Annulation chorégraphies sol - Retrait Roue de la Destinée - Raccourci Town Square", "color": "#856404", "bg": "#fff3cd"}
+        return {"t": "Temps 3 (Chaleur)", "msg": "Annulation chorégraphies sol - Retrait Roue de la Destinée - Raccourci Town Square", "color": "#856404", "bg": "#fff3cd"}
     elif 28.0 <= val <= 31.9:
-        return {"t": "Temps 2", "msg": "Vitesse adaptée - Annulation chorégraphies unités - Retrait Thorns et Gabrielles", "color": "#856404", "bg": "#fff3cd"}
+        return {"t": "Temps 2 (Chaleur)", "msg": "Vitesse adaptée - Annulation chorégraphies unités - Retrait Thorns et Gabrielles", "color": "#856404", "bg": "#fff3cd"}
     elif 25.0 <= val <= 27.9:
-        return {"t": "Temps 1", "msg": "Alternance chorégraphie/déambulation - Retrait gants - Brumisateurs actifs", "color": "#c67c00", "bg": "#fff3cd"}
+        return {"t": "Temps 1 (Chaleur)", "msg": "Alternance chorégraphie/déambulation - Retrait gants - Brumisateurs actifs", "color": "#c67c00", "bg": "#fff3cd"}
 
     # --- ZONE NEUTRE (Temps 0) ---
     elif 10.1 <= val <= 24.9:
@@ -136,14 +136,14 @@ def info_dsp(feels_like):
 
     # --- FROID DSP ---
     elif 5.0 <= val <= 10.0:
-        return {"t": "Temps 1", "msg": "Costumes hiver Face Characters & Bodys antifroid", "color": "#155724", "bg": "#d4edda"}
+        return {"t": "Temps 1 (Froid)", "msg": "Costumes hiver Face Characters & Bodys antifroid", "color": "#155724", "bg": "#d4edda"}
     elif 0.0 <= val <= 4.9:
-        return {"t": "Temps 2", "msg": "Costumes hiver Face Characters & Bodys antifroid", "color": "#004085", "bg": "#cce5ff"}
+        return {"t": "Temps 2 (Froid)", "msg": "Costumes hiver Face Characters & Bodys antifroid", "color": "#004085", "bg": "#cce5ff"}
     elif -4.9 <= val <= 0.1:
-        return {"t": "Temps 3", "msg": "Costumes hiver Face Characters & Bodys antifroid", "color": "#0c5460", "bg": "#d1ecf1"}
+        return {"t": "Temps 3 (Froid)", "msg": "Costumes hiver Face Characters & Bodys antifroid", "color": "#0c5460", "bg": "#d1ecf1"}
     elif -9.9 <= val <= -5.0:
-        return {"t": "Temps 4", "msg": "Costumes hiver Face Characters & Bodys antifroid", "color": "#856404", "bg": "#fff3cd"}
+        return {"t": "Temps 4 (Froid)", "msg": "Costumes hiver Face Characters & Bodys antifroid", "color": "#856404", "bg": "#fff3cd"}
     elif val <= -10.0:
-        return {"t": "Temps 5", "msg": "Parade Annulée", "color": "#721c24", "bg": "#f8d7da"}
+        return {"t": "Temps 5 (Froid)", "msg": "Parade Annulée", "color": "#721c24", "bg": "#f8d7da"}
 
     return None
