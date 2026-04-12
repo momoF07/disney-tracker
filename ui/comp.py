@@ -34,7 +34,6 @@ def render_ride_card(ride, sub, wait, bg, card_style, pill, show_wait=True):
     """Affiche la carte d'attraction. Le carré de droite est optionnel."""
     
     # Initialisation de la section de droite
-    wait_section = ""
     flex_style = ""
 
     if show_wait:
@@ -43,12 +42,6 @@ def render_ride_card(ride, sub, wait, bg, card_style, pill, show_wait=True):
         if str(wait).isdigit():
             wait_html += '<span class="wait-unit">min</span>'
         
-        wait_section = f"""
-            <div class="ride-right-wait {bg}">
-                <span style="font-size:10px; opacity:0.7;">ATTENTE</span>
-                {wait_html}
-            </div>
-        """
     else:
         # Si pas de carré, la carte de gauche prend toute la largeur
         flex_style = "flex-grow: 1;"
@@ -66,6 +59,9 @@ def render_ride_card(ride, sub, wait, bg, card_style, pill, show_wait=True):
             </div>
             <div class="state-pill">{pill}</div>
         </div>
-        {wait_section}
+            <div class="ride-right-wait {bg}">
+                <span style="font-size:10px; opacity:0.7;">ATTENTE</span>
+                {wait_html}
+            </div>
     </div>
     """, unsafe_allow_html=True)
