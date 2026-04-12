@@ -134,9 +134,11 @@ if not df_live.empty:
     st.query_params["fav"] = selected_options
 
     if selected_options:
-        st.markdown('<p class="sort-label">Tri de l\'affichage</p>', unsafe_allow_html=True)
+        # --- DÉBUT DU CONTENEUR STYLISÉ ---
+        st.markdown('<div class="sort-container">', unsafe_allow_html=True)
+        st.markdown('<p class="sort-label">Configuration de l\'affichage</p>', unsafe_allow_html=True)
         
-        col_mode, col_order = st.columns([0.7, 0.3], vertical_alignment="center")
+        col_mode, col_order = st.columns([0.65, 0.35], vertical_alignment="center")
         
         with col_mode:
             sort_mode = st.segmented_control(
@@ -148,20 +150,33 @@ if not df_live.empty:
             )
         
         with col_order:
-        # Initialisation de l'ordre si inexistant
             if 'desc_order' not in st.session_state:
                 st.session_state.desc_order = False
                 
-            # Définition de l'icône et du texte selon l'état
+            # Libellé plus "user-friendly"
             label_btn = "🔽 Décroissant" if st.session_state.desc_order else "🔼 Croissant"
             
-            # Le bouton qui bascule l'état
             if st.button(label_btn, key="order_btn", use_container_width=True):
                 st.session_state.desc_order = not st.session_state.desc_order
-                st.rerun() # On relance pour appliquer le tri immédiatement
+                st.rerun()
             
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True) # FERMETURE PROPRE DU CONTAINER
+        
+        # --- LOGIQUE DE TRI ---
         is_desc = st.session_state.desc_order
+        
+        if sort_mode == "⏳ Attente":
+            # On sépare les ouverts (triés) et les fermés (en bas)
+            opened = [r for r in selected_options if df_live[df_live['ride_name'] == r]['is_open'].iloc[0]]
+            closed = [r for r in selected_options if not df_live[df_live['ride_name'] == r]['is_open'].iloc[0]]
+            selected_options = sorted(opened, key=lambda x: df_live[df_live['ride_name'] == x]['wait_time'].iloc[0], reverse=is_desc) + closed
+        elif sort_mode == "⚠️ Incidents":
+            selected_options = sorted(selected_options, key=lambda r: is_incident(r), reverse=True) # Incidents en haut
+        elif sort_mode == "🛠️ Rehab":
+            selected_options = sorted(selected_options, key=lambda r: is_rehab(r), reverse=True) # Rehab en haut
+        else:
+            selected_options = sorted(selected_options, reverse=is_desc)
+
         # --- BOUCLE D'AFFICHAGE DES CARTES ---
         for ride in selected_options:
             data = df_live[df_live['ride_name'] == ride].iloc[0]
@@ -181,7 +196,6 @@ if not df_live.empty:
             else: sub, wait, bg, style, pill = "✅ Opérationnel", int(data['wait_time']), "bg-green", "card-green", "OUVERT"
 
             render_ride_card(ride, sub, wait, bg, style, pill) 
-            # (Par défaut show_wait est True, donc le carré s'affiche)
             
             with st.expander("📜 Historique"):
                 h_p_clean = [p for p in all_pannes if p['ride'] == ride and (p['statut'] == "EN_COURS" or p['duree'] >= 2)]
