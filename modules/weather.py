@@ -30,7 +30,7 @@ def get_disney_weather():
         emoji, desc = weather_map.get(code, ("❓", "Inconnu"))
         
         return {
-            "temp": f"{temp}°C",
+            "temp": f"{temp}",
             "wind": f"{wind} km/h",
             "desc": desc,
             "emoji": emoji
