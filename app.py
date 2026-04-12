@@ -283,7 +283,7 @@ if not df_pannes_brutes.empty:
                 wait="FIN", 
                 bg="bg-bordeaux", 
                 card_style="card-bordeaux", 
-                pill="TERMINÉ", 
+                pill="FERMETURE", 
                 show_wait=False
             )
 
