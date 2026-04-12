@@ -55,7 +55,7 @@ def info_weather(feels_like):
                 "sub": "Pensez à désactiver."
             }
         # 2. 77+
-        elif val >= 10:
+        elif val >= 30:
             return {
                 "code": "77+",
                 "color": "#FF4B4B",
