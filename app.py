@@ -134,55 +134,24 @@ if not df_live.empty:
     st.query_params["fav"] = selected_options
 
     if selected_options:
-        st.markdown("---") # Séparation visuelle élégante
+        st.markdown('<div class="sort-container">', unsafe_allow_html=True)
+        st.markdown('<p class="sort-label">Configuration de l\'affichage</p>', unsafe_allow_html=True)
         
-        # On utilise 3 colonnes pour mieux centrer et équilibrer
-        # Col 1: Label, Col 2: Contrôle segmenté, Col 3: Toggle de direction
-        c1, c2, c3 = st.columns([0.15, 0.70, 0.15], vertical_alignment="center")
+        col_mode, col_order = st.columns([0.7, 0.3], vertical_alignment="center")
         
-        with c1:
-            st.markdown("**Trier par :**")
-            
-        with c2:
-            # On garde le segmented_control mais on le rend plus large
+        with col_mode:
             sort_mode = st.segmented_control(
-                "Tri", 
-                options=["🔠 Nom", "⏳ Attente", "⚠️ Incidents", "🛠️ Rehab"], 
-                default="🔠 Nom", 
-                key="sort_selector", 
+                "Tri",
+                options=["🔠 Nom", "⏳ Attente", "⚠️ Incidents", "🛠️ Rehab"],
+                default="🔠 Nom",
+                key="sort_selector",
                 label_visibility="collapsed"
             )
+        
+        with col_order:
+            is_desc = st.toggle("Ordre Inverse", value=False)
             
-        with c3:
-            # Toggle avec label dynamique pour la clarté
-            descending = st.toggle("Inverse", value=False, help="Inverser l'ordre du tri")
-
-        # --- LOGIQUE DE TRI (Optimisée pour la performance) ---
-        if sort_mode == "⏳ Attente":
-            # On sépare Ouvert vs Fermé pour éviter que les fermés polluent le haut du tri
-            opened = [r for r in selected_options if df_live[df_live['ride_name'] == r]['is_open'].iloc[0]]
-            closed = [r for r in selected_options if not df_live[df_live['ride_name'] == r]['is_open'].iloc[0]]
-            selected_options = sorted(opened, key=lambda x: df_live[df_live['ride_name'] == x]['wait_time'].iloc[0], reverse=descending) + closed
-            
-        elif sort_mode == "⚠️ Incidents":
-            def is_incident(r):
-                d = df_live[df_live['ride_name'] == r].iloc[0]
-                i = status_map.get(r, {})
-                h_f_c = ANTICIPATED_CLOSINGS.get(r) or (DAW_CLOSING if any(a.lower() in r.lower() for a in RIDES_DAW) else DLP_CLOSING)
-                rehab = not i.get('opened_yesterday', True) and not i.get('has_opened_today', False)
-                return not d['is_open'] and not rehab and heure_actuelle < h_f_c
-            selected_options = sorted([r for r in selected_options if is_incident(r)], reverse=descending)
-            
-        elif sort_mode == "🛠️ Réhabilitations":
-            def is_rehab(r):
-                i = status_map.get(r, {})
-                return not i.get('opened_yesterday', True) and not i.get('has_opened_today', False)
-            selected_options = sorted([r for r in selected_options if is_rehab(r)], reverse=descending)
-            
-        else:
-            selected_options = sorted(selected_options, reverse=descending)
-
-        st.write("")
+        st.markdown('</div>', unsafe_allow_html=True)
         # --- BOUCLE D'AFFICHAGE DES CARTES ---
         for ride in selected_options:
             data = df_live[df_live['ride_name'] == ride].iloc[0]
