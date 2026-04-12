@@ -4,13 +4,14 @@ def get_disney_weather():
     # Coordonnées de Chessy (Marne-la-Vallée)
     lat, lon = 48.8675, 2.7841
     
-    url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,weather_code,wind_speed_10m&timezone=Europe%2FParis"
+    url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,weather_code,wind_speed_10m,apparent_temperature&timezone=Europe%2FParis"
     
     try:
         response = requests.get(url)
         data = response.json().get('current', {})
         
         temp = data.get('temperature_2m')
+        apparent_temp = data.get('apparent_temperature')
         wind = data.get('wind_speed_10m')
         code = data.get('weather_code')
         
@@ -31,6 +32,7 @@ def get_disney_weather():
         
         return {
             "temp": f"{temp}",
+            "feels_like": f"{apparent_temp}°C",
             "wind": f"{wind} km/h",
             "desc": desc,
             "emoji": emoji
@@ -39,4 +41,8 @@ def get_disney_weather():
         return None
 
 # Test
-print(get_disney_weather())
+weather = get_disney_weather()
+if weather:
+    print(f"Météo Disney : {weather['emoji']} {weather['desc']}")
+    print(f"Température : {weather['temp']} (Ressenti : {weather['feels_like']})")
+    print(f"Vent : {weather['wind']}")
