@@ -1,18 +1,16 @@
 import requests
 
 def get_disney_weather():
-    # Coordonnées de Chessy (Marne-la-Vallée)
     lat, lon = 48.8675, 2.7841
-    
-    # Ajout de 'apparent_temperature' dans la liste des paramètres 'current'
     url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m&timezone=Europe%2FParis"
     
     try:
         response = requests.get(url, timeout=5)
         data = response.json().get('current', {})
         
+        # ON GARDE LES VALEURS BRUTES (NOMBRES)
         temp = data.get('temperature_2m')
-        apparent_temp = data.get('apparent_temperature') # Récupération du ressenti
+        apparent_temp = data.get('apparent_temperature')
         wind = data.get('wind_speed_10m')
         code = data.get('weather_code')
         
@@ -31,33 +29,22 @@ def get_disney_weather():
         
         emoji, desc = weather_map.get(code, ("❓", "Inconnu"))
         
+        # RETOURNE DES NOMBRES PURS POUR LES CALCULS
         return {
-            "temp": f"Température : {temp}",
-            "feels_like": f"Ressenti : {apparent_temp}",
+            "temp": temp,           # Juste le nombre (ex: 22.5)
+            "feels_like": apparent_temp, # Juste le nombre (ex: 26.0)
             "wind": f"{wind} km/h",
             "desc": desc,
             "emoji": emoji
         }
     except Exception as e:
-        print(f"Erreur météo : {e}")
         return None
-
-# Test
-weather = get_disney_weather()
-if weather:
-    print(f"Météo Disney : {weather['emoji']} {weather['desc']}")
-    print(f"Température : {weather['temp']} (Ressenti : {weather['feels_like']})")
-    print(f"Vent : {weather['wind']}")
-
 
 def info_weather(feels_like):
-    """Génère les infos d'alerte basées sur le ressenti avec sécurité."""
-    # Sécurité : si feels_like est None ou n'est pas un nombre, on s'arrête
     if feels_like is None:
         return None
-        
     try:
-        # On force la conversion en float au cas où c'est une chaîne
+        # Maintenant float() fonctionnera car feels_like est un nombre ou une string numérique
         val = float(feels_like)
         
         if val >= 30:
@@ -65,7 +52,7 @@ def info_weather(feels_like):
                 "code": "77+",
                 "color": "#FF4B4B",
                 "msg": "🌡️ ALERTE CHALEUR EXTRÊME : CODE 77+",
-                "sub": "Hydratation prioritaire. Cherchez l'ombre et la clim."
+                "sub": "Hydratation prioritaire. Cherchez l'ombre."
             }
         elif val >= 25:
             return {
@@ -74,8 +61,6 @@ def info_weather(feels_like):
                 "msg": "⚠️ ALERTE CHALEUR : CODE 77",
                 "sub": "Pensez à boire régulièrement de l'eau."
             }
-    except ValueError:
-        # Si la conversion échoue (ex: feels_like est du texte bizarre)
+    except:
         return None
-        
     return None
