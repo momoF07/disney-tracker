@@ -63,7 +63,7 @@ def info_weather(feels_like):
                 "sub": "Hydratation prioritaire. Cherchez l'ombre."
             }
         # 3. Enfin la chaleur standard (ton test à 10 pour vérifier si ça marche)
-        elif val >= 10:
+        elif val >= 25:
             return {
                 "code": "77",
                 "color": "#FFA500",

@@ -8,14 +8,6 @@ def render_weather_card(weather):
     from modules.weather import info_weather
     alert = info_weather(weather.get('feels_like'))
     
-    alert_html = ""
-    if alert:
-        # On construit le HTML de l'alerte
-        alert_html = {f"""
-        <div style="margin-top: 12px; padding: 10px; background: {alert['color']}; border-radius: 10px; text-align: center; color: white; font-size: 13px; border: 1px solid rgba(255,255,255,0.2);">
-            <b>⚠️ CODE {alert['code']}</b> : {alert['msg']}
-        </div>
-        """}
 
     # Rendu global
     st.markdown(f"""
@@ -34,7 +26,9 @@ def render_weather_card(weather):
                 <span style="color: #94a3b8; font-size: 12px;">💨 {weather['wind']}</span>
             </div>
         </div>
-        {alert_html}
+        <div style="margin-top: 12px; padding: 10px; background: {alert['color']}; border-radius: 10px; text-align: center; color: white; font-size: 13px; border: 1px solid rgba(255,255,255,0.2);">
+            <b>⚠️ CODE {alert['code']}</b> : {alert['msg']}
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
