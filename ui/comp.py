@@ -2,20 +2,29 @@ import streamlit as st
 from modules.emojis import get_emoji
 
 def render_weather_card(weather):
-    if not weather:
-        return
+    if not weather: return
 
-    from modules.weather import info_weather_code
-    alert = info_weather_code(weather.get('feels_like'))
+    from modules.weather import info_weather, info_msc
+    ressenti = weather.get('feels_like')
     
+    alert = info_weather(ressenti)
+    msc = info_msc(ressenti)
+    
+    # Bloc HTML Code 77
     alert_html = ""
     if alert:
-        # On construit le HTML de l'alerte
-        alert_html = f"""<div style="margin-top: 12px; padding: 10px; background: {alert['color']}; border-radius: 10px; text-align: center; color: white; font-size: 13px; border: 1px solid rgba(255,255,255,0.2);">
-            <b>⚠️ CODE {alert['code']} </br> {alert['sub']}</b>
+        alert_html = f"""<div style="margin-top: 10px; padding: 10px; background: {alert['color']}; border-radius: 10px; text-align: center; color: white; font-size: 13px;">
+            <b>⚠️ {alert['code']} </br> {alert['sub']}</b>
         </div>"""
 
-    # Rendu global
+    # Bloc HTML MSC
+    msc_html = ""
+    if msc:
+        msc_html = f"""<div style="margin-top: 10px; padding: 10px; background: {msc['bg']}; border-radius: 10px; border: 1px solid {msc['color']}; color: {msc['color']}; font-size: 12px;">
+            <b style="font-size: 13px;">📊 État show MSC : {msc['t']}</b><br>
+            {msc['msg']}
+        </div>"""
+
     st.markdown(f"""
     <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;">
         <div style="display: flex; align-items: center; justify-content: space-between;">
@@ -23,16 +32,17 @@ def render_weather_card(weather):
                 <span style="font-size: 30px;">{weather['emoji']}</span>
                 <div>
                     <b style="color: white; font-size: 16px;">{weather['desc']}</b><br>
-                    <span style="color: #94a3b8; font-size: 12px;">Marne-la-Vallée - Parc Disneyland</span>
+                    <span style="color: #94a3b8; font-size: 11px;">Marne-la-Vallée - Parc Disneyland</span>
                 </div>
             </div>
             <div style="text-align: right;">
                 <b style="color: white; font-size: 18px;">{weather['temp']}°C</b><br>
-                <span style="color: white; font-size: 13px; opacity: 0.8;">Ressenti : {weather['feels_like']}°C</span><br>
-                <span style="color: #94a3b8; font-size: 12px;">💨 {weather['wind']}</span>
+                <span style="color: white; font-size: 13px; opacity: 0.8;">Ressenti : {ressenti}°C</span>
             </div>
         </div>
+        
         {alert_html}
+        {msc_html}
     </div>
     """, unsafe_allow_html=True)
 
