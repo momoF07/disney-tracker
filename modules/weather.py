@@ -1,6 +1,7 @@
 import requests
 import streamlit as st
 
+@st.cache_data(ttl=60)
 def get_disney_weather():
     lat, lon = 48.8675, 2.7841
     url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_gusts_10m&timezone=Europe%2FParis"
