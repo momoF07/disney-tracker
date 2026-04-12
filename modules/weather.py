@@ -33,7 +33,7 @@ def get_disney_weather():
         
         return {
             "temp": f"Température : {temp}",
-            "feels_like": f"{apparent_temp}°C",
+            "feels_like": f"Ressenti : {apparent_temp}",
             "wind": f"{wind} km/h",
             "desc": desc,
             "emoji": emoji
