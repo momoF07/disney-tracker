@@ -5,7 +5,7 @@ on:
     - cron: '*/10 * * * *'    # Relance automatique toutes les 10 min
   workflow_dispatch:          # Pour lancer manuellement depuis GitHub ou ton bouton Streamlit
   repository_dispatch:        # Pour les appels externes (Cron-job.org, etc.)
-    types: [run-disney-bot]
+    types: [run-all-bot]
 
 jobs:
   run-robot:
@@ -20,7 +20,6 @@ jobs:
           python-version: '3.10'
 
       - name: 📦 Install Dependencies
-        # AJOUT DE PYTZ ICI POUR ÉVITER L'ERREUR IMPORT
         run: pip install requests supabase pytz
 
       - name: 🚀 Run Worker
