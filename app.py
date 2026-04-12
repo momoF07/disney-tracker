@@ -158,7 +158,7 @@ if not df_live.empty:
             
             if st.button(label_btn, key="order_btn", use_container_width=True):
                 st.session_state.desc_order = not st.session_state.desc_order
-                st.rerun()
+                #st.rerun() # On relance pour appliquer le tri immédiatement
             
         st.markdown('</div>', unsafe_allow_html=True) # FERMETURE PROPRE DU CONTAINER
         
