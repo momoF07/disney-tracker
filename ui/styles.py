@@ -246,13 +246,13 @@ def apply_custom_style():
         }
 
         /* Bouton "Actualiser" (Style Glass bleu) */
-        .action-buttons-container div[data-testid="column"]:nth-child(1) button {
+        .action-buttons-container div[data-testid="stColumn"]:nth-child(1) button {
             background: rgba(79, 172, 254, 0.1) !important;
             color: #4facfe !important;
             border: 1px solid rgba(79, 172, 254, 0.3) !important;
         }
 
-        .action-buttons-container div[data-testid="column"]:nth-child(1) button:hover {
+        .action-buttons-container div[data-testid="stColumn"]:nth-child(1) button:hover {
             background: rgba(79, 172, 254, 0.2) !important;
             border-color: #4facfe !important;
             box-shadow: 0 0 20px rgba(79, 172, 254, 0.3) !important;
@@ -260,13 +260,13 @@ def apply_custom_style():
         }
 
         /* Bouton "Relevé manuel" (Style Danger Red Premium) */
-        .action-buttons-container div[data-testid="column"]:nth-child(2) button {
+        .action-buttons-container div[data-testid="stColumn"]:nth-child(2) button {
             background: linear-gradient(135deg, #ff4b4b 0%, #c0392b 100%) !important;
             color: white !important;
             border: none !important;
         }
 
-        .action-buttons-container div[data-testid="column"]:nth-child(2) button:hover {
+        .action-buttons-container div[data-testid="stColumn"]:nth-child(2) button:hover {
             filter: brightness(1.2) !important;
             box-shadow: 0 0 25px rgba(255, 75, 75, 0.4) !important;
             transform: translateY(-2px) scale(1.01) !important;
