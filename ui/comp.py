@@ -22,13 +22,13 @@ def render_weather_card(weather):
         def get_box(title, data):
             if not data: return ""
             return f"""<div style="flex: 1; min-width: 160px; padding: 10px; background: {data['bg']}; border-radius: 10px; border: 1px solid {data['color']}; color: {data['color']}; font-size: 11px; line-height: 1.3;">
-                <b style="font-size: 12px; display: block; margin-bottom: 2px;">🎭 {title} : {data['t']}</b>
+                <b style="font-size: 12px; display: block; margin-bottom: 2px;">{title} : {data['t']}</b>
                 {data['msg']}
             </div>"""
         
         shows_html = f"""<div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
-            {get_box("MSC", msc)}
-            {get_box("DSP", dsp)}
+            {get_box("🎨 MSC", msc)}
+            {get_box("🎭 DSP", dsp)}
         </div>"""
 
     st.markdown(f"""
