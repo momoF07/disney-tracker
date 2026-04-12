@@ -41,6 +41,11 @@ def render_ride_card(ride, sub, wait, bg, card_style, pill, show_wait=True):
         wait_html = f'<span class="wait-val">{wait}</span>'
         if str(wait).isdigit():
             wait_html += '<span class="wait-unit">min</span>'
+
+        wait_section = f"""<div class="ride-right-wait {bg}">
+                <span style="font-size:10px; opacity:0.7;">ATTENTE</span>
+                {wait_html}
+            </div>"""
         
         # On stocke tout le carré HTML dans cette variable
     else:
@@ -60,9 +65,6 @@ def render_ride_card(ride, sub, wait, bg, card_style, pill, show_wait=True):
             </div>
             <div class="state-pill">{pill}</div>
         </div>
-        <div class="ride-right-wait {bg}">
-                <span style="font-size:10px; opacity:0.7;">ATTENTE</span>
-                {wait_html}
-            </div>
+        {wait_section}
     </div>
     """, unsafe_allow_html=True)
