@@ -35,8 +35,7 @@ maintenant = datetime.now(paris_tz)
 # Auto-refresh toutes les 60 secondes
 st_autorefresh(interval=60000, key="datarefresh")
 
-if "last_refresh" not in st.session_state:
-    st.session_state.last_refresh = maintenant.strftime("%H:%M:%S")
+st.session_state.last_refresh = heure_actuelle
 
 # --- CONNEXION SUPABASE ---
 @st.cache_resource
