@@ -61,7 +61,7 @@ def info_weather(feels_like):
                 "msg": "⚠️ ALERTE CHALEUR : CODE 77",
                 "sub": "Pensez à boire régulièrement de l'eau."
             }
-        elif val >=10:
+        elif val >=50:
             return {
                 "code": "Test",
                 "color": "#3B82F6",
