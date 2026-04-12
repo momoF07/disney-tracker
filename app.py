@@ -145,35 +145,29 @@ if not df_live.empty:
 
         st.write("") # Petit espacement
 
-        # --- SECTION ORDRE DE TRI ---
         st.markdown('<p class="order-label">Ordre d\'affichage</p>', unsafe_allow_html=True)
 
-        # On utilise des colonnes plus serrées pour un look "boutons groupés"
-        col_asc, col_desc, col_spacer = st.columns([0.18, 0.18, 0.64])
+        # Colonnes optimisées pour mobile et desktop
+        col_asc, col_desc, _ = st.columns([0.18, 0.18, 0.64])
 
         if 'desc_order' not in st.session_state:
             st.session_state.desc_order = False
 
         with col_asc:
-            # État Croissant
-            is_active = not st.session_state.desc_order
-            css_class = "btn-active" if is_active else "btn-inactive"
-            st.markdown(f'<div class="{css_class}">', unsafe_allow_html=True)
+            active = "btn-active" if not st.session_state.desc_order else "btn-inactive"
+            st.markdown(f'<div class="{active}">', unsafe_allow_html=True)
             if st.button("🔼", key="order_asc", use_container_width=True):
                 st.session_state.desc_order = False
+                st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
 
         with col_desc:
-            # État Décroissant
-            is_active = st.session_state.desc_order
-            css_class = "btn-active" if is_active else "btn-inactive"
-            st.markdown(f'<div class="{css_class}">', unsafe_allow_html=True)
+            active = "btn-active" if st.session_state.desc_order else "btn-inactive"
+            st.markdown(f'<div class="{active}">', unsafe_allow_html=True)
             if st.button("🔽", key="order_desc", use_container_width=True):
                 st.session_state.desc_order = True
+                st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
-
-        st.markdown('</div>', unsafe_allow_html=True)
-        
         # --- LOGIQUE DE TRI ---
         is_desc = st.session_state.desc_order
         
