@@ -133,46 +133,51 @@ if not df_live.empty:
     if selected_options:
         st.markdown('<div class="sort-container">', unsafe_allow_html=True)
         
-        # --- LIGNE 1 : MODE DE TRI ---
+        # --- LIGNE 1 : CRITÈRE DE TRI ---
         st.markdown('<p class="sort-label">Filtrer par</p>', unsafe_allow_html=True)
         sort_mode = st.segmented_control(
-            "Tri",
+            "Critère",
             options=["🔠 Nom", "⏳ Attente", "⚠️ Incidents", "🛠️ Rehab"],
             default="🔠 Nom",
             key="sort_selector",
             label_visibility="collapsed"
         )
 
-        # --- LIGNE 2 : DIRECTION DU TRI (DYNAMIQUE) ---
-        if 'desc_order' not in st.session_state:
-            st.session_state.desc_order = False
-
-        # On adapte les labels des boutons selon le mode choisi
+        # --- LIGNE 2 : ORDRE DE TRI (DYNAMIQUE) ---
+        # On définit les options selon le choix du dessus
         if sort_mode == "⏳ Attente":
-            label_asc, label_desc = "- Attente", "+ Attente"
+            order_options = ["- Attente", "+ Attente"]
+        elif sort_mode == "🔠 Nom":
+            order_options = ["A → Z", "Z → A"]
         else:
-            label_asc, label_desc = "A → Z", "Z → A"
+            # Pour Incidents et Rehab, on peut mettre des labels explicites
+            order_options = ["Priorité", "Alphabétique"]
 
         st.markdown('<p class="order-label">Ordre d\'affichage</p>', unsafe_allow_html=True)
-        col_asc, col_desc, _ = st.columns([0.25, 0.25, 0.5])
-
-        with col_asc:
-            active = "btn-active" if not st.session_state.desc_order else "btn-inactive"
-            st.markdown(f'<div class="{active}">', unsafe_allow_html=True)
-            if st.button(f"🔼 {label_asc}", key="btn_asc", use_container_width=True):
-                st.session_state.desc_order = False
-                st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        with col_desc:
-            active = "btn-active" if st.session_state.desc_order else "btn-inactive"
-            st.markdown(f'<div class="{active}">', unsafe_allow_html=True)
-            if st.button(f"🔽 {label_desc}", key="btn_desc", use_container_width=True):
-                st.session_state.desc_order = True
-                st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
+        order_selection = st.segmented_control(
+            "Ordre",
+            options=order_options,
+            default=order_options[0],
+            key="order_selector_dynamic",
+            label_visibility="collapsed"
+        )
 
         st.markdown('</div>', unsafe_allow_html=True)
+
+    # --- LOGIQUE DE TRI ---
+    # On définit si c'est descendant basé sur la sélection du 2ème control
+    is_desc = order_selection in ["+ Attente", "Z → A"]
+    
+    if sort_mode == "⏳ Attente":
+        opened = [r for r in selected_options if df_live[df_live['ride_name'] == r]['is_open'].iloc[0]]
+        closed = [r for r in selected_options if not df_live[df_live['ride_name'] == r]['is_open'].iloc[0]]
+        selected_options = sorted(opened, key=lambda x: df_live[df_live['ride_name'] == x]['wait_time'].iloc[0], reverse=is_desc) + closed
+    elif sort_mode == "⚠️ Incidents":
+        selected_options = sorted(selected_options, key=lambda r: any(p['ride'] == r and p['statut'] == "EN_COURS" for p in all_pannes), reverse=True)
+    elif sort_mode == "🛠️ Rehab":
+        selected_options = sorted(selected_options, key=lambda r: not status_map.get(r, {}).get('opened_yesterday', True), reverse=True)
+    else:
+        selected_options = sorted(selected_options, reverse=is_desc)
 
     # --- APPLICATION DE LA LOGIQUE DE TRI ---
     is_desc = st.session_state.desc_order
