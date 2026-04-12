@@ -4,49 +4,45 @@ def apply_custom_style():
     """Injecte le CSS personnalisé dans l'application Streamlit"""
     st.markdown("""
     <style>
+        /* --- 1. LAYOUT GLOBAL --- */
+        .block-container {
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+            padding-left: 2rem;
+            padding-right: 2rem;
+            max-width: 100% !important;
+        }
 
-        /* --- BARRE DE TRI PREMIUM (AJOUT) --- */
+        /* --- 2. BARRE DE TRI (CONTAINER) --- */
         .sort-container {
             background: linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
-            padding: 12px 18px;
+            padding: 15px;
             border-radius: 16px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            margin: 15px 0 25px 0;
+            margin-bottom: 20px;
         }
-    
+
         .sort-label {
             color: #94a3b8;
             font-size: 0.75rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.1em;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
-        /* --- BOUTON D'ORDRE CUSTOM --- */
-        .stButton > button[key="order_btn"] {
-            background: rgba(255, 255, 255, 0.05) !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            border-radius: 12px !important;
-            color: #94a3b8 !important;
-            height: 42px !important;
-            font-size: 14px !important;
-            transition: all 0.3s ease !important;
-            width: 100% !important;
-        }
-        .stButton > button[key="order_btn"]:hover {
-            border-color: #4facfe !important;
-            color: white !important;
-            background: rgba(79, 172, 254, 0.1) !important;
-            transform: translateY(-1px);
-        }
-        .stButton > button[key="order_btn"]:active {
-            transform: translateY(1px);
+        .order-label {
+            font-size: 10px;
+            color: #64748b;
+            text-transform: uppercase;
+            font-weight: 700;
+            margin-top: 10px;
+            margin-bottom: 4px;
+            letter-spacing: 0.05em;
         }
 
-        /* --- STYLISATION DES WIDGETS DANS LE TRI --- */
-        /* Bouton Segmenté */
+        /* --- 3. WIDGETS DE TRI (SEGMENTED CONTROL) --- */
         div[data-baseweb="segmented-control"] {
             background-color: rgba(255, 255, 255, 0.03) !important;
             border-radius: 12px !important;
@@ -62,85 +58,41 @@ def apply_custom_style():
             background: rgba(255, 255, 255, 0.1) !important;
             color: white !important;
             border-radius: 8px !important;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
         }
 
-        /* Toggle Inverse */
-        div[data-testid="stWidgetLabel"] p {
-            font-size: 13px !important;
-            color: #94a3b8 !important;
-        }
-        
-        /* --- BOUTONS DE TRI (CROISSANT/DÉCROISSANT) --- */
-        .sort-btn-container {
-            display: flex;
-            gap: 8px;
-            width: 100%;
-        }
-
-        /* Style de base pour les deux boutons */
-        .stButton > button[key^="order_"] {
-            border-radius: 12px !important;
-            height: 40px !important;
-            font-size: 16px !important;
-            transition: all 0.3s ease !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        }
-
-        /* État inactif */
+        /* --- 4. PETITS BOUTONS D'ORDRE (ASC / DESC) --- */
+        /* On cible les boutons par leur clé spécifiée dans app.py */
         .btn-inactive > div > button {
-            background: rgba(255, 255, 255, 0.05) !important;
-            color: #64748b !important;
+            background: rgba(255, 255, 255, 0.03) !important;
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
+            color: #475569 !important;
+            height: 32px !important;
+            min-height: 32px !important;
+            font-size: 14px !important;
+            border-radius: 8px !important;
+            transition: all 0.3s ease !important;
         }
 
-        /* État actif (Bleu Magic) */
         .btn-active > div > button {
-            background: rgba(79, 172, 254, 0.2) !important;
-            border-color: #4facfe !important;
+            background: rgba(79, 172, 254, 0.15) !important;
+            border: 1px solid #4facfe !important;
             color: #4facfe !important;
-            box-shadow: 0 0 10px rgba(79, 172, 254, 0.2) !important;
+            height: 32px !important;
+            min-height: 32px !important;
+            font-size: 14px !important;
+            border-radius: 8px !important;
+            box-shadow: 0 0 12px rgba(79, 172, 254, 0.2) !important;
         }
 
-        /* --- OPTIMISATION DU LAYOUT (ANTI-SAUT) --- */
-        .block-container {
-            padding-top: 1rem;
-            padding-bottom: 1rem;
-            padding-left: 2rem;
-            padding-right: 2rem;
-            max-width: 100% !important;
-        }
-
-        /* --- RESPONSIVE : CARTES ET COLONNES --- */
-        @media (max-width: 768px) {
-            .block-container {
-                padding-left: 0.5rem;
-                padding-right: 0.5rem;
-            }
-            .ride-left-card {
-                padding: 8px 10px;
-                height: 60px;
-            }
-            .ride-right-wait {
-                min-width: 65px;
-                height: 60px;
-            }
-            .ride-main-name { font-size: 12px; }
-            .wait-val { font-size: 18px; }
-        }
-
-        /* --- DESIGN DES BADGES ET CARTES --- */
+        /* --- 5. DESIGN DES CARTES D'ATTRACTIONS --- */
         .ride-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; width: 100%; gap: 10px; }
         .ride-left-card { border-radius: 16px; padding: 10px 15px; display: flex; align-items: center; justify-content: space-between; flex-grow: 1; height: 68px; }
-        .ride-info-meta { display: flex; align-items: center; gap: 12px; }
-        .ride-titles { display: flex; flex-direction: column; }
         .ride-main-name { color: white; font-size: 14px; font-weight: 600; margin: 0; line-height: 1.2; }
-        .ride-sub-status { color: rgba(255,255,255,0.7); font-size: 11px; margin: 0; }
-        .state-pill { background: rgba(0,0,0,0.3); color: white; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; border: 1px solid rgba(255,255,255,0.1); }
-        .ride-right-wait { min-width: 75px; height: 68px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .ride-right-wait { min-width: 75px; height: 68px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; }
         .wait-val { font-size: 20px; font-weight: 800; line-height: 1; }
         .wait-unit { font-size: 10px; font-weight: 400; opacity: 0.8; }
 
-        /* --- COULEURS DES CARTES --- */
+        /* --- 6. COULEURS DES ÉTATS --- */
         .card-green { background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); }
         .card-orange { background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); }
         .card-blue { background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); }
@@ -152,7 +104,7 @@ def apply_custom_style():
         .bg-grey { background: #6b7280; }
         .bg-bordeaux { background: #991b1b; }
 
-        /* --- ANIMATIONS ET POPOVER --- */
+        /* --- 7. ANIMATIONS ET TITRE --- */
         @keyframes shine { to { background-position: 200% center; } }
         .magic-title {
             text-align: center;
@@ -163,20 +115,13 @@ def apply_custom_style():
             font-weight: 800; font-size: 28px; margin-bottom: 25px;
             animation: shine 3s linear infinite;
         }
-        .cat-badge-magic {
-            padding: 8px 20px; border-radius: 50px; font-size: 14px; font-weight: 700;
-            display: block; text-align: center; margin: 20px 0 10px 0; text-transform: uppercase;
+
+        /* --- 8. RESPONSIVE --- */
+        @media (max-width: 768px) {
+            .block-container { padding-left: 0.5rem; padding-right: 0.5rem; }
+            .ride-left-card, .ride-right-wait { height: 60px; }
+            .ride-main-name { font-size: 12px; }
+            .wait-val { font-size: 18px; }
         }
-        .bg-blue-magic { background: linear-gradient(45deg, #4facfe, #00f2fe); color: white; }
-        .bg-green-magic { background: linear-gradient(45deg, #43e97b, #38f9d7); color: white; }
-        .bg-orange-magic { background: linear-gradient(45deg, #f9d423, #ff4e50); color: white; }
-        .shortcut-card {
-            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px); border-radius: 15px; padding: 12px; margin-bottom: 10px; transition: 0.3s;
-        }
-        .shortcut-card:hover { transform: translateY(-3px); background: rgba(255, 255, 255, 0.08); }
-        
-        /* Harmonisation des codes dans le popover */
-        code { color: #4facfe !important; background: rgba(79, 172, 254, 0.1) !important; }
     </style>
     """, unsafe_allow_html=True)

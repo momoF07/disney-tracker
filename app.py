@@ -135,37 +135,40 @@ if not df_live.empty:
 
     if selected_options:
         st.markdown('<div class="sort-container">', unsafe_allow_html=True)
-        st.markdown('<p class="sort-label">Configuration de l\'affichage</p>', unsafe_allow_html=True)
         
-        col_mode, col_asc, col_desc = st.columns([1, 0.2, 0.2], vertical_alignment="center")
-        
-        with col_mode:
-            sort_mode = st.segmented_control(
-                "Tri",
-                options=["🔠 Nom", "⏳ Attente", "⚠️ Incidents", "🛠️ Rehab"],
-                default="🔠 Nom",
-                key="sort_selector",
-                label_visibility="collapsed"
-            )
-        
-        # Gestion de l'état
+        # Ligne 1 : Le gros Segmented Control
+        st.markdown('<p class="sort-label">Filtrer par</p>', unsafe_allow_html=True)
+        sort_mode = st.segmented_control(
+            "Tri",
+            options=["🔠 Nom", "⏳ Attente", "⚠️ Incidents", "🛠️ Rehab"],
+            default="🔠 Nom",
+            key="sort_selector",
+            label_visibility="collapsed"
+        )
+
+        st.write("") # Petit espacement
+
+        # Ligne 2 : Les petits boutons d'ordre
+        st.markdown('<p class="order-label">Ordre</p>', unsafe_allow_html=True)
+        col_asc, col_desc, col_spacer = st.columns([0.2, 0.2, 0.6]) # On laisse du vide à droite
+
         if 'desc_order' not in st.session_state:
             st.session_state.desc_order = False
 
         with col_asc:
-            # Applique la classe 'btn-active' si desc_order est False
-            css_class = "btn-active" if not st.session_state.desc_order else "btn-inactive"
-            st.markdown(f'<div class="{css_class}">', unsafe_allow_html=True)
+            css_asc = "btn-active" if not st.session_state.desc_order else "btn-inactive"
+            st.markdown(f'<div class="{css_asc}">', unsafe_allow_html=True)
             if st.button("🔼", key="order_asc", use_container_width=True):
                 st.session_state.desc_order = False
+                st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
 
         with col_desc:
-            # Applique la classe 'btn-active' si desc_order est True
-            css_class = "btn-active" if st.session_state.desc_order else "btn-inactive"
-            st.markdown(f'<div class="{css_class}">', unsafe_allow_html=True)
+            css_desc = "btn-active" if st.session_state.desc_order else "btn-inactive"
+            st.markdown(f'<div class="{css_desc}">', unsafe_allow_html=True)
             if st.button("🔽", key="order_desc", use_container_width=True):
                 st.session_state.desc_order = True
+                st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
 
         st.markdown('</div>', unsafe_allow_html=True)
