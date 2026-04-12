@@ -31,11 +31,10 @@ apply_custom_style()
 # --- GESTION DU TEMPS & REFRESH ---
 paris_tz = pytz.timezone('Europe/Paris')
 maintenant = datetime.now(paris_tz)
+heure_refresh = maintenant.strftime("%H:%M:%S") 
 
-# Auto-refresh toutes les 60 secondes
+st.session_state.last_refresh = heure_refresh
 st_autorefresh(interval=60000, key="datarefresh")
-
-st.session_state.last_refresh = heure_actuelle
 
 # --- CONNEXION SUPABASE ---
 @st.cache_resource
