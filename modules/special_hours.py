@@ -23,7 +23,7 @@ ANTICIPATED_CLOSINGS = {
 FANTASYLAND_EARLY_CLOSE = [
     "Dumbo the Flying Elephant",
     "Mad Hatter's Tea Cups",
-    "Le Carrousel de Lancelot",
+    "Le Carrousel de Lancelot ",
     "Blanche-Neige et les Sept Nains®",
     "Les Voyages de Pinocchio",
 ]
