@@ -152,17 +152,21 @@ if not df_live.empty:
             st.session_state.desc_order = False
 
         with col_asc:
-            active = "btn-active" if st.session_state.desc_order == False else "btn-inactive"
+            # On vérifie si l'ordre est croissant (False)
+            active = "btn-active" if not st.session_state.desc_order else "btn-inactive"
             st.markdown(f'<div class="{active}">', unsafe_allow_html=True)
             if st.button("🔼", key="order_asc", use_container_width=True):
                 st.session_state.desc_order = False
+                st.rerun() # Rafraîchit l'UI pour valider la couleur
             st.markdown('</div>', unsafe_allow_html=True)
 
         with col_desc:
-            active = "btn-active" if st.session_state.desc_order == True else "btn-inactive"
+            # On vérifie si l'ordre est décroissant (True)
+            active = "btn-active" if st.session_state.desc_order else "btn-inactive"
             st.markdown(f'<div class="{active}">', unsafe_allow_html=True)
             if st.button("🔽", key="order_desc", use_container_width=True):
                 st.session_state.desc_order = True
+                st.rerun() # Rafraîchit l'UI pour valider la couleur
             st.markdown('</div>', unsafe_allow_html=True)
 
         # --- LOGIQUE DE TRI ---
