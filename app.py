@@ -110,13 +110,11 @@ with col_btn2:
             st.toast("🚀 Requête envoyée !"); time_sleep.sleep(40); st.rerun()
 
 # --- 1. DÉFINITION DES VARIABLES DE BASE ---
-# On récupère la sélection actuelle dans l'URL
 current_selection = st.query_params.get_all("fav")
 
-# On prépare la liste complète des attractions
 options = sorted(df_live['ride_name'].unique()) if not df_live.empty else []
 
-# --- 2. AFFICHAGE DES FILTRES (ui/filters.py) ---
+st.markdown('<div class="sort-container">', unsafe_allow_html=True)
 render_quick_filters(options, all_pannes, heure_actuelle)
 
 # --- 3. SÉLECTION MULTIPLE ---
