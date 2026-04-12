@@ -31,22 +31,18 @@ def render_api_info(api_time, refresh_time):
     """, unsafe_allow_html=True)
 
 def render_ride_card(ride, sub, wait, bg, card_style, pill, show_wait=True):
-    """
-    Affiche la carte d'attraction. 
-    Si show_wait=False (pour les interruptions), le carré de droite est supprimé.
-    """
+    """Affiche la carte d'attraction. Le carré de droite est optionnel."""
     
-    # 1. Initialisation de la section de droite
+    # Initialisation de la section de droite
     wait_section = ""
     flex_style = ""
 
-    # 2. Construction conditionnelle du carré de droite
     if show_wait:
+        # Construction du HTML pour le carré de droite (Temps d'attente)
         wait_html = f'<span class="wait-val">{wait}</span>'
         if str(wait).isdigit():
             wait_html += '<span class="wait-unit">min</span>'
         
-        # On utilise les triple guillemets pour ne pas se soucier des doubles quotes du HTML
         wait_section = f"""
             <div class="ride-right-wait {bg}">
                 <span style="font-size:10px; opacity:0.7;">ATTENTE</span>
@@ -54,10 +50,10 @@ def render_ride_card(ride, sub, wait, bg, card_style, pill, show_wait=True):
             </div>
         """
     else:
-        # On force la carte de gauche à s'étendre s'il n'y a pas de carré à droite
+        # Si pas de carré, la carte de gauche prend toute la largeur
         flex_style = "flex-grow: 1;"
 
-    # 3. Rendu final avec interprétation du HTML
+    # Rendu final assemblé
     st.markdown(f"""
     <div class="ride-row">
         <div class="ride-left-card {card_style}" style="{flex_style}">

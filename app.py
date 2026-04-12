@@ -182,8 +182,8 @@ if not df_live.empty:
             elif not data['is_open']: sub, wait, bg, style, pill = f"⚠️ Panne depuis {panne_act['debut'].strftime('%H:%M')}" if panne_act else "⚠️ Interruption", "- - -", "bg-orange", "card-orange", "INCIDENT"
             else: sub, wait, bg, style, pill = "✅ Opérationnel", int(data['wait_time']), "bg-green", "card-green", "OUVERT"
 
-            # Rendu de la carte principale (avec le carré de temps)
-            render_ride_card(ride, sub, wait, bg, style, pill)
+            render_ride_card(ride, sub, wait, bg, style, pill) 
+            # (Par défaut show_wait est True, donc le carré s'affiche)
             
             with st.expander("📜 Historique"):
                 h_p_clean = [p for p in all_pannes if p['ride'] == ride and (p['statut'] == "EN_COURS" or p['duree'] >= 2)]
