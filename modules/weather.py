@@ -46,7 +46,7 @@ def info_weather(feels_like):
     try:
         val = float(feels_like)
         
-        # 1. On teste d'abord la valeur la plus haute
+        # 1. TEST
         if val >= 999:
             return {
                 "code": "Test",
@@ -54,7 +54,7 @@ def info_weather(feels_like):
                 "msg": "🌟 ALERTE CHALEUR DE TEST : CODE TEST",
                 "sub": "Pensez à désactiver."
             }
-        # 2. Puis la chaleur extrême
+        # 2. 77+
         elif val >= 30:
             return {
                 "code": "77+",
@@ -62,7 +62,7 @@ def info_weather(feels_like):
                 "msg": "🌡️ ALERTE CHALEUR EXTRÊME : CODE 77+",
                 "sub": "Hydratation prioritaire. Cherchez l'ombre."
             }
-        # 3. Enfin la chaleur standard (ton test à 10 pour vérifier si ça marche)
+        # 3. 77
         elif val >= 10:
             return {
                 "code": "77",
