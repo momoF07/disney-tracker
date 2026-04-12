@@ -2,8 +2,8 @@ import requests
 
 def get_disney_weather():
     lat, lon = 48.8675, 2.7841
-    url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m&timezone=Europe%2FParis"
-    
+    url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_gusts_10m&timezone=Europe%2FParis"
+
     try:
         response = requests.get(url, timeout=5)
         data = response.json().get('current', {})
@@ -12,6 +12,7 @@ def get_disney_weather():
         temp = data.get('temperature_2m')
         apparent_temp = data.get('apparent_temperature')
         wind = data.get('wind_speed_10m')
+        gusts = data.get('wind_gusts_10m')
         code = data.get('weather_code')
         
         weather_map = {
@@ -34,6 +35,7 @@ def get_disney_weather():
             "temp": temp,           # Juste le nombre (ex: 22.5)
             "feels_like": apparent_temp, # Juste le nombre (ex: 26.0)
             "wind": f"{wind} km/h",
+            "gusts": f"{gusts} km/h",
             "desc": desc,
             "emoji": emoji
         }
