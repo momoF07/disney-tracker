@@ -4,10 +4,10 @@ from modules.emojis import get_emoji
 def render_weather_card(weather):
     if not weather: return
 
-    from modules.weather import info_weather, info_msc
+    from modules.weather import info_weather_code, info_msc
     ressenti = weather.get('feels_like')
     
-    alert = info_weather(ressenti)
+    alert = info_weather_code(ressenti)
     msc = info_msc(ressenti)
     
     # Bloc HTML Code 77
