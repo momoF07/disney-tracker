@@ -160,7 +160,6 @@ if not df_live.empty:
             st.markdown(f'<div class="{css_asc}">', unsafe_allow_html=True)
             if st.button("🔼", key="order_asc", use_container_width=True):
                 st.session_state.desc_order = False
-                st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
 
         with col_desc:
@@ -168,7 +167,6 @@ if not df_live.empty:
             st.markdown(f'<div class="{css_desc}">', unsafe_allow_html=True)
             if st.button("🔽", key="order_desc", use_container_width=True):
                 st.session_state.desc_order = True
-                st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
 
         st.markdown('</div>', unsafe_allow_html=True)

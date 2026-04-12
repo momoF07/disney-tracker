@@ -66,8 +66,8 @@ def apply_custom_style():
             background: rgba(255, 255, 255, 0.03) !important;
             border: 1px solid rgba(255, 255, 255, 0.05) !important;
             color: #475569 !important;
-            height: 32px !important;
-            min-height: 32px !important;
+            height: 20px !important;
+            min-height: 20px !important;
             font-size: 14px !important;
             border-radius: 8px !important;
             transition: all 0.3s ease !important;
@@ -77,8 +77,8 @@ def apply_custom_style():
             background: rgba(79, 172, 254, 0.15) !important;
             border: 1px solid #4facfe !important;
             color: #4facfe !important;
-            height: 32px !important;
-            min-height: 32px !important;
+            height: 20px !important;
+            min-height: 20px !important;
             font-size: 14px !important;
             border-radius: 8px !important;
             box-shadow: 0 0 12px rgba(79, 172, 254, 0.2) !important;
