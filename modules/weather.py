@@ -40,7 +40,7 @@ def get_disney_weather():
     except Exception as e:
         return None
 
-def info_weather(feels_like):
+def info_weather_code(feels_like):
     if feels_like is None:
         return None
     try:

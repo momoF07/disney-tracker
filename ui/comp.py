@@ -5,7 +5,7 @@ def render_weather_card(weather):
     if not weather:
         return
 
-    from modules.weather import info_weather
+    from modules.weather import info_weather_code
     alert = info_weather(weather.get('feels_like'))
     
     alert_html = ""
