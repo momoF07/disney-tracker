@@ -57,7 +57,7 @@ def render_quick_filters(options, all_pannes, heure_actuelle):
             st.query_params["fav"] = get_rides_by_zone("*FRONTIER", options, all_pannes)
             st.rerun()
     with c9:
-        if st.button("🏴‍☠️ ADVENT", use_container_width=True):
+        if st.button("🏴‍☠️ ADVENTURE", use_container_width=True):
             st.query_params["fav"] = get_rides_by_zone("*ADVENTURE", options, all_pannes)
             st.rerun()
     with c10:
@@ -80,7 +80,7 @@ def render_quick_filters(options, all_pannes, heure_actuelle):
             st.query_params["fav"] = get_rides_by_zone("*PIXAR", options, all_pannes)
             st.rerun()
     with c14:
-        if st.button("🎥 PROD", use_container_width=True):
+        if st.button("🎥 COURTYARD", use_container_width=True):
             st.query_params["fav"] = get_rides_by_zone("*COURTYARD", options, all_pannes)
             st.rerun()
     with c15:
