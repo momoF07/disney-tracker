@@ -14,16 +14,13 @@ def render_weather_card(weather):
     alert_html = ""
     if alert:
         alert_html = f"""<div style="margin-top: 10px; padding: 10px; background: {alert['color']}; border-radius: 10px; text-align: center; color: white; font-size: 13px;">
-            <b>⚠️ {alert['code']} </br> {alert['sub']}</b>
-        </div>"""
+            <b>⚠️ {alert['code']} </br> {alert['sub']}</b></div>"""
 
     # Bloc HTML MSC
     msc_html = ""
     if msc:
         msc_html = f"""<div style="margin-top: 10px; padding: 10px; background: {msc['bg']}; border-radius: 10px; border: 1px solid {msc['color']}; color: {msc['color']}; font-size: 12px;">
-            <b style="font-size: 13px;">📊 État show MSC : {msc['t']}</b><br>
-            {msc['msg']}
-        </div>"""
+            <b style="font-size: 13px;">📊 État show MSC : {msc['t']}</b><br>{msc['msg']}</div>"""
 
     st.markdown(f"""
     <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;">
