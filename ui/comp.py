@@ -33,10 +33,10 @@ def render_weather_card(weather):
                 </div>
             </div>
             <div style="text-align: right;">
-                <b style="color: white; font-size: 18px;">Température : {weather['temp']}°C</b><br>
-                <span style="color: white; font-size: 15px; opacity: 0.8;">Ressenti : {ressenti}°C</span><br>
-                <span style="color: white; font-size: 12px; opacity: 0.8;">Vent : {weather['wind']}</span><br>
-                <span style="color: white; font-size: 9px; opacity: 0.8;">Rafale : {weather['gusts']}</span>
+                <b style="color: white; font-size: 18px;">Température : {weather['temp']}°C /</b>
+                <span style="color: white; font-size: 18px; opacity: 0.8;">/Ressenti : {ressenti}°C</span><br>
+                <span style="color: white; font-size: 12px; opacity: 0.8;">Vent : {weather['wind']}</span>
+                <span style="color: white; font-size: 12px; opacity: 0.8;">Rafale : {weather['gusts']}</span>
             </div>
         </div>{alert_html}{msc_html}
 </div>
