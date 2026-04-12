@@ -114,7 +114,7 @@ col_sc, col_help = st.columns([0.88, 0.12])
 with col_help:
     render_shortcuts_popover()
 with col_sc:
-    sc = st.text_input("Raccourci...", placeholder="ex: *FANTASY", label_visibility="collapsed")
+    sc = st.text_input("Raccourci...", label_visibility="collapsed")
 
 current_selection = st.query_params.get_all("fav")
 if sc.startswith("*") and not df_live.empty:
