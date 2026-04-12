@@ -47,7 +47,7 @@ def info_weather(feels_like):
         val = float(feels_like)
         
         # 1. On teste d'abord la valeur la plus haute
-        if val >= 50:
+        if val >= 10:
             return {
                 "code": "Test",
                 "color": "#3B82F6", # Ton bleu aléatoire
