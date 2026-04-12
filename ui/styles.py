@@ -118,6 +118,41 @@ def apply_custom_style():
             padding-right: 2rem;
             max-width: 100% !important;
         }
+        /* Style pour les étiquettes (chips) du Multiselect */
+        span[data-baseweb="tag"] {
+            background-color: rgba(79, 172, 254, 0.1) !important;
+            border: 1px solid rgba(79, 172, 254, 0.4) !important;
+            border-radius: 8px !important;
+            padding: 2px 8px !important;
+            transition: all 0.2s ease !important;
+        }
+
+        span[data-baseweb="tag"]:hover {
+            border-color: #4facfe !important;
+            background-color: rgba(79, 172, 254, 0.2) !important;
+            box-shadow: 0 0 10px rgba(79, 172, 254, 0.2) !important;
+        }
+
+        /* Couleur du texte et de l'icône de suppression (X) */
+        span[data-baseweb="tag"] span {
+            color: #e0e0e0 !important;
+            font-size: 13px !important;
+            font-weight: 500 !important;
+        }
+
+        span[data-baseweb="tag"] svg {
+            fill: #4facfe !important;
+        }
+
+        /* Supprimer le label standard pour mettre le nôtre en plus beau */
+        [data-testid="stWidgetLabel"] p {
+            font-size: 11px !important;
+            color: #94a3b8 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.1em !important;
+            font-weight: 700 !important;
+            margin-bottom: 8px !important;
+        }
 
         /* --- RESPONSIVE : CARTES ET COLONNES --- */
         @media (max-width: 768px) {

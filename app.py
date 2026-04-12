@@ -114,20 +114,28 @@ col_sc, col_help = st.columns([0.88, 0.12])
 with col_help:
     render_shortcuts_popover()
 with col_sc:
-    sc = st.text_input("Raccourci...", placeholder="Voir la liste en cliquant sur ❓...", label_visibility="collapsed")
+    sc = st.text_input("Raccourci...", placeholder="Voir la liste des raccourcis en cliquant sur ❓...", label_visibility="collapsed")
 
 current_selection = st.query_params.get_all("fav")
 if sc.startswith("*") and not df_live.empty:
     res = get_rides_by_zone(sc, sorted(df_live['ride_name'].unique()), all_pannes)
 
 if not df_live.empty:
+    st.markdown('<div class="selection-container">', unsafe_allow_html=True)
+    
     options = sorted(df_live['ride_name'].unique())
-    selected_options = st.multiselect(
-        "📍 Sélection :", 
-        options=options, 
-        default=[i for i in current_selection if i in options], 
-        format_func=lambda x: f"{get_emoji(x)} {x}"
-    )
+    
+    # On utilise un container pour grouper visuellement
+    with st.container():
+        selected_options = st.multiselect(
+            "📍 VOTRE SÉLECTION", 
+            options=options, 
+            default=[i for i in current_selection if i in options], 
+            format_func=lambda x: f"{get_emoji(x)} {x}",
+            placeholder="Ajouter une attraction..."
+        )
+    
+    st.markdown('</div>', unsafe_allow_html=True)
     st.query_params["fav"] = selected_options
 
     if selected_options:
