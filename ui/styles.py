@@ -81,35 +81,6 @@ def apply_custom_style():
             transition: all 0.3s ease !important;
         }
 
-        /* 2. Style BOUTON ACTIF (Le Bleu) */
-        .btn-active div[data-testid="stButton"] button {
-            background-color: rgba(79, 172, 254, 0.15) !important;
-            border: 1px solid #4facfe !important;
-            box-shadow: 0 0 12px rgba(79, 172, 254, 0.2) !important;
-        }
-
-        /* Forcer la couleur du texte/émoji à l'intérieur du bouton actif */
-        .btn-active div[data-testid="stButton"] button p {
-            color: #4facfe !important;
-            font-weight: 700 !important;
-        }
-
-        /* 3. Style BOUTON INACTIF (Le Gris) */
-        .btn-inactive div[data-testid="stButton"] button {
-            background-color: rgba(255, 255, 255, 0.03) !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        }
-
-        .btn-inactive div[data-testid="stButton"] button p {
-            color: #64748b !important;
-        }
-
-        /* 4. Hover sur bouton inactif */
-        .btn-inactive div[data-testid="stButton"] button:hover {
-            border-color: rgba(255, 255, 255, 0.3) !important;
-            background-color: rgba(255, 255, 255, 0.08) !important;
-        }
-
         /* --- OPTIMISATION DU LAYOUT (ANTI-SAUT) --- */
         .block-container {
             padding-top: 1rem;
