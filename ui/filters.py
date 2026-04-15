@@ -37,7 +37,7 @@ def render_quick_filters(options, all_pannes, heure_actuelle):
                 display: flex;
                 align-items: center;
                 text-align: center;
-                margin: 30px 0 15px 0;
+                margin: 25px 0 15px 0;
                 color: #64748b;
             }
             .class-divider::before, .park-divider::after {
