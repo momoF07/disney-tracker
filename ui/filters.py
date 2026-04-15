@@ -49,7 +49,7 @@ def render_quick_filters(options, all_pannes, heure_actuelle):
             .class-divider:not(:empty)::after { margin-left: .75em; }
             
             .class-name {
-                font-size: 13px;
+                font-size: 10px;
                 font-weight: 800;
                 text-transform: uppercase;
                 letter-spacing: 2px;
