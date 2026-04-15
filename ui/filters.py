@@ -144,7 +144,7 @@ def render_quick_filters(options, all_pannes, heure_actuelle):
     st.markdown('</div>', unsafe_allow_html=True)
 
 # --- SÉPARATEUR : --- ---
-    st.markdown('<div class="park-divider"><span class="class-name"></span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="park-divider"></div>', unsafe_allow_html=True)
 
 
     components.html("""
