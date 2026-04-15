@@ -50,6 +50,7 @@ def render_quick_filters(options, all_pannes, heure_actuelle):
     c1, c2, c3, c4, c5, c6 = st.columns(6)
     with c1:
         if st.button("🌐 TOUT", use_container_width=True):
+            st.query_params["fav"] = [] 
             st.query_params["fav"] = options
             st.rerun()
     with c2:
