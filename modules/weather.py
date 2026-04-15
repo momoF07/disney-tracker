@@ -67,7 +67,7 @@ def info_weather_code(feels_like):
                 "sub": "Hydratation prioritaire. Cherchez l'ombre."
             }
         # 3. 77
-        elif val >= 25:
+        elif val >= 10:
             return {
                 "code": "77",
                 "color": "#FFA500",
