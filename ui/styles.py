@@ -242,32 +242,36 @@ def apply_custom_style():
         .action-buttons-container button:hover { transform: translateY(-2px); filter: brightness(1.1); }
 
         /* --- BOUTONS DE RACCOURCIS (DANS FILTER-CONTAINER) --- */
-        .filter-container div[data-testid="stColumn"] button {
-            background-color: rgba(255, 255, 255, 0.03) !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            color: #94a3b8 !important;
-            border-radius: 10px !important;
-            font-size: 10px !important;
-            height: 32px !important;
-            text-transform: uppercase !important;
-        }
+.filter-container div[data-testid="stColumn"] button {
+    background-color: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #94a3b8 !important;
+    border-radius: 10px !important;
+    font-size: 10px !important;
+    height: 32px !important;
+    text-transform: uppercase !important;
+}
 
-        /* Accentuation par Land (Bordure Gauche) */
-        /* Disneyland Park */
-        .filter-container .dlp-btn button { border-left: 3px solid #4ade80 !important; } /* Vert général */
-        .filter-container .ms-btn button { border-left: 3px solid #f472b6 !important; }  /* Rose Main Street */
-        .filter-container .fr-btn button { border-left: 3px solid #fbbf24 !important; }  /* Jaune Frontier */
-        .filter-container .ad-btn button { border-left: 3px solid #10b981 !important; }  /* Vert Adventure */
-        .filter-container .fa-btn button { border-left: 3px solid #60a5fa !important; }  /* Bleu Fantasy */
-        .filter-container .di-btn button { border-left: 3px solid #a78bfa !important; }  /* Violet Disco */
+    /* --- LIGNE 1 : 6 boutons globaux --- */
+    .filter-container > div:nth-of-type(1) div[data-testid="stColumn"]:nth-child(2) button { border-left: 3px solid #4ade80 !important; } /* DLP */
+    .filter-container > div:nth-of-type(1) div[data-testid="stColumn"]:nth-child(3) button { border-left: 3px solid #fb923c !important; } /* DAW */
+    .filter-container > div:nth-of-type(1) div[data-testid="stColumn"]:nth-child(4) button { border-left: 3px solid #ff4b4b !important; } /* 101 */
+    .filter-container > div:nth-of-type(1) div[data-testid="stColumn"]:nth-child(5) button { border-left: 3px solid #ff4b4b !important; } /* 102 */
+    .filter-container > div:nth-of-type(1) div[data-testid="stColumn"]:nth-child(6) button { border-left: 3px solid #ff4b4b !important; } /* FERMÉ */
 
-        /* Adventure World */
-        .filter-container .daw-btn button { border-left: 3px solid #fb923c !important; } /* Orange DAW */
-        .filter-container .ca-btn button { border-left: 3px solid #ef4444 !important; }  /* Rouge Campus */
-        .filter-container .pi-btn button { border-left: 3px solid #34d399 !important; }  /* Pixar */
-        .filter-container .co-btn button { border-left: 3px solid #6366f1 !important; }  /* Courtyard */
-        .filter-container .frz-btn button { border-left: 3px solid #00f2fe !important; } /* Frozen */
-        .filter-container .wy-btn button { border-left: 3px solid #84cc16 !important; }  /* Way */
+    /* --- LIGNE 2 : 5 boutons Disneyland Park --- */
+    .filter-container > div:nth-of-type(2) div[data-testid="stColumn"]:nth-child(1) button { border-left: 3px solid #f472b6 !important; } /* MS */
+    .filter-container > div:nth-of-type(2) div[data-testid="stColumn"]:nth-child(2) button { border-left: 3px solid #fbbf24 !important; } /* FRONTIER */
+    .filter-container > div:nth-of-type(2) div[data-testid="stColumn"]:nth-child(3) button { border-left: 3px solid #10b981 !important; } /* ADVENTURE */
+    .filter-container > div:nth-of-type(2) div[data-testid="stColumn"]:nth-child(4) button { border-left: 3px solid #60a5fa !important; } /* FANTASY */
+    .filter-container > div:nth-of-type(2) div[data-testid="stColumn"]:nth-child(5) button { border-left: 3px solid #a78bfa !important; } /* DISCO */
+
+    /* --- LIGNE 3 : 5 boutons Adventure World --- */
+    .filter-container > div:nth-of-type(3) div[data-testid="stColumn"]:nth-child(1) button { border-left: 3px solid #ef4444 !important; } /* CAMPUS */
+    .filter-container > div:nth-of-type(3) div[data-testid="stColumn"]:nth-child(2) button { border-left: 3px solid #34d399 !important; } /* PIXAR */
+    .filter-container > div:nth-of-type(3) div[data-testid="stColumn"]:nth-child(3) button { border-left: 3px solid #6366f1 !important; } /* COURTYARD */
+    .filter-container > div:nth-of-type(3) div[data-testid="stColumn"]:nth-child(4) button { border-left: 3px solid #00f2fe !important; } /* FROZEN */
+    .filter-container > div:nth-of-type(3) div[data-testid="stColumn"]:nth-child(5) button { border-left: 3px solid #84cc16 !important; } /* WAY */
 
         /* Status & Reset */
         .filter-container .status-btn button { border-left: 3px solid #ff4b4b !important; }
