@@ -40,6 +40,7 @@ def render_quick_filters(options, all_pannes, heure_actuelle):
     st.markdown('<div class="park-divider"><span class="park-name">Accès Rapide</span></div>', unsafe_allow_html=True)
 
     st.write("")
+    st.write("")
 
     # --- LIGNE 1 : FILTRES GLOBAUX & ÉTATS ---
     c1, c2, c3, c4, c5, c6 = st.columns(6)
