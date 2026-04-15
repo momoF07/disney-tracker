@@ -36,8 +36,10 @@ def render_quick_filters(options, all_pannes, heure_actuelle):
         </style>
     """, unsafe_allow_html=True)
 
-    st.markdown('<div class="sort-container">', unsafe_allow_html=True)
-    st.markdown('<p class="order-label">Accès Rapide</p>', unsafe_allow_html=True)
+    # --- SÉPARATEUR : ACCÈS RAPIDE ---
+    st.markdown('<div class="park-divider"><span class="park-name">Accès Rapide</span></div>', unsafe_allow_html=True)
+
+    st.write("")
 
     # --- LIGNE 1 : FILTRES GLOBAUX & ÉTATS ---
     c1, c2, c3, c4, c5, c6 = st.columns(6)
