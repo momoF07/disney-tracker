@@ -50,29 +50,25 @@ def render_quick_filters(options, all_pannes, heure_actuelle):
     st.write("")
 
     # --- LIGNE 1 : FILTRES GLOBAUX & ÉTATS ---
-    c1, c2, c3, c4, c5, c6 = st.columns(6)
+    c1, c2, c3, c4, c5 = st.columns(5)
     with c1:
-        if st.button("🌐 TOUT", key="btn_tout", use_container_width=True):
-            st.query_params["fav"] = options
-            st.rerun()
-    with c2:
         if st.button("🏰 DLP", key="btn_dlp", use_container_width=True):
             st.query_params["fav"] = [r for r in options if r in RIDES_DLP]
             st.rerun()
-    with c3:
+    with c2:
         if st.button("🎬 DAW", key="btn_daw", use_container_width=True):
             st.query_params["fav"] = [r for r in options if r in RIDES_DAW]
             st.rerun()
-    with c4:
+    with c3:
         if st.button("⚠️ 101", key="btn_101", use_container_width=True):
             st.query_params["fav"] = [p['ride'] for p in all_pannes if p['statut'] == "EN_COURS"]
             st.rerun()
-    with c5:
+    with c4:
         if st.button("⏪ 102", key="btn_102", use_container_width=True):
             rides_with_incidents = list(set([p['ride'] for p in all_pannes]))
             st.query_params["fav"] = rides_with_incidents
             st.rerun()
-    with c6:
+    with c5:
         if st.button("🏁 FERMÉ", key="btn_ferme", use_container_width=True):
             closed_rides = []
             for r in options:
@@ -134,10 +130,13 @@ def render_quick_filters(options, all_pannes, heure_actuelle):
             st.query_params["fav"] = get_rides_by_zone("*WAY", options, all_pannes)
             st.rerun()
 
-# --- SÉPARATEUR : Reset ---
-    st.markdown('<div class="park-divider"><span class="park-name">Reset</span></div>', unsafe_allow_html=True)
+# --- SÉPARATEUR : Global ---
+    st.markdown('<div class="park-divider"><span class="park-name">Global</span></div>', unsafe_allow_html=True)
 
     # --- BOUTON DE NETTOYAGE ---
+    if st.button("🌐 TOUT", key="btn_tout", use_container_width=True):
+            st.query_params["fav"] = options
+            st.rerun()
     if st.button("🧹 VIDER LA SÉLECTION", key="btn_vider", use_container_width=True):
         st.query_params["fav"] = []
         st.rerun()
