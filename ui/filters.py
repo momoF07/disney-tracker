@@ -5,10 +5,12 @@ from modules.special_hours import ANTICIPATED_CLOSINGS, FANTASYLAND_EARLY_CLOSE
 from config import DLP_CLOSING, DAW_CLOSING
 
 def render_quick_filters(options, all_pannes, heure_actuelle):
-    """Affiche les boutons de raccourcis avec isolation et couleurs par Land"""
+    """Affiche les boutons de raccourcis avec séparateurs et isolation CSS"""
     
-    # On ouvre le conteneur global pour appliquer le style spécifique aux raccourcis
+    # On ouvre le conteneur global pour isoler le style des raccourcis
     st.markdown('<div class="filter-container">', unsafe_allow_html=True)
+    
+    st.markdown('<p class="order-label">Accès Rapide</p>', unsafe_allow_html=True)
 
     # --- LIGNE 1 : FILTRES GLOBAUX & ÉTATS ---
     c1, c2, c3, c4, c5, c6 = st.columns(6)
@@ -44,9 +46,15 @@ def render_quick_filters(options, all_pannes, heure_actuelle):
     with c6:
         st.markdown('<div class="status-btn">', unsafe_allow_html=True)
         if st.button("🏁 FERMÉ", use_container_width=True):
-            # ... (logique de calcul fermés) ...
+            closed_rides = []
+            for r in options:
+                is_daw_check = any(a.lower() in r.lower() for a in RIDES_DAW)
+                if r in ANTICIPATED_CLOSINGS: h_f_check = ANTICIPATED_CLOSINGS[r]
+                elif r in FANTASYLAND_EARLY_CLOSE: h_f_check = time(DLP_CLOSING.hour - 1, DLP_CLOSING.minute)
+                else: h_f_check = DAW_CLOSING if is_daw_check else DLP_CLOSING
+                if heure_actuelle >= h_f_check: closed_rides.append(r)
+            st.query_params["fav"] = closed_rides
             st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
 
     # --- SÉPARATEUR : DISNEYLAND PARK ---
     st.markdown('<div class="park-divider"><span class="park-name">Disneyland Park</span></div>', unsafe_allow_html=True)
@@ -118,11 +126,11 @@ def render_quick_filters(options, all_pannes, heure_actuelle):
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # Bouton de Reset (Status Red)
+    # --- BOUTON DE NETTOYAGE ---
     st.markdown('<div class="status-btn" style="margin-top: 20px;">', unsafe_allow_html=True)
     if st.button("🧹 VIDER LA SÉLECTION", use_container_width=True):
         st.query_params["fav"] = []
         st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown('</div>', unsafe_allow_html=True) # Fermeture filter-container
+    st.markdown('</div>', unsafe_allow_html=True) # Fin filter-container
