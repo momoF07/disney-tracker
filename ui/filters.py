@@ -124,6 +124,9 @@ def render_quick_filters(options, all_pannes, heure_actuelle):
             st.query_params["fav"] = get_rides_by_zone("*WAY", options, all_pannes)
             st.rerun()
 
+# --- SÉPARATEUR : Reset ---
+    st.markdown('<div class="park-divider"><span class="park-name">Reset</span></div>', unsafe_allow_html=True)
+
     # --- BOUTON DE NETTOYAGE ---
     if st.button("🧹 VIDER LA SÉLECTION", key="btn_vider", use_container_width=True):
         st.query_params["fav"] = []
