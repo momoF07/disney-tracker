@@ -284,3 +284,46 @@ def apply_custom_style():
         
     </style>
     """, unsafe_allow_html=True)
+
+    st.markdown("""
+<script>
+    function styleFilterButtons() {
+        const colorMap = {
+            'DLP':       '3px solid #4ade80',
+            'DAW':       '3px solid #fb923c',
+            '101':       '3px solid #ff4b4b',
+            '102':       '3px solid #ff4b4b',
+            'FERMÉ':     '3px solid #ff4b4b',
+            'MS':        '3px solid #f472b6',
+            'FRONTIER':  '3px solid #fbbf24',
+            'ADVENTURE': '3px solid #10b981',
+            'FANTASY':   '3px solid #60a5fa',
+            'DISCO':     '3px solid #a78bfa',
+            'CAMPUS':    '3px solid #ef4444',
+            'PIXAR':     '3px solid #34d399',
+            'COURTYARD': '3px solid #6366f1',
+            'FROZEN':    '3px solid #00f2fe',
+            'WAY':       '3px solid #84cc16',
+        };
+
+        const doc = window.parent.document;
+        doc.querySelectorAll('button').forEach(btn => {
+            const text = btn.innerText.trim().toUpperCase();
+            for (const [key, style] of Object.entries(colorMap)) {
+                if (text.includes(key)) {
+                    btn.style.setProperty('border-left', style, 'important');
+                    break;
+                }
+            }
+        });
+    }
+
+    // Observe les re-renders Streamlit
+    const doc = window.parent.document;
+    const observer = new MutationObserver(() => styleFilterButtons());
+    observer.observe(doc.body, { childList: true, subtree: true });
+    
+    // Premier appel immédiat
+    styleFilterButtons();
+</script>
+""", unsafe_allow_html=True)
