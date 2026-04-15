@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 from datetime import time
 from modules.emojis import get_rides_by_zone, RIDES_DLP, RIDES_DAW
 from modules.special_hours import ANTICIPATED_CLOSINGS, FANTASYLAND_EARLY_CLOSE
@@ -130,21 +131,46 @@ def render_quick_filters(options, all_pannes, heure_actuelle):
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown("""
+    components.html("""
 <script>
-    setTimeout(() => {
-        // Test 1 : dans l'iframe actuel
-        const btns = document.querySelectorAll('button');
-        console.log('Boutons dans iframe:', btns.length);
-        btns.forEach(b => console.log(' -', b.innerText.trim()));
-        
-        // Test 2 : dans le parent
-        try {
-            const btns2 = window.parent.document.querySelectorAll('button');
-            console.log('Boutons dans parent:', btns2.length);
-        } catch(e) {
-            console.log('Parent bloqué:', e);
-        }
-    }, 2000);
+    function styleFilterButtons() {
+        const colorMap = {
+            'DLP':       '3px solid #4ade80',
+            'DAW':       '3px solid #fb923c',
+            '101':       '3px solid #ff4b4b',
+            '102':       '3px solid #ff4b4b',
+            'FERMÉ':     '3px solid #ff4b4b',
+            'MS':        '3px solid #f472b6',
+            'FRONTIER':  '3px solid #fbbf24',
+            'ADVENTURE': '3px solid #10b981',
+            'FANTASY':   '3px solid #60a5fa',
+            'DISCO':     '3px solid #a78bfa',
+            'CAMPUS':    '3px solid #ef4444',
+            'PIXAR':     '3px solid #34d399',
+            'COURTYARD': '3px solid #6366f1',
+            'FROZEN':    '3px solid #00f2fe',
+            'WAY':       '3px solid #84cc16',
+        };
+
+        // components.html tourne dans son propre iframe, on remonte au parent
+        const doc = window.parent.document;
+        doc.querySelectorAll('button').forEach(btn => {
+            const text = btn.innerText.trim().toUpperCase();
+            for (const [key, style] of Object.entries(colorMap)) {
+                if (text.includes(key)) {
+                    btn.style.setProperty('border-left', style, 'important');
+                    break;
+                }
+            }
+        });
+    }
+
+    // On attend que Streamlit ait fini de rendre la page
+    setTimeout(styleFilterButtons, 500);
+    setTimeout(styleFilterButtons, 1500); // Double appel au cas où
+
+    // MutationObserver pour survivre aux reruns
+    const observer = new MutationObserver(() => styleFilterButtons());
+    observer.observe(window.parent.document.body, { childList: true, subtree: true });
 </script>
-""", unsafe_allow_html=True)
+""", height=0)
