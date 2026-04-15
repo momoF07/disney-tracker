@@ -6,6 +6,40 @@ from config import DLP_CLOSING, DAW_CLOSING
 
 def render_quick_filters(options, all_pannes, heure_actuelle):
     """Affiche les boutons de raccourcis avec séparateurs et isolation CSS"""
+    st.markdown("""
+    <style>
+        .park-divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 25px 0 15px 0;
+            color: #64748b;
+        }
+
+        .park-divider::before, 
+        .park-divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .park-divider:not(:empty)::before { 
+            margin-right: .75em; 
+        }
+
+        .park-divider:not(:empty)::after { 
+            margin-left: .75em; 
+        }
+
+        .park-name {
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #94a3b8;
+        }
+    </style>
+    """, unsafe_allow_html=True)
     
     # On ouvre le conteneur global pour isoler le style des raccourcis
     st.markdown('<div class="filter-container">', unsafe_allow_html=True)
