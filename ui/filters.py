@@ -33,11 +33,18 @@ def render_quick_filters(options, all_pannes, heure_actuelle):
                 letter-spacing: 2px;
                 color: #94a3b8;
             }
+            .class-name {
+                font-size: 14px;
+                font-weight: 800;
+                text-transform: uppercase;
+                letter-spacing: 2px;
+                color: #94a3b8;
+            }
         </style>
     """, unsafe_allow_html=True)
 
     # --- SÉPARATEUR : ACCÈS RAPIDE ---
-    st.markdown('<div class="park-divider"><span class="park-name">Accès Rapide</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="park-divider"><span class="class-name">Accès Rapide</span></div>', unsafe_allow_html=True)
 
     st.write("")
     st.write("")
