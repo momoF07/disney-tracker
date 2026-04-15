@@ -135,43 +135,61 @@ def render_quick_filters(options, all_pannes, heure_actuelle):
 <script>
     function styleFilterButtons() {
         const colorMap = {
-            'DLP':       { border: '#4ade80', glow: 'rgba(74, 222, 128, 0.15)' },
-            'DAW':       { border: '#fb923c', glow: 'rgba(251, 146, 60, 0.15)' },
-            '101':       { border: '#ff4b4b', glow: 'rgba(255, 75, 75, 0.15)' },
-            '102':       { border: '#ff4b4b', glow: 'rgba(255, 75, 75, 0.15)' },
-            'FERMÉ':     { border: '#ff4b4b', glow: 'rgba(255, 75, 75, 0.15)' },
-            'MS':        { border: '#f472b6', glow: 'rgba(244, 114, 182, 0.15)' },
-            'FRONTIER':  { border: '#fbbf24', glow: 'rgba(251, 191, 36, 0.15)' },
-            'ADVENTURE': { border: '#10b981', glow: 'rgba(16, 185, 129, 0.15)' },
-            'FANTASY':   { border: '#60a5fa', glow: 'rgba(96, 165, 250, 0.15)' },
-            'DISCO':     { border: '#a78bfa', glow: 'rgba(167, 139, 250, 0.15)' },
-            'CAMPUS':    { border: '#ef4444', glow: 'rgba(239, 68, 68, 0.15)' },
-            'PIXAR':     { border: '#34d399', glow: 'rgba(52, 211, 153, 0.15)' },
-            'COURTYARD': { border: '#6366f1', glow: 'rgba(99, 102, 241, 0.15)' },
-            'FROZEN':    { border: '#00f2fe', glow: 'rgba(0, 242, 254, 0.15)' },
-            'WAY':       { border: '#84cc16', glow: 'rgba(132, 204, 22, 0.15)' },
+            // --- Disneyland Park global ---
+            'DLP':       { border: '#a78bfa', glow: '#a78bfa' }, // Violet château
+
+            // --- DAW global ---
+            'DAW':       { border: '#fb923c', glow: '#fb923c' }, // Orange DAW général
+
+            // --- Status ---
+            '101':       { border: '#f87171', glow: '#f87171' },
+            '102':       { border: '#f87171', glow: '#f87171' },
+            'FERMÉ':     { border: '#f87171', glow: '#f87171' },
+
+            // --- Disneyland Park : lands ---
+            'MS':        { border: '#fcd34d', glow: '#fcd34d' }, // Jaune/crème Main Street USA années 1900
+            'FRONTIER':  { border: '#c17f3a', glow: '#c17f3a' }, // Ocre terre Far West / Big Thunder
+            'ADVENTURE': { border: '#4ade80', glow: '#4ade80' }, // Vert jungle tropicale
+            'FANTASY':   { border: '#e879f9', glow: '#e879f9' }, // Rose/mauve château Sleeping Beauty
+            'DISCO':     { border: '#fbbf24', glow: '#fbbf24' }, // Or bronze Jules Verne / rétro-futuriste
+
+            // --- Disney Adventure World : zones ---
+            'CAMPUS':    { border: '#f87171', glow: '#f87171' }, // Rouge Marvel Avengers
+            'PIXAR':     { border: '#38bdf8', glow: '#38bdf8' }, // Bleu ciel Pixar / Nemo / Finding
+            'COURTYARD': { border: '#d4ac0d', glow: '#d4ac0d' }, // Or Art Déco World Premiere Plaza
+            'FROZEN':    { border: '#bae6fd', glow: '#bae6fd' }, // Bleu glacé Arendelle
+            'WAY':       { border: '#86efac', glow: '#86efac' }, // Vert art nouveau Adventure Way
         };
 
         const doc = window.parent.document;
         doc.querySelectorAll('button').forEach(btn => {
+            if (btn._styledV2) return;
             const text = btn.innerText.trim().toUpperCase();
             for (const [key, colors] of Object.entries(colorMap)) {
                 if (text.includes(key)) {
-                    // Contour complet coloré
-                    btn.style.setProperty('border', `1px solid ${colors.border}`, 'important');
-                    btn.style.setProperty('color', colors.border, 'important');
-                    btn.style.setProperty('transition', 'all 0.25s ease', 'important');
+                    btn._styledV2 = true;
 
-                    // Hover
+                    // État normal : border subtil + teinte de fond légère
+                    btn.style.setProperty('border', `1px solid ${colors.border}50`, 'important');
+                    btn.style.setProperty('color', colors.border, 'important');
+                    btn.style.setProperty('background', `${colors.border}0d`, 'important');
+                    btn.style.setProperty('transition', 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)', 'important');
+
                     btn.addEventListener('mouseenter', () => {
-                        btn.style.setProperty('background', colors.glow, 'important');
-                        btn.style.setProperty('box-shadow', `0 0 12px ${colors.glow}`, 'important');
-                        btn.style.setProperty('transform', 'translateY(-1px)', 'important');
+                        btn.style.setProperty('border', `1px solid ${colors.border}cc`, 'important');
+                        btn.style.setProperty('color', '#ffffff', 'important');
+                        btn.style.setProperty('background', `${colors.border}25`, 'important');
+                        btn.style.setProperty('box-shadow', 
+                            `0 0 16px ${colors.border}40, 0 0 4px ${colors.border}30, inset 0 1px 0 ${colors.border}30`, 
+                            'important');
+                        btn.style.setProperty('transform', 'translateY(-2px) scale(1.02)', 'important');
                     });
                     btn.addEventListener('mouseleave', () => {
-                        btn.style.setProperty('background', 'rgba(255,255,255,0.03)', 'important');
+                        btn.style.setProperty('border', `1px solid ${colors.border}50`, 'important');
+                        btn.style.setProperty('color', colors.border, 'important');
+                        btn.style.setProperty('background', `${colors.border}0d`, 'important');
                         btn.style.setProperty('box-shadow', 'none', 'important');
-                        btn.style.setProperty('transform', 'translateY(0)', 'important');
+                        btn.style.setProperty('transform', 'translateY(0) scale(1)', 'important');
                     });
                     break;
                 }
