@@ -135,41 +135,53 @@ def render_quick_filters(options, all_pannes, heure_actuelle):
 <script>
     function styleFilterButtons() {
         const colorMap = {
-            'DLP':       '3px solid #4ade80',
-            'DAW':       '3px solid #fb923c',
-            '101':       '3px solid #ff4b4b',
-            '102':       '3px solid #ff4b4b',
-            'FERMÉ':     '3px solid #ff4b4b',
-            'MS':        '3px solid #f472b6',
-            'FRONTIER':  '3px solid #fbbf24',
-            'ADVENTURE': '3px solid #10b981',
-            'FANTASY':   '3px solid #60a5fa',
-            'DISCO':     '3px solid #a78bfa',
-            'CAMPUS':    '3px solid #ef4444',
-            'PIXAR':     '3px solid #34d399',
-            'COURTYARD': '3px solid #6366f1',
-            'FROZEN':    '3px solid #00f2fe',
-            'WAY':       '3px solid #84cc16',
+            'DLP':       { border: '#4ade80', glow: 'rgba(74, 222, 128, 0.15)' },
+            'DAW':       { border: '#fb923c', glow: 'rgba(251, 146, 60, 0.15)' },
+            '101':       { border: '#ff4b4b', glow: 'rgba(255, 75, 75, 0.15)' },
+            '102':       { border: '#ff4b4b', glow: 'rgba(255, 75, 75, 0.15)' },
+            'FERMÉ':     { border: '#ff4b4b', glow: 'rgba(255, 75, 75, 0.15)' },
+            'MS':        { border: '#f472b6', glow: 'rgba(244, 114, 182, 0.15)' },
+            'FRONTIER':  { border: '#fbbf24', glow: 'rgba(251, 191, 36, 0.15)' },
+            'ADVENTURE': { border: '#10b981', glow: 'rgba(16, 185, 129, 0.15)' },
+            'FANTASY':   { border: '#60a5fa', glow: 'rgba(96, 165, 250, 0.15)' },
+            'DISCO':     { border: '#a78bfa', glow: 'rgba(167, 139, 250, 0.15)' },
+            'CAMPUS':    { border: '#ef4444', glow: 'rgba(239, 68, 68, 0.15)' },
+            'PIXAR':     { border: '#34d399', glow: 'rgba(52, 211, 153, 0.15)' },
+            'COURTYARD': { border: '#6366f1', glow: 'rgba(99, 102, 241, 0.15)' },
+            'FROZEN':    { border: '#00f2fe', glow: 'rgba(0, 242, 254, 0.15)' },
+            'WAY':       { border: '#84cc16', glow: 'rgba(132, 204, 22, 0.15)' },
         };
 
-        // components.html tourne dans son propre iframe, on remonte au parent
         const doc = window.parent.document;
         doc.querySelectorAll('button').forEach(btn => {
             const text = btn.innerText.trim().toUpperCase();
-            for (const [key, style] of Object.entries(colorMap)) {
+            for (const [key, colors] of Object.entries(colorMap)) {
                 if (text.includes(key)) {
-                    btn.style.setProperty('border-left', style, 'important');
+                    // Contour complet coloré
+                    btn.style.setProperty('border', `1px solid ${colors.border}`, 'important');
+                    btn.style.setProperty('color', colors.border, 'important');
+                    btn.style.setProperty('transition', 'all 0.25s ease', 'important');
+
+                    // Hover
+                    btn.addEventListener('mouseenter', () => {
+                        btn.style.setProperty('background', colors.glow, 'important');
+                        btn.style.setProperty('box-shadow', `0 0 12px ${colors.glow}`, 'important');
+                        btn.style.setProperty('transform', 'translateY(-1px)', 'important');
+                    });
+                    btn.addEventListener('mouseleave', () => {
+                        btn.style.setProperty('background', 'rgba(255,255,255,0.03)', 'important');
+                        btn.style.setProperty('box-shadow', 'none', 'important');
+                        btn.style.setProperty('transform', 'translateY(0)', 'important');
+                    });
                     break;
                 }
             }
         });
     }
 
-    // On attend que Streamlit ait fini de rendre la page
     setTimeout(styleFilterButtons, 500);
-    setTimeout(styleFilterButtons, 1500); // Double appel au cas où
+    setTimeout(styleFilterButtons, 1500);
 
-    // MutationObserver pour survivre aux reruns
     const observer = new MutationObserver(() => styleFilterButtons());
     observer.observe(window.parent.document.body, { childList: true, subtree: true });
 </script>
