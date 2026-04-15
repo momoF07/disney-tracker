@@ -134,7 +134,7 @@ def render_quick_filters(options, all_pannes, heure_actuelle):
     st.markdown('<div class="park-divider"><span class="park-name">Global</span></div>', unsafe_allow_html=True)
 
     # --- BOUTON DE NETTOYAGE ---
-    if st.button("🌐 TOUT", key="btn_tout", use_container_width=True):
+    if st.button("🌐 TOUT SÉLECTIONNER", key="btn_tout", use_container_width=True):
             st.query_params["fav"] = options
             st.rerun()
     if st.button("🧹 VIDER LA SÉLECTION", key="btn_vider", use_container_width=True):
