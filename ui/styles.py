@@ -167,27 +167,6 @@ def apply_custom_style():
         .bg-grey { background: #6b7280; }
         .bg-bordeaux { background: #991b1b; }
         
-        /* --- BOUTONS DE RACCOURCIS RAPIDES (GRID) --- */
-        div[data-testid="stColumn"] button {
-            background-color: rgba(255, 255, 255, 0.03) !important;
-            border: 1px solid rgba(255, 255, 255, 0.08) !important;
-            color: #94a3b8 !important;
-            border-radius: 10px !important;
-            font-size: 10px !important;
-            font-weight: 700 !important;
-            height: 32px !important;
-            padding: 0px !important;
-            text-transform: uppercase !important;
-            transition: all 0.2s ease-in-out !important;
-        }
-
-        div[data-testid="stColumn"] button:hover {
-            border-color: #4facfe !important;
-            color: #4facfe !important;
-            background-color: rgba(79, 172, 254, 0.1) !important;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(79, 172, 254, 0.1);
-        }
 
         /* --- MULTISELECT MAGIQUE --- */
         span[data-baseweb="tag"] {
@@ -226,55 +205,78 @@ def apply_custom_style():
             padding: 15px;
             margin-bottom: 20px;
         }
-        /* --- CONTENEUR DES BOUTONS D'ACTION (HAUT DE PAGE) --- */
-        .action-buttons-container {
-            margin-bottom: 25px;
-            padding: 5px;
+
+        /* --- LAYOUT & CONTAINERS --- */
+        .block-container { padding: 1rem 2rem; max-width: 100% !important; }
+        
+        .sort-container {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 15px; padding: 15px; margin-bottom: 20px;
         }
 
-        /* Style de base pour les deux boutons */
+        /* --- BOUTONS D'ACTION (HAUT DE PAGE) --- */
+        /* On cible uniquement les boutons dans ce conteneur spécifique */
         .action-buttons-container div[data-testid="stColumn"] button {
             height: 50px !important;
             border-radius: 14px !important;
             font-size: 15px !important;
             font-weight: 700 !important;
-            letter-spacing: 0.5px !important;
-            text-transform: none !important;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+            transition: all 0.3s ease !important;
         }
 
-        /* Bouton "Actualiser" (Style Glass bleu) */
-        .action-buttons-container div[data-testid="stColumn"]:nth-child(1) button {
+        /* Bouton Actualiser (Glass Bleu) */
+        .action-buttons-container div[data-testid="column"]:nth-child(1) button {
             background: rgba(79, 172, 254, 0.1) !important;
             color: #4facfe !important;
             border: 1px solid rgba(79, 172, 254, 0.3) !important;
         }
 
-        .action-buttons-container div[data-testid="stColumn"]:nth-child(1) button:hover {
-            background: rgba(79, 172, 254, 0.2) !important;
-            border-color: #4facfe !important;
-            box-shadow: 0 0 20px rgba(79, 172, 254, 0.3) !important;
-            transform: translateY(-2px) !important;
-        }
-
-        /* Bouton "Relevé manuel" (Style Danger Red Premium) */
-        .action-buttons-container div[data-testid="stColumn"]:nth-child(2) button {
+        /* Bouton Relevé (Gradiant Rouge) */
+        .action-buttons-container div[data-testid="column"]:nth-child(2) button {
             background: linear-gradient(135deg, #ff4b4b 0%, #c0392b 100%) !important;
             color: white !important;
             border: none !important;
         }
 
-        .action-buttons-container div[data-testid="stColumn"]:nth-child(2) button:hover {
-            filter: brightness(1.2) !important;
-            box-shadow: 0 0 25px rgba(255, 75, 75, 0.4) !important;
-            transform: translateY(-2px) scale(1.01) !important;
+        .action-buttons-container button:hover { transform: translateY(-2px); filter: brightness(1.1); }
+
+        /* --- BOUTONS DE RACCOURCIS (DANS FILTER-CONTAINER) --- */
+        .filter-container div[data-testid="stColumn"] button {
+            background-color: rgba(255, 255, 255, 0.03) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            color: #94a3b8 !important;
+            border-radius: 10px !important;
+            font-size: 10px !important;
+            height: 32px !important;
+            text-transform: uppercase !important;
         }
 
-        /* Effet au clic (Active) */
-        .action-buttons-container button:active {
-            transform: translateY(1px) scale(0.98) !important;
-        }
+        /* Accentuation par Land (Bordure Gauche) */
+        /* Disneyland Park */
+        .filter-container .dlp-btn button { border-left: 3px solid #4ade80 !important; } /* Vert général */
+        .filter-container .ms-btn button { border-left: 3px solid #f472b6 !important; }  /* Rose Main Street */
+        .filter-container .fr-btn button { border-left: 3px solid #fbbf24 !important; }  /* Jaune Frontier */
+        .filter-container .ad-btn button { border-left: 3px solid #10b981 !important; }  /* Vert Adventure */
+        .filter-container .fa-btn button { border-left: 3px solid #60a5fa !important; }  /* Bleu Fantasy */
+        .filter-container .di-btn button { border-left: 3px solid #a78bfa !important; }  /* Violet Disco */
+
+        /* Adventure World */
+        .filter-container .daw-btn button { border-left: 3px solid #fb923c !important; } /* Orange DAW */
+        .filter-container .ca-btn button { border-left: 3px solid #ef4444 !important; }  /* Rouge Campus */
+        .filter-container .pi-btn button { border-left: 3px solid #34d399 !important; }  /* Pixar */
+        .filter-container .co-btn button { border-left: 3px solid #6366f1 !important; }  /* Courtyard */
+        .filter-container .frz-btn button { border-left: 3px solid #00f2fe !important; } /* Frozen */
+        .filter-container .wy-btn button { border-left: 3px solid #84cc16 !important; }  /* Way */
+
+        /* Status & Reset */
+        .filter-container .status-btn button { border-left: 3px solid #ff4b4b !important; }
+
+        /* Style des cartes d'attractions (inchangé) */
+        .card-green { background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); }
+        .card-orange { background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); }
+        .card-bordeaux { background: rgba(153, 27, 27, 0.12); border: 1px solid rgba(153, 27, 27, 0.3); }
+
+        
     </style>
     """, unsafe_allow_html=True)
