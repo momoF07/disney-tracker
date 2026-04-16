@@ -19,7 +19,7 @@ from config import PARK_OPENING, DLP_CLOSING, DAW_CLOSING, EMT_OPENING
 from ui.filters import render_quick_filters
 from maintenance import show_maintenance
 
-MAINTENANCE_MODE = False 
+MAINTENANCE_MODE = True 
 
 if MAINTENANCE_MODE:
     show_maintenance()
