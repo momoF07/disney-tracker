@@ -246,8 +246,13 @@ if not df_live.empty:
         # PRIORITÉ 3 : Avant l'ouverture
         elif heure_actuelle < h_o and not data['is_open']: 
             sub, wait, bg, style, pill = "🕒 En attente", "- - -", "bg-blue", "card-blue", "ATTENTE"
+
+        # PRIORITÉ 4 : Ouverture retardée
+        # Si l'heure d'ouverture est passée, qu'elle est fermée et qu'elle n'a JAMAIS ouvert du jour
+        elif not data['is_open'] and not info.get('has_opened_today', False):
+            sub, wait, bg, style, pill = "⏳ Ouverture retardée", "DELAY", "bg-purple", "card-purple", "RETARDÉ"
         
-        # PRIORITÉ 4 : Incident (Seulement si on est dans les horaires d'ouverture)
+        # PRIORITÉ 5 : Incident (Seulement si on est dans les horaires d'ouverture)
         elif not data['is_open']: 
             sub, wait, bg, style, pill = f"⚠️ Panne depuis {panne_act['debut'].strftime('%H:%M')}" if panne_act else "⚠️ Interruption", "- - -", "bg-orange", "card-orange", "INCIDENT"
         

@@ -161,11 +161,13 @@ def apply_custom_style():
         .card-blue { background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); }
         .card-grey { background: rgba(107, 114, 128, 0.15); border: 1px solid rgba(107, 114, 128, 0.3); }
         .card-bordeaux { background: rgba(153, 27, 27, 0.15); border: 1px solid rgba(153, 27, 27, 0.3); }
+        .card-purple { background: rgba(157, 80, 187, 0.15); border: 1px solid rgba(157, 80, 187, 0.3); }
         .bg-green { background: #10b981; }
         .bg-orange { background: #f59e0b; }
         .bg-blue { background: #3b82f6; }
         .bg-grey { background: #6b7280; }
         .bg-bordeaux { background: #991b1b; }
+        .bg-purple { background: #9D50BB; }
         
 
         /* --- MULTISELECT MAGIQUE --- */
