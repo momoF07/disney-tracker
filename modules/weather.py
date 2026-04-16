@@ -48,9 +48,9 @@ def get_disney_weather():
     except Exception as e:
         # En cas d'erreur, on retourne un dictionnaire "safe" pour ne pas planter l'UI
         return {
-            "temp": "--", "feels_like": "--", 
-            "wind": "-- km/h", "gusts": "-- km/h", 
-            "desc": "Météo indisponible", "emoji": "⚠️",
+            "temp": "10", "feels_like": "10", 
+            "wind": "10 km/h", "gusts": "10 km/h", 
+            "desc": "Météo indisponible, ne pas tenir compte des valeurs", "emoji": "⚠️",
             "success": False
         }
 def info_weather_code(feels_like):
