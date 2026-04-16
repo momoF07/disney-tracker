@@ -17,6 +17,12 @@ from modules.emojis import get_emoji, get_rides_by_zone, RIDES_DLP, RIDES_DAW
 from modules.special_hours import ANTICIPATED_CLOSINGS, FANTASYLAND_EARLY_CLOSE, EMT_EARLY_OPEN, SPECIAL_OPENING_HOURS
 from config import PARK_OPENING, DLP_CLOSING, DAW_CLOSING, EMT_OPENING
 from ui.filters import render_quick_filters
+from maintenance import show_maintenance
+
+MAINTENANCE_MODE = False 
+
+if MAINTENANCE_MODE:
+    show_maintenance()
 
 # --- CONFIGURATION DE LA PAGE ---
 st.set_page_config(
