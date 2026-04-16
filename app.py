@@ -102,7 +102,7 @@ if not df_live.empty and not df_pannes_brutes.empty:
         })
 
 # --- BLOC METEO ---
-render_weather_card(get_disney_weather())
+#render_weather_card(get_disney_weather())
 render_weather_card(get_maintenance_weather())
 
 # --- HEADER INFO ---
