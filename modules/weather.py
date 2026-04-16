@@ -4,13 +4,15 @@ import streamlit as st
 #@st.cache_data(ttl=150)
 def get_disney_weather():
     lat, lon = 48.8675, 2.7841
-    url = "https://api.open-meteo.com/v1/forecast?latitude=48.8675&longitude=2.7841&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_gusts_10m&timezone=Europe%2FParis"
+    nocache = int(time.time())
+    url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_gusts_10m&timezone=Europe%2FParis&nocache={nocache}"
 
     try:
         response = requests.get(url, timeout=5)
         response.raise_for_status()
         res_json = response.json()
         data = res_json.get('current', {})
+        print(f"DEBUG: Appel météo effectué à {time.ctime()}")
         
         # Sécurisation des valeurs : on remplace None par 0 ou "--"
         def clean_val(val, default=0):
