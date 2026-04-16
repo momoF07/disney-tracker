@@ -72,29 +72,23 @@ st.title("🏰 Disney Wait Time")
 
 # --- DATA RECOVERY ---
 heure_actuelle = maintenant.time()
-heure_reset = maintenant.replace(hour=1, minute=12, second=0, microsecond=0)
+heure_reset = maintenant.replace(hour=2, minute=30, second=0, microsecond=0)
 debut_journee = heure_reset if maintenant >= heure_reset else heure_reset - timedelta(days=1)
 
 try:
-    # 1. Historique des pannes (Logs 101) depuis 02h30
+    resp_live = supabase.table("disney_live").select("*").execute()
+    df_live = pd.DataFrame(resp_live.data)
+    
+    resp_status = supabase.table("daily_status").select("*").execute()
+    status_map = {item['ride_name']: item for item in resp_status.data} if resp_status.data else {}
+    
     resp_101 = supabase.table("logs_101").select("*").gte("start_time", debut_journee.isoformat()).execute()
     df_pannes_brutes = pd.DataFrame(resp_101.data)
-
-    # 2. Logs Météo (Récupération du dernier relevé pour éviter le "None")
-    resp_weather = supabase.table("weather_logs").select("*").order("created_at", desc=True).limit(1).execute()
-    weather_data = resp_weather.data[0] if resp_weather.data else None
-
-    # 3. Logs Généraux (Optionnel : pour monitorer les events système)
-    resp_logs = supabase.table("disney_logs").select("*").gte("created_at", debut_journee.isoformat()).execute()
-    df_logs = pd.DataFrame(resp_logs.data)
     
-    # Heure de dernière mise à jour
     derniere_maj = pd.to_datetime(df_live['updated_at']).dt.tz_convert('Europe/Paris').max().strftime("%H:%M:%S") if not df_live.empty else "--:--:--"
-
 except Exception as e:
     st.error(f"❌ Erreur base de données : {e}")
-    df_live, df_pannes_brutes, df_logs = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
-    weather_data = None
+    df_live, df_pannes_brutes = pd.DataFrame(), pd.DataFrame()
 
 all_pannes = []
 if not df_live.empty and not df_pannes_brutes.empty:
