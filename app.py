@@ -76,23 +76,15 @@ heure_reset = maintenant.replace(hour=1, minute=12, second=0, microsecond=0)
 debut_journee = heure_reset if maintenant >= heure_reset else heure_reset - timedelta(days=1)
 
 try:
-    # 1. État actuel des attractions
-    resp_live = supabase.table("disney_live").select("*").execute()
-    df_live = pd.DataFrame(resp_live.data)
-    
-    # 2. Status quotidien (Ouvert hier, déjà ouvert aujourd'hui, etc.)
-    resp_status = supabase.table("daily_status").select("*").execute()
-    status_map = {item['ride_name']: item for item in resp_status.data} if resp_status.data else {}
-    
-    # 3. Historique des pannes (Logs 101) depuis 02h30
+    # 1. Historique des pannes (Logs 101) depuis 02h30
     resp_101 = supabase.table("logs_101").select("*").gte("start_time", debut_journee.isoformat()).execute()
     df_pannes_brutes = pd.DataFrame(resp_101.data)
 
-    # 4. Logs Météo (Récupération du dernier relevé pour éviter le "None")
+    # 2. Logs Météo (Récupération du dernier relevé pour éviter le "None")
     resp_weather = supabase.table("weather_logs").select("*").order("created_at", desc=True).limit(1).execute()
     weather_data = resp_weather.data[0] if resp_weather.data else None
 
-    # 5. Logs Généraux (Optionnel : pour monitorer les events système)
+    # 3. Logs Généraux (Optionnel : pour monitorer les events système)
     resp_logs = supabase.table("disney_logs").select("*").gte("created_at", debut_journee.isoformat()).execute()
     df_logs = pd.DataFrame(resp_logs.data)
     
