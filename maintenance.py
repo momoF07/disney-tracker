@@ -70,10 +70,10 @@ def show_maintenance():
             <div class="maint-card">
                 <div class="glow-icon">🏰</div>
                 <h1>Mise à jour en cours</h1>
-                <p>Le Disney Tracker se refait une beauté technique. <br>Nous revenons dans quelques minutes avec des données encore plus fraîches.</p>
+                <p>Le Disney Tracker se refait une beauté technique. <br>Nous revenons dans quelques heures avec des données encore plus fraîches.</p>
                 <div class="loader"></div>
                 <div style="font-size: 0.8rem; color: #64748b; margin-top: 20px;">
-                    STATUS: PCOps Connection Update
+                    STATUS: Maintenance technique
                 </div>
             </div>
         </div>
