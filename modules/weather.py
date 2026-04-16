@@ -56,6 +56,19 @@ def get_disney_weather():
             "desc": "Météo indisponible, ne pas tenir compte des valeurs", "emoji": "⚠️",
             "success": False
         }
+
+def get_maintenance_weather():
+    """Version statique pour maintenance ou désactivation du service"""
+    return {
+        "temp": "--",
+        "feels_like": "--",
+        "wind": "-- km/h",
+        "gusts": "-- km/h",
+        "desc": "Météo suspendue",
+        "emoji": "💤",
+        "success": False
+    }
+
 def info_weather_code(feels_like):
     if feels_like is None:
         return None
