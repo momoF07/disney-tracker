@@ -45,3 +45,8 @@ EMT_EARLY_OPEN = [
     "Frozen Ever After",
     "Raiponce Tangled Spin",
 ]
+
+SPECIAL_OPENING_HOURS = {
+    "Disneyland Railroad Frontierland Depot": time(12, 15),
+    "Disneyland Railroad Main Street Station": time(12, 15)
+}

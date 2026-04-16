@@ -228,8 +228,12 @@ if not df_live.empty:
             h_f = time(base_h - 1, base_m)
         else:
             h_f = DAW_CLOSING if is_daw else DLP_CLOSING
+
+        # --- 1bis. CALCUL DE L'HEURE D'OUVERTURE (h_o) ---
         
         h_o = EMT_OPENING if ride in EMT_EARLY_OPEN else PARK_OPENING
+        if ride in SPECIAL_OPENING_HOURS:
+            h_o = SPECIAL_OPENING_HOURS[ride]
         
         # --- 2. DÉTERMINATION DU STATUT (LOGIQUE PRIORISÉE) ---
         rehab_flag = not info.get('opened_yesterday', True) and not info.get('has_opened_today', False) and not data['is_open']
