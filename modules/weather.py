@@ -60,11 +60,11 @@ def get_disney_weather():
 def get_maintenance_weather():
     """Version statique pour maintenance ou désactivation du service"""
     return {
-        "temp": "XX",
-        "feels_like": "XX",
-        "wind": "XX km/h",
-        "gusts": "XX km/h",
-        "desc": "Météo en attente",
+        "temp": "--",
+        "feels_like": "--",
+        "wind": "-- km/h",
+        "gusts": "-- km/h",
+        "desc": "Météo en attente.",
         "emoji": "💤",
         "success": False
     }
