@@ -8,42 +8,51 @@ def get_disney_weather():
 
     try:
         response = requests.get(url, timeout=5)
-        data = response.json().get('current', {})
+        response.raise_for_status()
+        res_json = response.json()
+        data = res_json.get('current', {})
         
-        # ON GARDE LES VALEURS BRUTES (NOMBRES)
-        temp = data.get('temperature_2m')
-        apparent_temp = data.get('apparent_temperature')
-        wind = data.get('wind_speed_10m')
-        gusts = data.get('wind_gusts_10m')
-        code = data.get('weather_code')
+        # Sécurisation des valeurs : on remplace None par 0 ou "--"
+        def clean_val(val, default=0):
+            return val if val is not None else default
+
+        temp = clean_val(data.get('temperature_2m'), "--")
+        apparent_temp = clean_val(data.get('apparent_temperature'), "--")
+        wind = clean_val(data.get('wind_speed_10m'), 0)
+        gusts = clean_val(data.get('wind_gusts_10m'), 0)
+        code = data.get('weather_code', -1)
         
+        # Map étendue pour éviter le "Inconnu" sur les codes intermédiaires
         weather_map = {
             0: ("☀️", "Ciel dégagé"),
-            1: ("🌤️", "Plutôt beau"),
-            2: ("⛅", "Partiellement nuageux"),
-            3: ("☁️", "Couvert"),
-            45: ("🌫️", "Brouillard"),
-            61: ("🌧️", "Pluie faible"),
-            63: ("🌧️", "Pluie modérée"),
-            71: ("❄️", "Neige"),
-            80: ("🌦️", "Averses"),
-            95: ("⛈️", "Orage")
+            1: ("🌤️", "Plutôt beau"), 2: ("⛅", "Partiellement nuageux"), 3: ("☁️", "Couvert"),
+            45: ("🌫️", "Brouillard"), 48: ("🌫️", "Brouillard givrant"),
+            51: ("🌦️", "Bruine"), 53: ("🌦️", "Bruine"), 55: ("🌦️", "Bruine"),
+            61: ("🌧️", "Pluie faible"), 63: ("🌧️", "Pluie modérée"), 65: ("🌧️", "Pluie forte"),
+            71: ("❄️", "Neige faible"), 73: ("❄️", "Neige"), 75: ("❄️", "Neige forte"),
+            80: ("🌦️", "Averses"), 81: ("🌦️", "Averses"), 82: ("🌦️", "Averses"),
+            95: ("⛈️", "Orage"), 96: ("⛈️", "Orage"), 99: ("⛈️", "Orage")
         }
         
-        emoji, desc = weather_map.get(code, ("❓", "Inconnu"))
+        emoji, desc = weather_map.get(code, ("🌡️", "Météo stable"))
         
-        # RETOURNE DES NOMBRES PURS POUR LES CALCULS
         return {
-            "temp": temp,           # Juste le nombre (ex: 22.5)
-            "feels_like": apparent_temp, # Juste le nombre (ex: 26.0)
-            "wind": f"{wind} km/h",
-            "gusts": f"{gusts} km/h",
+            "temp": temp,
+            "feels_like": apparent_temp,
+            "wind": f"{round(wind)} km/h",
+            "gusts": f"{round(gusts)} km/h",
             "desc": desc,
-            "emoji": emoji
+            "emoji": emoji,
+            "success": True
         }
     except Exception as e:
-        return None
-
+        # En cas d'erreur, on retourne un dictionnaire "safe" pour ne pas planter l'UI
+        return {
+            "temp": "--", "feels_like": "--", 
+            "wind": "-- km/h", "gusts": "-- km/h", 
+            "desc": "Météo indisponible", "emoji": "⚠️",
+            "success": False
+        }
 def info_weather_code(feels_like):
     if feels_like is None:
         return None
