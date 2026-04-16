@@ -100,30 +100,60 @@ def render_shortcuts_popover():
 
 # ---
 def render_history_expander(ride, rehab, h_p_clean, pannes_triees, est_en_retard_live, h_o, h_f, data_is_open):
-    """Gère le contenu du menu déroulant Historique"""
+    """Gère le contenu du menu déroulant Historique avec détection intelligente des retards"""
+    
+    marge_ouverture = 3 # Marge de tolérance en minutes
+    
     if rehab: 
         st.write("• 🛠️ :grey[**Maintenance en cours**]")
+        
     elif h_p_clean or est_en_retard_live:
+        # --- 1. CAS DU RETARD EN COURS (LIVE) ---
         if est_en_retard_live:
             st.write(f"• 🟣 :violet[**Ouverture retardée**] (Prévue à {h_o.strftime('%H:%M')})")
             st.caption("&nbsp;&nbsp;&nbsp;&nbsp;└ 🕒 En attente de mise en service")
+            
+        # --- 2. ANALYSE DE L'HISTORIQUE ---
         elif pannes_triees:
+            # On traite l'incident le plus récent (index 0)
             p_actuelle = pannes_triees[0]
             h_d_act = p_actuelle['debut'].strftime('%H:%M')
+            
+            # Calcul pour savoir si c'est un vrai retard (Ouverture après h_o + marge)
+            # On utilise .replace pour ajouter la marge à h_o
+            h_limite = (datetime.combine(datetime.today(), h_o) + timedelta(minutes=marge_ouverture)).time()
+            
             if not data_is_open:
+                # Si l'attraction est fermée actuellement
                 st.write(f"• 🟠 :orange[**En cours** depuis {h_d_act}]")
             else: 
+                # Si elle est ouverte, on vérifie si l'ouverture était un retard ou une panne
                 st.write(f"• 🟢 :green[**Opérationnel** à {p_actuelle['fin'].strftime('%H:%M')}]")
-                if p_actuelle['debut'].time() <= h_o:
+                
+                # C'est un retard si : début avant l'heure prévue ET fin après l'heure limite
+                vrai_retard = (p_actuelle['debut'].time() <= h_o) and (p_actuelle['fin'].time() > h_limite)
+                
+                if vrai_retard:
                     st.caption("&nbsp;&nbsp;&nbsp;&nbsp;└ 🟣 :violet[**Ouverture retardée**]")
-                else:
+                elif p_actuelle['debut'].time() > h_o:
+                    # C'est une panne classique car elle a eu lieu après l'heure d'ouverture
                     st.caption(f"&nbsp;&nbsp;&nbsp;&nbsp;└ 🔴 :red[**Panne** à {h_d_act}] ({p_actuelle['duree']} min)")
 
-        if len(pannes_triees) > 1:
-            for p in pannes_triees[1:]:
-                h_d = p['debut'].strftime('%H:%M')
-                if p['statut'] == "TERMINEE":
-                    status_txt = "🟣 :violet[**Retard d'ouverture**]" if p['debut'].time() <= h_o else f"🔴 :red[**Panne à {h_d}**] ({p['duree']} min)"
-                    st.caption(f"• 🟢 :green[**Ope à {p['fin'].strftime('%H:%M')}**] | {status_txt}")
+            # --- 3. AFFICHAGE DU RESTE DE L'HISTORIQUE ---
+            if len(pannes_triees) > 1:
+                for p in pannes_triees[1:]:
+                    if p['statut'] == "TERMINEE":
+                        h_d = p['debut'].strftime('%H:%M')
+                        h_f_p = p['fin'].strftime('%H:%M')
+                        
+                        # Vérification retard pour les lignes précédentes
+                        vrai_retard_hist = (p['debut'].time() <= h_o) and (p['fin'].time() > h_limite)
+                        
+                        if vrai_retard_hist:
+                            status_txt = "🟣 :violet[**Retard d'ouverture**]"
+                        else:
+                            status_txt = f"🔴 :red[**Panne à {h_d}**] ({p['duree']} min)"
+                            
+                        st.caption(f"• 🟢 :green[**Ope à {h_f_p}**] | {status_txt}")
     else: 
         st.write("✅ Aucun incident aujourd'hui.")
