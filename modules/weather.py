@@ -70,7 +70,7 @@ def get_maintenance_weather():
     }
 
 def info_weather_code(feels_like):
-    if feels_like is None or feels_like == "--":
+    if feels_like is None or feels_like == "XX":
         return None
     try:
         val = float(feels_like)
@@ -142,7 +142,7 @@ def info_msc(feels_like):
 
 def info_dsp(feels_like):
     """Protocole complet Disney Stars on Parade (DSP)."""
-    if feels_like is None or feels_like == "--": 
+    if feels_like is None or feels_like == "XX": 
         return {"t": "Maintenance", "msg": "Protocoles indisponibles", "color": "#64748b", "bg": "rgba(255,255,255,0.05)"}
 
     # --- CHALEUR DSP ---
