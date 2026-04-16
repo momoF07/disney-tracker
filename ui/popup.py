@@ -1,4 +1,5 @@
 import streamlit as st
+from datetime import datetime, timedelta
 
 def render_shortcuts_popover():
     """Affiche le bouton popover avec l'index des codes magiques précis"""
