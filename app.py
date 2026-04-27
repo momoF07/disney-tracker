@@ -213,14 +213,52 @@ if not df_live.empty:
         else: # Mode Nom
             selected_options = sorted(selected_options, reverse=is_desc)
 
-    # --- BOUCLE D'AFFICHAGE ---
-    for ride in selected_options:
+    # --- BOUCLE D'AFFICHAGE EN GRILLE (TRANSPOSEE) ---
+    # On crée les colonnes pour l'affichage en grille
+    cols = st.columns(2)
+
+    # Calcul du nombre total d'attractions ouvertes pour la logique FIN vs 101
+    t_open = len(df_live[df_live['open'] == True])
+
+    for i, ride in enumerate(selected_options):
         ride_data = df_live[df_live['ride_name'] == ride]
-        if ride_data.empty: continue
+        if ride_data.empty: 
+            continue
         
         data = ride_data.iloc[0]
-        info = status_map.get(ride, {})
+        # Récupération de la panne en cours (Logique issue de ton code final)
         panne_act = next((p for p in all_pannes if p['ride'] == ride and p['statut'] == "EN_COURS"), None)
+        
+        # --- DÉTERMINATION DU STATUT & STYLE ---
+        is_open = data['open']
+        
+        if not is_open:
+            # Si le parc est fermé (t_open == 0) -> FIN (Bordeaux)
+            if t_open == 0:
+                status_class, label, sub = "status-closed", "FIN", "Fermeture journalière"
+            else:
+                # Si panne détectée -> 101 (Orange)
+                d_p = panne_act['debut'] if panne_act else datetime.now()
+                status_class, label, sub = "status-incident", "101", f"En panne à {d_p.strftime('%H:%M')}"
+        else:
+            # Ouvert (Vert)
+            status_class, label, sub = "status-open", str(int(data['wait'])), "Opérationnel"
+
+        unit = "min" if label.isdigit() else ""
+
+        # Affichage alterné dans les colonnes
+        with cols[i % 2]:
+            st.markdown(f"""
+                <div class="ride-card {status_class}">
+                    <div style="max-width: 75%;">
+                        <p class="ride-name">{ride}</p>
+                        <p class="land-name">{data.get('zone', 'Disney')} • {sub}</p>
+                    </div>
+                    <div class="wait-time">
+                        {label}<span style="font-size:0.8rem; margin-left:2px;">{unit}</span>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
         
         # --- 1. CALCUL DE L'HEURE DE FERMETURE (h_f) ---
         is_daw = any(a.lower() in ride.lower() for a in RIDES_DAW)
