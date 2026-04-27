@@ -214,11 +214,14 @@ if not df_live.empty:
             selected_options = sorted(selected_options, reverse=is_desc)
 
     # --- BOUCLE D'AFFICHAGE EN GRILLE (TRANSPOSEE) ---
+    # On vérifie le nom de la colonne pour éviter le KeyError (is_open ou open)
+    col_open = 'is_open' if 'is_open' in df_live.columns else 'open'
+
     # On crée les colonnes pour l'affichage en grille
     cols = st.columns(2)
 
     # Calcul du nombre total d'attractions ouvertes pour la logique FIN vs 101
-    t_open = len(df_live[df_live['open'] == True])
+    t_open = len(df_live[df_live[col_open] == True])
 
     for i, ride in enumerate(selected_options):
         ride_data = df_live[df_live['ride_name'] == ride]
@@ -226,22 +229,23 @@ if not df_live.empty:
             continue
         
         data = ride_data.iloc[0]
-        # Récupération de la panne en cours (Logique issue de ton code final)
+        # Récupération de la panne en cours (Logique issue de ton code)
         panne_act = next((p for p in all_pannes if p['ride'] == ride and p['statut'] == "EN_COURS"), None)
         
         # --- DÉTERMINATION DU STATUT & STYLE ---
-        is_open = data['open']
+        # On utilise la variable col_open détectée plus haut
+        is_open = data[col_open]
         
         if not is_open:
-            # Si le parc est fermé (t_open == 0) -> FIN (Bordeaux)
+            # Si le parc est fermé (t_open == 0) -> FIN
             if t_open == 0:
                 status_class, label, sub = "status-closed", "FIN", "Fermeture journalière"
             else:
-                # Si panne détectée -> 101 (Orange)
+                # Si panne détectée -> 101
                 d_p = panne_act['debut'] if panne_act else datetime.now()
                 status_class, label, sub = "status-incident", "101", f"En panne à {d_p.strftime('%H:%M')}"
         else:
-            # Ouvert (Vert)
+            # Ouvert
             status_class, label, sub = "status-open", str(int(data['wait'])), "Opérationnel"
 
         unit = "min" if label.isdigit() else ""
