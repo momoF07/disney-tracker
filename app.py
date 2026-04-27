@@ -23,18 +23,17 @@ from maintenance import show_maintenance
 # On fusionne tes deux listes de Disneyland Park et Disney Adventure World
 ALL_RIDES_LIST = sorted(list(set(RIDES_DLP + RIDES_DAW)))
 
-# --- GESTION DE LA MAINTENANCE ---
-# On initialise la variable de session si elle n'existe pas
+# 1. Initialisation de la variable de session (mémoire du mot de passe)
 if "bypass_maintenance" not in st.session_state:
     st.session_state.bypass_maintenance = False
 
+# 2. Variable de contrôle globale
 MAINTENANCE_MODE = True 
 
-# On n'affiche la maintenance QUE SI le mode est activé ET que l'utilisateur n'a pas bypass
+# 3. Logique de filtrage
 if MAINTENANCE_MODE and not st.session_state.bypass_maintenance:
+    from maintenance import show_maintenance
     show_maintenance()
-    # Note : show_maintenance() contient un st.stop(), 
-    # donc le code en dessous ne s'exécutera pas.
 
 # --- CONFIGURATION DE LA PAGE ---
 st.set_page_config(

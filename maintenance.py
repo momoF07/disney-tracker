@@ -1,9 +1,6 @@
 import streamlit as st
 
 def show_maintenance():
-    # On utilise le query_params pour un accès ultra-rapide via l'URL (ex: ?admin=1)
-    # Ou un simple champ texte discret
-    
     st.markdown("""
         <style>
             .maint-container {
@@ -29,8 +26,15 @@ def show_maintenance():
                 -webkit-text-fill-color: transparent;
             }
             p { color: #94a3b8; }
-            .stTextInput { width: 150px !important; margin: 0 auto; opacity: 0.3; transition: 0.3s; }
-            .stTextInput:hover { opacity: 1; }
+            /* Style pour rendre le champ très discret */
+            div[data-baseweb="input"] {
+                background: transparent !important;
+                border: none !important;
+            }
+            input {
+                text-align: center !important;
+                color: rgba(255,255,255,0.2) !important;
+            }
         </style>
         
         <div class="maint-container">
@@ -42,15 +46,13 @@ def show_maintenance():
         </div>
     """, unsafe_allow_html=True)
 
-    # Petit champ de mot de passe discret en bas de page
     col1, col2, col3 = st.columns([1,1,1])
     with col2:
-        code = st.text_input("Accès restreint", type="password", label_visibility="collapsed", placeholder="Code...")
+        # Utilisation d'une clé spécifique pour Streamlit
+        code = st.text_input("Accès", type="password", label_visibility="collapsed", placeholder="...", key="maint_password")
         
-    # VERIFICATION DU CODE
-    if code == "AdminPass":
-        st.success("Accès autorisé")
+    if code == "AdminPass": # Ton code secret
         st.session_state.bypass_maintenance = True
-        st.rerun()
-    else:
-        st.stop() # Bloque le reste de l'app si le code est mauvais
+        st.rerun() 
+    
+    st.stop()
