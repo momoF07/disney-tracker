@@ -70,24 +70,35 @@ def trigger_github_action():
 st.write("") 
 st.title("🏰 Disney Wait Time")
 
-# --- DATA RECOVERY ---
+# --- CONFIGURATION DU FILTRAGE ---
 heure_actuelle = maintenant.time()
 heure_reset = maintenant.replace(hour=2, minute=30, second=0, microsecond=0)
 debut_journee = heure_reset if maintenant >= heure_reset else heure_reset - timedelta(days=1)
+date_30j = (maintenant - timedelta(days=30)).isoformat()
 
 try:
+    # 1. ÉTAT LIVE (Pour les cartes du haut)
     resp_live = supabase.table("disney_live").select("*").execute()
     df_live = pd.DataFrame(resp_live.data)
     
+    # 2. STATUS QUOTIDIENS (Réhabs, etc.)
     resp_status = supabase.table("daily_status").select("*").execute()
     status_map = {item['ride_name']: item for item in resp_status.data} if resp_status.data else {}
     
+    # 3. FLUX DU JOUR (Logs 101 depuis 02h30 uniquement)
+    # On filtre ici pour garder l'app fluide au démarrage
     resp_101 = supabase.table("logs_101").select("*").gte("start_time", debut_journee.isoformat()).execute()
     df_pannes_brutes = pd.DataFrame(resp_101.data)
     
+    # 4. RÉCUPÉRATION DES INFOS RÉFÉRENTIELLES (Optionnel mais propre)
+    resp_info = supabase.table("rides_info").select("*").execute()
+    df_info = pd.DataFrame(resp_info.data)
+
+    # 5. DERNIÈRE MAJ
     derniere_maj = pd.to_datetime(df_live['updated_at']).dt.tz_convert('Europe/Paris').max().strftime("%H:%M:%S") if not df_live.empty else "--:--:--"
+
 except Exception as e:
-    st.error(f"❌ Erreur base de données : {e}")
+    st.error(f"❌ Erreur critique base de données : {e}")
     df_live, df_pannes_brutes = pd.DataFrame(), pd.DataFrame()
 
 all_pannes = []
@@ -280,62 +291,89 @@ if not df_live.empty:
             do_live = (heure_actuelle > h_o) and (heure_actuelle < h_f) and not info.get('has_opened_today', False) and not data['is_open']
             render_history_expander(ride, rehab_flag, h_p_clean, p_triees, do_live, h_o, h_f, data['is_open'])
 
-# --- DERNIÈRES INTERRUPTIONS & ACTUALITÉS ---
+# --- SECTION FLUX & STATISTIQUES ---
 st.write("---")
-st.subheader("🚨 Flux des activités")
+col_flux, col_stats = st.columns([1, 1.2], gap="large")
 
-if not df_pannes_brutes.empty:
-    flux = df_pannes_brutes.copy()
-    flux['dt'] = pd.to_datetime(flux['start_time'])
-    flux = flux[flux['dt'].dt.tz_convert('Europe/Paris') >= debut_journee]
-    flux = flux.sort_values('dt', ascending=False).drop_duplicates(subset=['ride_name']).head(10)
+# ==========================================
+# GAUCHE : FLUX DES ACTIVITÉS (JOURNÉE)
+# ==========================================
+with col_flux:
+    st.subheader("🚨 Flux du jour")
     
-    for _, p in flux.iterrows():
-        r_n = p['ride_name']
-        d_p = pd.to_datetime(p['start_time']).astimezone(paris_tz)
-        h_f_p = pd.to_datetime(p['end_time']).astimezone(paris_tz).strftime("%H:%M") if pd.notna(p['end_time']) else None
+    if not df_pannes_brutes.empty:
+        # On utilise df_pannes_brutes qui est déjà filtré depuis 02h30 dans Data Recovery
+        flux = df_pannes_brutes.copy()
+        flux['dt'] = pd.to_datetime(flux['start_time'])
+        flux = flux.sort_values('dt', ascending=False).drop_duplicates(subset=['ride_name']).head(8)
         
-        # --- CALCUL DE L'HEURE DE FERMETURE (pour filtrage actu) ---
-        is_daw_p = any(a.lower() in r_n.lower() for a in RIDES_DAW)
-        if r_n in ANTICIPATED_CLOSINGS: h_f_limit = ANTICIPATED_CLOSINGS[r_n]
-        elif r_n in FANTASYLAND_EARLY_CLOSE: h_f_limit = time(DLP_CLOSING.hour - 1, DLP_CLOSING.minute)
-        else: h_f_limit = DAW_CLOSING if is_daw_p else DLP_CLOSING
+        for _, p in flux.iterrows():
+            r_n = p['ride_name']
+            d_p = pd.to_datetime(p['start_time']).astimezone(paris_tz)
+            h_f_p = pd.to_datetime(p['end_time']).astimezone(paris_tz).strftime("%H:%M") if pd.notna(p['end_time']) else None
+            
+            # Calcul de l'heure de fermeture théorique
+            is_daw_p = any(a.lower() in r_n.lower() for a in RIDES_DAW)
+            if r_n in ANTICIPATED_CLOSINGS: h_f_limit = ANTICIPATED_CLOSINGS[r_n]
+            elif r_n in FANTASYLAND_EARLY_CLOSE: h_f_limit = time(DLP_CLOSING.hour - 1, DLP_CLOSING.minute)
+            else: h_f_limit = DAW_CLOSING if is_daw_p else DLP_CLOSING
 
-        # 1. CAS FERMETURE DÉFINITIVE (Si l'heure actuelle a dépassé l'heure de fermeture)
-        if heure_actuelle >= h_f_limit:
-            render_ride_card(
-                ride=r_n, 
-                sub=f"Fermeture journalière à {h_f_limit.strftime('%H:%M')}", 
-                wait="FIN", 
-                bg="bg-bordeaux", 
-                card_style="card-bordeaux", 
-                pill="FERMETURE", 
-                show_wait=False
-            )
+            # Rendu des cartes selon le statut
+            if heure_actuelle >= h_f_limit:
+                render_ride_card(r_n, f"Fermeture à {h_f_limit.strftime('%H:%M')}", "FIN", "bg-bordeaux", "card-bordeaux", "FERMETURE", False)
+            elif not h_f_p:
+                render_ride_card(r_n, f"En panne à {d_p.strftime('%H:%M')}", "101", "bg-orange", "card-orange", "INTERRUPTION", False)
+            else:
+                render_ride_card(r_n, f"Réouvert à {h_f_p}", "OK", "bg-green", "card-green", "REOUVERTURE", False)
+    else:
+        st.caption("Aucune activité majeure aujourd'hui.")
 
-        # 2. CAS PANNE EN COURS
-        elif not h_f_p:
-            render_ride_card(
-                ride=r_n, 
-                sub=f"En panne à {d_p.strftime('%H:%M')}", 
-                wait="101", 
-                bg="bg-orange", 
-                card_style="card-orange", 
-                pill="INTERRUPTION", 
-                show_wait=False
-            )
+# ==========================================
+# DROITE : STATISTIQUES (30 DERNIERS JOURS)
+# ==========================================
+with col_stats:
+    st.subheader("📊 Analyse 30 jours")
+    
+    # 1. Menu de sélection (basé sur df_live pour n'avoir que les attractions actuelles)
+    liste_rides = sorted(df_live['ride_name'].unique()) if not df_live.empty else []
+    selected_ride = st.selectbox("Historique détaillé de l'attraction :", liste_rides, index=0 if "Crush's Coaster" not in liste_rides else liste_rides.index("Crush's Coaster"))
 
-        # 3. CAS RÉOUVERTURE
+    if selected_ride:
+        # Appel à Supabase pour l'historique spécifique (Fonction définie dans Data Recovery)
+        with st.spinner(f"Analyse de {selected_ride}..."):
+            df_h = get_ride_stats_30d(selected_ride) # Voir fonction ci-dessous
+            
+        if not df_h.empty:
+            # Traitement des données
+            df_h['start'] = pd.to_datetime(df_h['start_time'])
+            df_h['end'] = pd.to_datetime(df_h['end_time'])
+            # On calcule la durée réelle (en ignorant les pannes non finies pour la moyenne)
+            df_h['duree'] = (df_h['end'] - df_h['start']).dt.total_seconds() / 60
+            
+            # Metrics
+            total_pannes = len(df_h)
+            duree_moy = df_h['duree'].mean()
+            plus_longue = df_h['duree'].max()
+            
+            m1, m2, m3 = st.columns(3)
+            m1.metric("Interruptions", f"{total_pannes}")
+            m2.metric("Moyenne", f"{int(duree_moy) if pd.notna(duree_moy) else 0} min")
+            m3.metric("Record", f"{int(plus_longue) if pd.notna(plus_longue) else 0} min")
+
+            # Graphique simple des pannes par jour
+            df_h['date'] = df_h['start'].dt.date
+            pannes_par_jour = df_h.groupby('date').size()
+            st.area_chart(pannes_par_jour, height=150, use_container_width=True)
+            
+            st.markdown(f"""
+                <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+                    <small style="color: #64748b;">Dernière panne enregistrée :</small><br>
+                    <b>{df_h.sort_values('start', ascending=False).iloc[0]['start'].strftime('%d/%m à %H:%M')}</b>
+                </div>
+            """, unsafe_allow_html=True)
         else:
-            render_ride_card(
-                ride=r_n, 
-                sub=f"Réouvert à {h_f_p}", 
-                wait="OK", 
-                bg="bg-green", 
-                card_style="card-green", 
-                pill="REOUVERTURE", 
-                show_wait=False
-            )
+            st.info(f"Parfait ! Aucune panne pour {selected_ride} sur les 30 derniers jours. ✨")
+            
 st.divider()
 footer_html = f"""
 <style>
@@ -380,5 +418,4 @@ footer_html = f"""
     </div>
 </div>
 """
-
 st.markdown(footer_html, unsafe_allow_html=True)
