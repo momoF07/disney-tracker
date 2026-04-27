@@ -19,6 +19,10 @@ from config import PARK_OPENING, DLP_CLOSING, DAW_CLOSING, EMT_OPENING
 from ui.filters import render_quick_filters
 from maintenance import show_maintenance
 
+# --- RÉFÉRENTIEL DES ATTRACTIONS ---
+# On fusionne tes deux listes de Disneyland Park et Disney Adventure World
+ALL_RIDES_LIST = sorted(list(set(RIDES_DLP + RIDES_DAW)))
+
 MAINTENANCE_MODE = False 
 
 if MAINTENANCE_MODE:
@@ -373,7 +377,7 @@ with col_stats:
             """, unsafe_allow_html=True)
         else:
             st.info(f"Parfait ! Aucune panne pour {selected_ride} sur les 30 derniers jours. ✨")
-            
+
 st.divider()
 footer_html = f"""
 <style>
