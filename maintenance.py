@@ -49,7 +49,7 @@ def show_maintenance():
         
     # VERIFICATION DU CODE
     # Remplace 'MICKEY2026' par le code de ton choix
-    if code == "MICKEY2026":
+    if code == "AdminPass":
         st.success("Accès autorisé")
         st.session_state.bypass_maintenance = True
         st.rerun()
