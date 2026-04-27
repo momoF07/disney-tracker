@@ -252,7 +252,7 @@ if not df_live.empty:
         # PRIORITÉ 2 : Fermeture (On retire le "and not data['is_open']" pour plus de fiabilité)
         # Si l'heure actuelle dépasse h_f, c'est FERMÉ (même si l'API n'est pas encore à jour)
         elif heure_actuelle >= h_f: 
-            sub, wait, bg, style, pill = f"🏁 Fermé à {h_f.strftime('%H:%M')}", "- - -", "bg-bordeaux", "card-bordeaux", "FERMÉ"
+            sub, wait, bg, style, pill = f"🏁 Fermé à {h_f.strftime('%H:%M')}", "F I N", "bg-bordeaux", "card-bordeaux", "FERMÉ"
         
         # PRIORITÉ 3 : Avant l'ouverture
         elif heure_actuelle < h_o and not data['is_open']: 
