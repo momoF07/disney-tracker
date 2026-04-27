@@ -23,7 +23,7 @@ from maintenance import show_maintenance
 # On fusionne tes deux listes de Disneyland Park et Disney Adventure World
 ALL_RIDES_LIST = sorted(list(set(RIDES_DLP + RIDES_DAW)))
 
-MAINTENANCE_MODE = False 
+MAINTENANCE_MODE = True 
 
 if MAINTENANCE_MODE:
     show_maintenance()
