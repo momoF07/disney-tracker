@@ -48,7 +48,6 @@ def show_maintenance():
         code = st.text_input("Accès restreint", type="password", label_visibility="collapsed", placeholder="Code...")
         
     # VERIFICATION DU CODE
-    # Remplace 'MICKEY2026' par le code de ton choix
     if code == "AdminPass":
         st.success("Accès autorisé")
         st.session_state.bypass_maintenance = True
