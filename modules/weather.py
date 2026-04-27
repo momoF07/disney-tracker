@@ -145,6 +145,8 @@ def info_dsp(feels_like):
     if feels_like is None or feels_like == "XX": 
         return {"t": "Maintenance", "msg": "Protocoles indisponibles", "color": "#64748b", "bg": "rgba(255,255,255,0.05)"}
 
+    val = float(feels_like)
+
     # --- CHALEUR DSP ---
     if val >= 38.0:
         return {"t": "Temps 5 (Chaleur)", "msg": "Parade Annulée", "color": "#721c24", "bg": "#f8d7da"}
