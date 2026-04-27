@@ -337,6 +337,48 @@ if not df_pannes_brutes.empty:
                 show_wait=False
             )
 st.divider()
-st.caption(f"Disney Wait Time Tool | v4.0 | Refresh: {st.session_state.last_refresh}")
-st.caption("Données d'attente et d'interruption via ThemePark Wiki.")
-st.caption("Données Météo via Open Meteo.")
+footer_html = f"""
+<style>
+    .main-footer {{
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 5px;
+        color: #64748b;
+        font-family: 'Inter', sans-serif;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        margin-top: 20px;
+    }}
+    .footer-item {{
+        font-size: 11px;
+        letter-spacing: 0.5px;
+    }}
+    .footer-separator {{
+        margin: 0 8px;
+        opacity: 0.3;
+    }}
+    .version-tag {{
+        background: rgba(255, 255, 255, 0.05);
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-weight: 700;
+        color: #94a3b8;
+    }}
+</style>
+
+<div class="main-footer">
+    <div class="footer-item">
+        <span class="version-tag">v4.0</span>
+        <span class="footer-separator">|</span>
+        Disney Wait Time Tool
+    </div>
+    <div class="footer-item" style="text-align: center; flex-grow: 1;">
+        ThemePark Wiki <span class="footer-separator">•</span> Open Meteo
+    </div>
+    <div class="footer-item" style="text-align: right;">
+        Actualisé à : <b>{st.session_state.last_refresh}</b>
+    </div>
+</div>
+"""
+
+st.markdown(footer_html, unsafe_allow_html=True)
