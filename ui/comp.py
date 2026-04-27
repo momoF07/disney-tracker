@@ -58,8 +58,6 @@ def render_api_info(api_time, refresh_time):
         <div style="display:flex; justify-content:space-between; width:100%;">
             <div><span style="color:#94a3b8; font-size:12px;">API:</span> <b style="color:white;">{api_time}</b></div>
             <div><span style="color:#94a3b8; font-size:12px;">Refresh:</span> <b style="color:white;">{refresh_time}</b></div>
-            <br>
-            <div><span style="color:#94a3b8; font-size:12px;">Data par:</span> <b style="color:white;">ThemePark Wiki</b></div>
         </div>
     </div>
     """, unsafe_allow_html=True)

@@ -336,4 +336,7 @@ if not df_pannes_brutes.empty:
                 pill="REOUVERTURE", 
                 show_wait=False
             )
+st.divider()
 st.caption(f"Disney Wait Time Tool | v4.0 | Refresh: {st.session_state.last_refresh}")
+st.caption("Données d'attente et d'interruption via ThemePark Wiki.")
+st.caption("Données Météo via Open Meteo.")
