@@ -373,7 +373,7 @@ footer_html = f"""
         Disney Wait Time Tool
     </div>
     <div class="footer-item" style="text-align: center; flex-grow: 1;">
-        ThemePark Wiki <span class="footer-separator">•</span> Open Meteo
+        API Attente : ThemePark Wiki <span class="footer-separator">•</span> API Météo : Open Meteo
     </div>
     <div class="footer-item" style="text-align: right;">
         Actualisé à : <b>{st.session_state.last_refresh}</b>
