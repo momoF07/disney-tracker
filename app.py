@@ -338,60 +338,6 @@ with col_flux:
     else:
         st.caption("Aucune activité majeure aujourd'hui.")
 
-# ==========================================
-# DROITE : STATISTIQUES (30 DERNIERS JOURS)
-# ==========================================
-
-def get_ride_stats_30d(ride_name):
-    resp = supabase.table("logs_101").select("*") \
-        .eq("ride_name", ride_name) \
-        .gte("start_time", date_30j) \
-        .execute()
-    return pd.DataFrame(resp.data)
-
-with col_stats:
-    st.subheader("📊 Analyse 30 jours")
-    
-    # 1. Menu de sélection (basé sur df_live pour n'avoir que les attractions actuelles)
-    liste_rides = sorted(df_live['ride_name'].unique()) if not df_live.empty else []
-    selected_ride = st.selectbox("Historique détaillé de l'attraction :", liste_rides, index=0 if "Crush's Coaster" not in liste_rides else liste_rides.index("Crush's Coaster"))
-
-    if selected_ride:
-        # Appel à Supabase pour l'historique spécifique (Fonction définie dans Data Recovery)
-        with st.spinner(f"Analyse de {selected_ride}..."):
-            df_h = get_ride_stats_30d(selected_ride) # Voir fonction ci-dessous
-            
-        if not df_h.empty:
-            # Traitement des données
-            df_h['start'] = pd.to_datetime(df_h['start_time'])
-            df_h['end'] = pd.to_datetime(df_h['end_time'])
-            # On calcule la durée réelle (en ignorant les pannes non finies pour la moyenne)
-            df_h['duree'] = (df_h['end'] - df_h['start']).dt.total_seconds() / 60
-            
-            # Metrics
-            total_pannes = len(df_h)
-            duree_moy = df_h['duree'].mean()
-            plus_longue = df_h['duree'].max()
-            
-            m1, m2, m3 = st.columns(3)
-            m1.metric("Interruptions", f"{total_pannes}")
-            m2.metric("Moyenne", f"{int(duree_moy) if pd.notna(duree_moy) else 0} min")
-            m3.metric("Record", f"{int(plus_longue) if pd.notna(plus_longue) else 0} min")
-
-            # Graphique simple des pannes par jour
-            df_h['date'] = df_h['start'].dt.date
-            pannes_par_jour = df_h.groupby('date').size()
-            st.area_chart(pannes_par_jour, height=150, use_container_width=True)
-            
-            st.markdown(f"""
-                <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
-                    <small style="color: #64748b;">Dernière panne enregistrée :</small><br>
-                    <b>{df_h.sort_values('start', ascending=False).iloc[0]['start'].strftime('%d/%m à %H:%M')}</b>
-                </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.info(f"Parfait ! Aucune panne pour {selected_ride} sur les 30 derniers jours. ✨")
-
 st.divider()
 footer_html = f"""
 <style>
