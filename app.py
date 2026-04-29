@@ -305,7 +305,7 @@ if not df_live.empty:
 st.write("---")
 col_flux, col_stats = st.columns([1, 1.2], gap="large")
 
-# ==========================================
+# # ==========================================
 # GAUCHE : FLUX DES ACTIVITÉS (JOURNÉE)
 # ==========================================
 with col_flux:
