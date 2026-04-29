@@ -32,7 +32,6 @@ MAINTENANCE_MODE = True
 
 # 3. Logique de filtrage
 if MAINTENANCE_MODE and not st.session_state.bypass_maintenance:
-    from maintenance import show_maintenance
     show_maintenance()
 
 # --- CONFIGURATION DE LA PAGE ---
@@ -235,72 +234,72 @@ if not df_live.empty:
         else: # Mode Nom
             selected_options = sorted(selected_options, reverse=is_desc)
 
-    # --- BOUCLE D'AFFICHAGE ---
-    for ride in selected_options:
-        ride_data = df_live[df_live['ride_name'] == ride]
-        if ride_data.empty: continue
-        
-        data = ride_data.iloc[0]
-        info = status_map.get(ride, {})
-        panne_act = next((p for p in all_pannes if p['ride'] == ride and p['statut'] == "EN_COURS"), None)
-        
-        # --- 1. CALCUL DE L'HEURE DE FERMETURE (h_f) ---
-        is_daw = any(a.lower() in ride.lower() for a in RIDES_DAW)
-        
-        if ride in ANTICIPATED_CLOSINGS:
-            h_f = ANTICIPATED_CLOSINGS[ride]
-        elif ride in FANTASYLAND_EARLY_CLOSE:
-            # Calcul : DLP_CLOSING - 1 heure
-            base_h = DLP_CLOSING.hour
-            base_m = DLP_CLOSING.minute
-            # On recrée l'heure avec une heure en moins
-            h_f = time(base_h - 1, base_m)
-        else:
-            h_f = DAW_CLOSING if is_daw else DLP_CLOSING
+        # --- BOUCLE D'AFFICHAGE ---
+        for ride in selected_options:
+            ride_data = df_live[df_live['ride_name'] == ride]
+            if ride_data.empty: continue
+            
+            data = ride_data.iloc[0]
+            info = status_map.get(ride, {})
+            panne_act = next((p for p in all_pannes if p['ride'] == ride and p['statut'] == "EN_COURS"), None)
+            
+            # --- 1. CALCUL DE L'HEURE DE FERMETURE (h_f) ---
+            is_daw = any(a.lower() in ride.lower() for a in RIDES_DAW)
+            
+            if ride in ANTICIPATED_CLOSINGS:
+                h_f = ANTICIPATED_CLOSINGS[ride]
+            elif ride in FANTASYLAND_EARLY_CLOSE:
+                # Calcul : DLP_CLOSING - 1 heure
+                base_h = DLP_CLOSING.hour
+                base_m = DLP_CLOSING.minute
+                # On recrée l'heure avec une heure en moins
+                h_f = time(base_h - 1, base_m)
+            else:
+                h_f = DAW_CLOSING if is_daw else DLP_CLOSING
 
-        # --- 1bis. CALCUL DE L'HEURE D'OUVERTURE (h_o) ---
-        
-        h_o = EMT_OPENING if ride in EMT_EARLY_OPEN else PARK_OPENING
-        if ride in SPECIAL_OPENING_HOURS:
-            h_o = SPECIAL_OPENING_HOURS[ride]
-        
-        # --- 2. DÉTERMINATION DU STATUT (LOGIQUE PRIORISÉE) ---
-        rehab_flag = not info.get('opened_yesterday', True) and not info.get('has_opened_today', False) and not data['is_open']
-        
-        # PRIORITÉ 1 : Travaux
-        if rehab_flag: 
-            sub, wait, bg, style, pill = "🛠️ Travaux détectés", "REHAB", "bg-grey", "card-grey", "TRAVAUX"
-        
-        # PRIORITÉ 2 : Fermeture (On retire le "and not data['is_open']" pour plus de fiabilité)
-        # Si l'heure actuelle dépasse h_f, c'est FERMÉ (même si l'API n'est pas encore à jour)
-        elif heure_actuelle >= h_f: 
-            sub, wait, bg, style, pill = f"🏁 Fermé à {h_f.strftime('%H:%M')}", "F I N", "bg-bordeaux", "card-bordeaux", "FERMÉ"
-        
-        # PRIORITÉ 3 : Avant l'ouverture
-        elif heure_actuelle < h_o and not data['is_open']: 
-            sub, wait, bg, style, pill = "🕒 En attente", "- - -", "bg-blue", "card-blue", "ATTENTE"
+            # --- 1bis. CALCUL DE L'HEURE D'OUVERTURE (h_o) ---
+            
+            h_o = EMT_OPENING if ride in EMT_EARLY_OPEN else PARK_OPENING
+            if ride in SPECIAL_OPENING_HOURS:
+                h_o = SPECIAL_OPENING_HOURS[ride]
+            
+            # --- 2. DÉTERMINATION DU STATUT (LOGIQUE PRIORISÉE) ---
+            rehab_flag = not info.get('opened_yesterday', True) and not info.get('has_opened_today', False) and not data['is_open']
+            
+            # PRIORITÉ 1 : Travaux
+            if rehab_flag: 
+                sub, wait, bg, style, pill = "🛠️ Travaux détectés", "REHAB", "bg-grey", "card-grey", "TRAVAUX"
+            
+            # PRIORITÉ 2 : Fermeture (On retire le "and not data['is_open']" pour plus de fiabilité)
+            # Si l'heure actuelle dépasse h_f, c'est FERMÉ (même si l'API n'est pas encore à jour)
+            elif heure_actuelle >= h_f: 
+                sub, wait, bg, style, pill = f"🏁 Fermé à {h_f.strftime('%H:%M')}", "F I N", "bg-bordeaux", "card-bordeaux", "FERMÉ"
+            
+            # PRIORITÉ 3 : Avant l'ouverture
+            elif heure_actuelle < h_o and not data['is_open']: 
+                sub, wait, bg, style, pill = "🕒 En attente", "- - -", "bg-blue", "card-blue", "ATTENTE"
 
-        # PRIORITÉ 4 : Ouverture retardée
-        # Si l'heure d'ouverture est passée, qu'elle est fermée et qu'elle n'a JAMAIS ouvert du jour
-        elif not data['is_open'] and not info.get('has_opened_today', False):
-            sub, wait, bg, style, pill = "⏳ Ouverture retardée", "- - -", "bg-purple", "card-purple", "RETARDÉ"
-        
-        # PRIORITÉ 5 : Incident (Seulement si on est dans les horaires d'ouverture)
-        elif not data['is_open']: 
-            sub, wait, bg, style, pill = f"⚠️ Panne depuis {panne_act['debut'].strftime('%H:%M')}" if panne_act else "⚠️ Interruption", "- - -", "bg-orange", "card-orange", "INCIDENT"
-        
-        # PAR DÉFAUT : Ouvert
-        else: 
-            sub, wait, bg, style, pill = "✅ Opérationnel", int(data['wait_time']), "bg-green", "card-green", "OUVERT"
+            # PRIORITÉ 4 : Ouverture retardée
+            # Si l'heure d'ouverture est passée, qu'elle est fermée et qu'elle n'a JAMAIS ouvert du jour
+            elif not data['is_open'] and not info.get('has_opened_today', False):
+                sub, wait, bg, style, pill = "⏳ Ouverture retardée", "- - -", "bg-purple", "card-purple", "RETARDÉ"
+            
+            # PRIORITÉ 5 : Incident (Seulement si on est dans les horaires d'ouverture)
+            elif not data['is_open']: 
+                sub, wait, bg, style, pill = f"⚠️ Panne depuis {panne_act['debut'].strftime('%H:%M')}" if panne_act else "⚠️ Interruption", "- - -", "bg-orange", "card-orange", "INCIDENT"
+            
+            # PAR DÉFAUT : Ouvert
+            else: 
+                sub, wait, bg, style, pill = "✅ Opérationnel", int(data['wait_time']), "bg-green", "card-green", "OUVERT"
 
-        # --- 3. AFFICHAGE ---
-        render_ride_card(ride, sub, wait, bg, style, pill)
-        
-        with st.expander("📜 Historique"):
-            h_p_clean = [p for p in all_pannes if p['ride'] == ride and (p['statut'] == "EN_COURS" or p['duree'] >= 2)]
-            p_triees = sorted(h_p_clean, key=lambda x: x['debut'], reverse=True)
-            do_live = (heure_actuelle > h_o) and (heure_actuelle < h_f) and not info.get('has_opened_today', False) and not data['is_open']
-            render_history_expander(ride, rehab_flag, h_p_clean, p_triees, do_live, h_o, h_f, data['is_open'])
+            # --- 3. AFFICHAGE ---
+            render_ride_card(ride, sub, wait, bg, style, pill)
+            
+            with st.expander("📜 Historique"):
+                h_p_clean = [p for p in all_pannes if p['ride'] == ride and (p['statut'] == "EN_COURS" or p['duree'] >= 2)]
+                p_triees = sorted(h_p_clean, key=lambda x: x['debut'], reverse=True)
+                do_live = (heure_actuelle > h_o) and (heure_actuelle < h_f) and not info.get('has_opened_today', False) and not data['is_open']
+                render_history_expander(ride, rehab_flag, h_p_clean, p_triees, do_live, h_o, h_f, data['is_open'])
 
 # --- SECTION FLUX & STATISTIQUES ---
 st.write("---")
@@ -342,6 +341,14 @@ with col_flux:
 # ==========================================
 # DROITE : STATISTIQUES (30 DERNIERS JOURS)
 # ==========================================
+
+def get_ride_stats_30d(ride_name):
+    resp = supabase.table("logs_101").select("*") \
+        .eq("ride_name", ride_name) \
+        .gte("start_time", date_30j) \
+        .execute()
+    return pd.DataFrame(resp.data)
+
 with col_stats:
     st.subheader("📊 Analyse 30 jours")
     
