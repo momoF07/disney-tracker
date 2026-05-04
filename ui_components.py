@@ -4,7 +4,7 @@ import streamlit as st
 def render_metric_row(meteo_data, park_hours, show_info):
     col1, col2, col3 = st.columns(3)
     col1.metric("Météo", f"{meteo_data['temp']}°C", delta=meteo_data['status'])
-    col2.metric("Horaires DLP", park_hours)
+    col2.metric("Horaires", park_hours)
     col3.metric("Prochain Show", show_info['name'], delta=show_info['time'])
 
 def render_activity_item(time, event, ride, style):

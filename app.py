@@ -75,6 +75,7 @@ if res_show.data:
 # Note : Tu peux brancher une API météo réelle ici plus tard
 render_metric_row(
     {"temp": 12, "status": "Ciel Étoilé"}, 
+    hours_display, 
     next_show_data
 )
 st.divider()
