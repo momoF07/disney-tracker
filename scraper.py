@@ -10,8 +10,8 @@ SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 
 # IDs Destination (Paris)
 PARKS = {
-    "DLP": "dae968d5-630d-4719-8b06-3d107e944401", 
-    "DAW": "ca888437-ebb4-4d50-aed2-d227f7096968"
+    "DLP": "dae968d5-630d-4719-8b06-3d107e944401", # Disneyland Park (P1)
+    "DAW": "ca888437-ebb4-4d50-aed2-d227f7096968"  # Disney Adventure World (P2)
 }
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -19,6 +19,7 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 def fetch_and_sync():
     for park_code, park_id in PARKS.items():
         print(f"🔄 Scraping {park_code} ({park_id})...")
+        # Test de l'URL live
         url = f"https://api.themeparks.wiki/v1/entity/{park_id}/live"
         
         try:
@@ -26,22 +27,33 @@ def fetch_and_sync():
             response.raise_for_status()
             raw_data = response.json()
             
-            # Vérification du contenu
+            # --- DEBUG DE STRUCTURE ---
+            # Si data est vide, on affiche les clés du JSON pour comprendre
             data = raw_data.get('live', [])
-            print(f"📊 {park_code} : {len(data)} entités reçues.")
             
             if not data:
-                print(f"⚠️ Aucun contenu 'live' pour {park_code}")
-                continue
-
+                print(f"❓ 'live' est vide. Clés reçues : {list(raw_data.keys())}")
+                # Tentative de repli si les données sont ailleurs dans le JSON
+                if 'children' in raw_data:
+                    print(f"ℹ️ Tentative via 'children'...")
+                    data = raw_data.get('children', [])
+            
+            print(f"📊 {park_code} : {len(data)} entités reçues.")
+            
             for item in data:
-                # Filtrage insensible à la casse
-                if item.get('entityType', '').upper() == 'ATTRACTION':
+                # L'API peut renvoyer 'ATTRACTION' ou 'attraction'
+                e_type = str(item.get('entityType', '')).upper()
+                if e_type == 'ATTRACTION':
                     process_ride(item)
+                # Si on est sur un ID de destination, les attractions sont dans les enfants
+                elif e_type == 'PARK' and 'live' in item:
+                    for sub_item in item.get('live', []):
+                        if str(sub_item.get('entityType', '')).upper() == 'ATTRACTION':
+                            process_ride(sub_item)
                     
         except Exception as e:
             print(f"❌ Erreur critique sur {park_code}: {e}")
-
+            
 def process_ride(item):
     api_name = item['name']
     
