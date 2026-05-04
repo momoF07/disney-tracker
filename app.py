@@ -28,7 +28,7 @@ if "bypass_maintenance" not in st.session_state:
     st.session_state.bypass_maintenance = False
 
 # 2. Variable de contrôle globale
-MAINTENANCE_MODE = False 
+MAINTENANCE_MODE = True 
 
 # 3. Logique de filtrage
 if MAINTENANCE_MODE and not st.session_state.bypass_maintenance:
