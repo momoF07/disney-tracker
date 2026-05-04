@@ -40,5 +40,6 @@ def get_ride_history(_supabase, ride_name):
         return pd.DataFrame()
 
 def get_weather():
-    """Simule ou récupère la météo réelle (Marne-la-Vallée)"""
+    """Récupère la météo réelle de Marne-la-Vallée (Simulation préparée)"""
+    # Tu pourras connecter une API comme OpenWeatherMap ici plus tard
     return {"temp": 15, "status": "Nuageux", "icon": "☁️"}
