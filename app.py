@@ -54,7 +54,7 @@ tab1, tab2 = st.tabs(["Disneyland Park", "Disney Adventure World"])
 with tab1:
     # Ici on bouclera sur PARKS_DATA["Disneyland Park"]
     # land_cols = st.columns(3) ... etc.
-    st.info("Les cartes d'attractions s'afficheront ici par zone.")
+    st.info("Les cartes du Disneyland Park s'afficheront ici par zone.")
 
 with tab2:
     st.info("Les cartes de Disney Adventure World s'afficheront ici.")
@@ -72,7 +72,7 @@ flux_data = [
 
 for item in flux_data:
     st.markdown(f"""
-        <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px; border-left: 5px solid {item['style']}; margin-bottom: 10px;">
+        <div style="background: {item['style']}; padding: 10px; border-radius: 10px; border-left: 5px solid {item['style']}; margin-bottom: 10px;">
             <small style="color: #64748b;">{item['time']}</small> | <b>{item['event']}</b> : {item['ride']}
         </div>
     """, unsafe_allow_html=True)
