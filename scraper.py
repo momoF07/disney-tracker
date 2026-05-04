@@ -16,6 +16,35 @@ PARKS = {
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
+
+def send_discord_alert(ride_name, is_open, wait_time):
+    if not DISCORD_WEBHOOK_URL:
+        return
+
+    # Style du message
+    color = 0x2ECC71 if is_open else 0xE74C3C # Vert pour réouverture, Rouge pour panne
+    status_text = "✅ RÉOUVERTURE" if is_open else "⚠️ INTERRUPTION"
+    emoji = "🎢"
+    
+    payload = {
+        "embeds": [{
+            "title": f"{emoji} {status_text}",
+            "description": f"**{ride_name}** est désormais {'ouvert' if is_open else 'en panne'}.",
+            "color": color,
+            "fields": [
+                {"name": "Temps d'attente", "value": f"{wait_time} min", "inline": True},
+                {"name": "Heure", "value": datetime.now().strftime("%H:%M"), "inline": True}
+            ],
+            "footer": {"text": "Disney Tracker Live Update"}
+        }]
+    }
+    
+    try:
+        requests.post(DISCORD_WEBHOOK_URL, json=payload)
+    except Exception as e:
+        print(f"Erreur Webhook: {e}")
+
 def super_clean(text):
     """Garde uniquement les lettres et chiffres (ignore émojis, accents, symboles)"""
     if not text: return ""
