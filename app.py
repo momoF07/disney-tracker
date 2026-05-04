@@ -1,4 +1,3 @@
-# app.py
 import streamlit as st
 import pandas as pd
 import config as cfg
@@ -20,7 +19,6 @@ live_data = get_live_wait_times(supabase)
 # --- 1. HEADER (Météo / Horaires / Shows) ---
 st.title("🏰 Disney Live Control Center")
 
-# Récupération du prochain show via Supabase
 now_iso = datetime.now(timezone.utc).isoformat()
 res_show = supabase.table("show_times") \
     .select("*") \
@@ -47,51 +45,79 @@ st.divider()
 
 # --- 2. TEMPS D'ATTENTE ---
 st.header("🎢 Temps d'Attente")
-tab1, tab2 = st.tabs(["Disneyland Park", "Disney Adventure World"])
+tab_wait1, tab_wait2 = st.tabs(["Disneyland Park", "Disney Adventure World"])
 
 def render_park_tab(park_key):
-    """Boucle sur les lands et affiche les attractions sous forme de metrics"""
     for land, rides in cfg.PARKS_DATA[park_key].items():
         with st.expander(f"📍 {land}", expanded=True):
-            cols = st.columns(4) # 4 colonnes pour une grille plus dense
+            cols = st.columns(4)
             for i, ride_name in enumerate(rides):
                 data = live_data.get(ride_name)
-                
                 if data:
                     wait = data["wait_time"]
                     is_open = data["is_open"]
                     status_text = "Ouvert ✅" if is_open else "Fermé 🔴"
-                    val_display = f"{wait} min" if is_open else "---"
-                    
                     with cols[i % 4]:
-                        st.metric(
-                            label=ride_name, 
-                            value=val_display, 
-                            delta=status_text,
-                            delta_color="normal" if is_open else "inverse"
-                        )
+                        st.metric(label=ride_name, value=f"{wait} min" if is_open else "---", 
+                                  delta=status_text, delta_color="normal" if is_open else "inverse")
                 else:
-                    with cols[i % 4]:
-                        st.caption(f"⌛ {ride_name}\n(Indisponible)")
+                    with cols[i % 4]: st.caption(f"⌛ {ride_name}\n(Indisponible)")
 
-with tab1:
-    render_park_tab("Disneyland Park")
-
-with tab2:
-    render_park_tab("Disney Adventure World")
+with tab_wait1: render_park_tab("Disneyland Park")
+with tab_wait2: render_park_tab("Disney Adventure World")
 
 st.divider()
 
-# --- 3. FLUX D'ACTIVITÉS (Journal en direct) ---
+# --- 3. AGENDA DES SPECTACLES (NOUVEAU) ---
+st.header("🎭 Agenda des Spectacles")
+tab_show1, tab_show2 = st.tabs(["Disneyland Park", "Disney Adventure World"])
+
+def render_shows(park_code):
+    # Récupération de tous les shows du jour pour le parc
+    res = supabase.table("show_times") \
+        .select("*") \
+        .eq("park", park_code) \
+        .order("start_time") \
+        .execute()
+    
+    if not res.data:
+        st.info("Aucun horaire de spectacle disponible pour le moment.")
+        return
+
+    # Groupement par nom de show pour l'affichage
+    df_shows = pd.DataFrame(res.data)
+    unique_shows = df_shows['show_name'].unique()
+    
+    cols = st.columns(3)
+    for i, name in enumerate(unique_shows):
+        show_perf = df_shows[df_shows['show_name'] == name]
+        
+        # Trouver la prochaine performance
+        future_perf = show_perf[show_perf['is_performed'] == False]
+        next_time = pd.to_datetime(future_perf['start_time'].iloc[0]).strftime("%H:%M") if not future_perf.empty else "Terminé"
+        
+        # Liste de tous les horaires pour le sous-titre
+        all_times = ", ".join([pd.to_datetime(t).strftime("%H:%M") for t in show_perf['start_time']])
+
+        with cols[i % 3]:
+            st.metric(
+                label=name,
+                value=next_time,
+                delta=f"Séances : {all_times}",
+                delta_color="off"
+            )
+
+with tab_show1: render_shows("DLP")
+with tab_show2: render_shows("DAW")
+
+st.divider()
+
+# --- 4. FLUX D'ACTIVITÉS ---
 st.header("🚨 Flux d'Activités")
-
 recent_logs = get_recent_logs(supabase, limit=8)
-
 if recent_logs:
     for log in recent_logs:
-        # Formatage de l'heure
         time_str = pd.to_datetime(log['start_time']).strftime("%H:%M")
-        
         if log['end_time'] is None:
             render_activity_item(time_str, "⚠️ Interruption", log['ride_name'], cfg.STYLES["orange"])
         else:
@@ -101,7 +127,7 @@ else:
 
 st.divider()
 
-# --- 4. ANALYSE DE PERFORMANCE ---
+# --- 5. ANALYSE DE PERFORMANCE ---
 st.header("📊 Analyse de Performance")
 
 col_scope, col_target = st.columns(2)
