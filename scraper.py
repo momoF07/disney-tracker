@@ -58,7 +58,7 @@ def process_ride(item):
     # On ne traite l'attraction QUE si elle est dans ta config officielle
     if full_name not in cfg.ALL_RIDES_LIST:
         # Optionnel : log pour savoir ce qui est rejeté
-        # print(f"ℹ️ Ignoré (non listé) : {full_name}")
+        print(f"ℹ️ Ignoré (non listé) : {full_name}")
         return 
     # ------------------------------------
 
