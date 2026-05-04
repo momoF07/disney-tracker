@@ -80,46 +80,84 @@ render_metric_row(
 )
 st.divider()
 
-# --- 2. TEMPS D'ATTENTE ---
-st.header("🎢 Temps d'Attente")
-tab_wait1, tab_wait2 = st.tabs(["Disneyland Park", "Disney Adventure World"])
+# --- 2. TEMPS D'ATTENTE (UI Premium) ---
+st.header("🎢 État des Attractions")
 
-def render_park_tab(park_key):
+# Récupération des horaires pour les badges d'onglets
+def get_park_hours(park_id):
+    res = supabase.table("park_schedule").select("*").eq("park_id", park_id).eq("date", today_date).execute()
+    if res.data:
+        s = res.data[0]
+        o = pd.to_datetime(s['opening_time']).astimezone(paris_tz).strftime("%H:%M")
+        c = pd.to_datetime(s['closing_time']).astimezone(paris_tz).strftime("%H:%M")
+        return f"{o} - {c}"
+    return "Horaires NC"
+
+hours_dlp = get_park_hours("DLP")
+hours_daw = get_park_hours("DAW")
+
+# Onglets avec horaires intégrés
+tab_wait1, tab_wait2 = st.tabs([f"🏰 Disneyland Park ({hours_dlp})", f"🎬 Adventure World ({hours_daw})"])
+
+def render_premium_cards(park_key):
     for land, rides in cfg.PARKS_DATA[park_key].items():
-        with st.expander(f"📍 {land}", expanded=True):
-            cols = st.columns(4)
-            for i, ride_name in enumerate(rides):
-                data = live_data.get(ride_name)
-                
-                with cols[i % 4]:
+        st.markdown(f"#### 📍 {land}")
+        cols = st.columns(4)
+        
+        for i, ride_name in enumerate(rides):
+            data = live_data.get(ride_name)
+            with cols[i % 4]:
+                # Conteneur stylisé avec bordure
+                with st.container(border=True):
                     if data:
                         wait = data["wait_time"]
                         is_open = data["is_open"]
-                        status_text = "Ouvert ✅" if is_open else "Fermé 🔴"
                         
-                        st.metric(
-                            label=ride_name, 
-                            value=f"{wait} min" if is_open else "---", 
-                            delta=status_text, 
-                            delta_color="normal" if is_open else "inverse"
-                        )
-                        
-                        # Le popover ne charge les données que si l'on clique dessus
-                        with st.popover("📈 Historique", use_container_width=True):
-                            # On ne fait l'appel Supabase QUE si le popover est ouvert
-                            from data_manager import get_ride_history
-                            h_df = get_ride_history(supabase, ride_name)
-                            
-                            if not h_df.empty:
-                                st.caption(f"Dernières 24h - {ride_name}")
-                                st.line_chart(h_df.set_index("heure")["attente"])
-                            else:
-                                st.write("Aucun historique pour le moment.")
-                    else:
-                        st.caption(f"⌛ {ride_name}\n(Indisponible)")
+                        # Logique de couleur
+                        if not is_open:
+                            color = "🔴"
+                            text_color = "gray"
+                            label_suffix = "(Fermé)"
+                        elif wait <= 20:
+                            color = "🟢"
+                            text_color = "green"
+                            label_suffix = ""
+                        elif wait <= 50:
+                            color = "🟡"
+                            text_color = "orange"
+                            label_suffix = ""
+                        else:
+                            color = "🔴"
+                            text_color = "red"
+                            label_suffix = ""
 
-with tab_wait1: render_park_tab("Disneyland Park")
-with tab_wait2: render_park_tab("Disney Adventure World")
+                        # Affichage du nom et du temps
+                        st.markdown(f"**{ride_name}**")
+                        
+                        if is_open:
+                            # Utilisation de colonnes pour aligner le chiffre et l'historique
+                            c1, c2 = st.columns([1, 1])
+                            c1.markdown(f"### {wait} <small>min</small>", unsafe_allow_html=True)
+                            with c2:
+                                with st.popover("📈"):
+                                    from data_manager import get_ride_history
+                                    h_df = get_ride_history(supabase, ride_name)
+                                    if not h_df.empty:
+                                        st.line_chart(h_df.set_index("heure")["attente"], height=150)
+                            
+                            # Petite barre de progression visuelle (max 120min)
+                            progress = min(wait / 120, 1.0)
+                            st.progress(progress)
+                        else:
+                            st.markdown("🔒 *Actuellement fermé*")
+                    else:
+                        st.caption(f"⌛ {ride_name}\nIndisponible")
+
+with tab_wait1:
+    render_premium_cards("Disneyland Park")
+
+with tab_wait2:
+    render_premium_cards("Disney Adventure World")
 
 st.divider()
 
