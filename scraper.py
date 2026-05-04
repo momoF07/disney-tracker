@@ -1,5 +1,6 @@
 import os
 import requests
+import config as cfg # Importe ton fichier config.py
 from supabase import create_client
 from datetime import datetime
 
@@ -33,22 +34,40 @@ def fetch_and_sync():
             print(f"❌ Erreur sur {park_code}: {e}")
 
 def process_ride(item):
-    name = item['name']
-    status = item['status'] # OPERATING, DOWN, CLOSED, REFURBISHMENT
+    api_name = item['name']
+    
+    # --- LOGIQUE DE CORRESPONDANCE DES NOMS ---
+    # On reconstruit le nom exact avec l'émoji tel qu'il est dans rides_info
+    # Exemple: "Big Thunder Mountain" -> "Big Thunder Mountain ⛰️"
+    emoji = cfg.get_emoji(api_name)
+    
+    # Si l'émoji est trouvé et n'est pas déjà dans le nom, on l'ajoute
+    # (Adaptation selon comment tu as rempli rides_info via init_db)
+    full_name = f"{api_name} {emoji}".strip() if emoji != "🎡" else api_name
+    
+    # DEBUG pour voir ce qui est envoyé
+    print(f"DEBUG: API dit '{api_name}' -> On cherche '{full_name}'")
+
+    status = item['status']
     wait = item.get('queue', {}).get('STANDBY', {}).get('waitTime', 0)
     is_open = (status == 'OPERATING')
 
-    # 1. Mise à jour de la table Live (Upsert)
-    supabase.table("disney_live").upsert({
-        "ride_name": name,
-        "wait_time": wait,
-        "is_open": is_open,
-        "status": status,
-        "last_updated": "now()"
-    }, on_conflict="ride_name").execute()
+    try:
+        # 1. Mise à jour de la table Live
+        # L'upsert ne marchera QUE si full_name existe déjà dans rides_info
+        supabase.table("disney_live").upsert({
+            "ride_name": full_name, 
+            "wait_time": wait,
+            "is_open": is_open,
+            "status": status,
+            "last_updated": "now()"
+        }, on_conflict="ride_name").execute()
 
-    # 2. Logique de détection de Panne (101)
-    handle_breakdown_logic(name, status)
+        # 2. Logique de détection de Panne (101)
+        handle_breakdown_logic(full_name, status)
+        
+    except Exception as e:
+        print(f"⚠️ Erreur insertion pour {full_name}: {e}")
 
 def handle_breakdown_logic(name, current_status):
     # On vérifie si un log est déjà ouvert pour cette attraction
