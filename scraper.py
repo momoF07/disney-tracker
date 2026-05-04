@@ -62,14 +62,14 @@ def fetch_shows():
         response = requests.get(url, timeout=15)
         response.raise_for_status()
         data = response.json().get('liveData', [])
+        
+        # On récupère l'heure actuelle AVEC information de timezone (UTC)
         now = datetime.now(timezone.utc)
         count = 0
 
         for item in data:
             if item.get('entityType') == 'SHOW':
                 show_name = item.get('name')
-                
-                # LA CORRECTION EST ICI : 'showtimes' en minuscules
                 slots = item.get('showtimes', [])
                 
                 if not slots:
@@ -79,27 +79,28 @@ def fetch_shows():
                     start_str = slot.get('startTime')
                     if not start_str: continue
                     
-                    # Conversion en datetime pour comparer
+                    # L'API renvoie "2026-05-04T22:30:00+02:00"
+                    # fromisoformat() comprend le "+02:00" et crée un objet offset-aware
                     start_dt = datetime.fromisoformat(start_str)
+                    
+                    # La comparaison est maintenant safe : UTC vs UTC+2 géré par Python
                     is_performed = now > start_dt
 
-                    # On récupère le parkId pour déduire le parc
                     park_id = item.get('parkId', '')
                     park_name = "DAW" if park_id == "ca888437-ebb4-4d50-aed2-d227f7096968" else "DLP"
 
-                    # Upsert dans Supabase
                     supabase.table("show_times").upsert({
                         "show_name": show_name,
                         "park": park_name,
                         "location": item.get('location', 'Disneyland Paris'),
-                        "start_time": start_str,
+                        "start_time": start_str, # On garde le string original avec l'offset (+02:00)
                         "is_performed": is_performed,
                         "updated_at": now.isoformat()
                     }, on_conflict="show_name, start_time").execute()
                     
                     count += 1
         
-        print(f"🎭 Shows : {count} performances synchronisées (Clé 'showtimes' détectée).")
+        print(f"🎭 Shows : {count} performances synchronisées (TimeZone Corrected).")
 
     except Exception as e:
         print(f"❌ Erreur Shows: {e}")

@@ -1,14 +1,16 @@
 import streamlit as st
 import pandas as pd
 import config as cfg
+import pytz
 from datetime import datetime, timezone
 from ui_components import render_metric_row, render_activity_item
 from data_manager import init_supabase, get_live_wait_times, get_recent_logs, get_stats_for_rides
 from streamlit_autorefresh import st_autorefresh
 
-# 1. Configuration et Refresh (Toutes les 5 minutes)
+# 1. Configuration, UTC et Refresh (Toutes les 5 minutes)
 st.set_page_config(page_title="Disney Tracker Pro", layout="wide", initial_sidebar_state="collapsed")
 st_autorefresh(interval=5 * 60 * 1000, key="datarefresh")
+paris_tz = pytz.timezone("Europe/Paris")
 
 # 2. Initialisation Supabase
 supabase = init_supabase()
@@ -31,9 +33,13 @@ res_show = supabase.table("show_times") \
 next_show_data = {"name": "Aucun show", "time": "--:--"}
 if res_show.data:
     s = res_show.data[0]
+    # Conversion forcée vers l'heure de Paris
+    dt_utc = pd.to_datetime(s['start_time'])
+    dt_paris = dt_utc.astimezone(paris_tz)
+    
     next_show_data = {
         "name": s['show_name'], 
-        "time": pd.to_datetime(s['start_time']).strftime("%H:%M")
+        "time": dt_paris.strftime("%H:%M")
     }
 
 render_metric_row(
@@ -94,10 +100,21 @@ def render_shows(park_code):
         
         # Trouver la prochaine performance
         future_perf = show_perf[show_perf['is_performed'] == False]
-        next_time = pd.to_datetime(future_perf['start_time'].iloc[0]).strftime("%H:%M") if not future_perf.empty else "Terminé"
         
-        # Liste de tous les horaires pour le sous-titre
-        all_times = ", ".join([pd.to_datetime(t).strftime("%H:%M") for t in show_perf['start_time']])
+        if not future_perf.empty:
+            # Conversion Heure de Paris pour le "Value"
+            next_dt = pd.to_datetime(future_perf['start_time'].iloc[0]).astimezone(paris_tz)
+            next_time = next_dt.strftime("%H:%M")
+        else:
+            next_time = "Terminé"
+        
+        # Conversion Heure de Paris pour la liste complète (delta)
+        formatted_times = []
+        for t in show_perf['start_time']:
+            t_paris = pd.to_datetime(t).astimezone(paris_tz)
+            formatted_times.append(t_paris.strftime("%H:%M"))
+            
+        all_times = ", ".join(formatted_times)
 
         with cols[i % 3]:
             st.metric(
