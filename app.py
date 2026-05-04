@@ -1,70 +1,68 @@
 import streamlit as st
 import pandas as pd
 from supabase import create_client
-from datetime import datetime, time
+from datetime import datetime
 import pytz
 
-# --- INITIALISATION & CONNEXION ---
+# --- CONFIGURATION & DONNÉES DE RÉFÉRENCE ---
 st.set_page_config(page_title="Disney Tracker Pro", layout="wide", initial_sidebar_state="collapsed")
 
-if "bypass_maintenance" not in st.session_state:
-    st.session_state.bypass_maintenance = False
+# Simulation des données de structure (À lier à ta table rides_info plus tard)
+PARKS_DATA = {
+    "Disneyland Park": {
+        "Main Street U.S.A": ["Railroad"],
+        "Fantasyland": ["Peter Pan", "it's a small world"],
+        "Adventureland": ["Pirates", "Indy"],
+        "Frontierland": ["BTM", "Phantom Manor"],
+        "Discoveryland": ["Space Mountain", "Star Tours"]
+    },
+    "Disney Adventure World": {
+        "World of Pixar": ["Crush's Coaster", "Ratatouille"],
+        "Avengers Campus": ["Spider-Man", "Iron Man"],
+        "Production Courtyard": ["Tower of Terror"]
+    }
+}
 
-MAINTENANCE_MODE = False 
-if MAINTENANCE_MODE and not st.session_state.bypass_maintenance:
-    from maintenance import show_maintenance
-    show_maintenance()
+# Liste plate pour le sélecteur par attraction
+ALL_RIDES_LIST = [ride for park in PARKS_DATA.values() for land in park.values() for ride in land]
 
+# --- CONNEXION SUPABASE ---
 @st.cache_resource
 def init_supabase():
     return create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 
-supabase = init_supabase()
-paris_tz = pytz.timezone('Europe/Paris')
-maintenant = datetime.now(paris_tz)
+# supabase = init_supabase() # Activé une fois les secrets configurés
 
-# --- 1. BLOC INFOS (Météo, Horaires, Spectacles) ---
+# --- HEADER & INFOS ---
 st.title("🏰 Disney Live Control Center")
 
-# On crée des sous-colonnes juste pour les petites infos du haut
 info_cols = st.columns(3)
-
 with info_cols[0]:
-    # Météo avec Alerte Orage
-    meteo = {"temp": 18, "condition": "Orage"} # Exemple API
-    orage_alerte = "⚡ ALERTE ORAGE : Attractions extérieures fermées" if meteo["condition"] == "Orage" else "🌤️ Météo Clémente"
+    meteo = {"temp": 18, "condition": "Orage"} 
+    orage_alerte = "⚡ ALERTE ORAGE" if meteo["condition"] == "Orage" else "🌤️ Météo Clémente"
     st.metric("Météo", f"{meteo['temp']}°C", delta=orage_alerte, delta_color="inverse" if meteo["condition"] == "Orage" else "normal")
 
 with info_cols[1]:
-    # Horaires Parcs
     st.metric("Horaires DLP", "09:30 - 21:00", delta="EMT: 08:30")
 
 with info_cols[2]:
-    # Prochain Spectacle
     st.metric("Prochain Show", "Disney Illuminations", delta="À 21:00")
 
 st.write("---")
 
-# --- 2. BLOC TEMPS D'ATTENTE (Par Land) ---
+# --- TEMPS D'ATTENTE ---
 st.header("🎢 Temps d'Attente")
-
-# Exemple de filtre par Parc (Tabs)
 tab1, tab2 = st.tabs(["Disneyland Park", "Disney Adventure World"])
 
 with tab1:
-    # Ici on bouclera sur PARKS_DATA["Disneyland Park"]
-    # land_cols = st.columns(3) ... etc.
     st.info("Les cartes du Disneyland Park s'afficheront ici par zone.")
-
 with tab2:
     st.info("Les cartes de Disney Adventure World s'afficheront ici.")
 
 st.write("---")
 
-# --- 3. BLOC FLUX D'ACTIVITÉS (Historique récent) ---
+# --- FLUX D'ACTIVITÉS ---
 st.header("🚨 Flux d'Activités")
-
-# Simulation de flux
 flux_data = [
     {"time": "14:20", "event": "✅ Réouverture", "ride": "Big Thunder Mountain", "style": "green"},
     {"time": "14:05", "event": "⚠️ Interruption", "ride": "Star Wars Hyperspace Mountain", "style": "orange"},
@@ -79,17 +77,44 @@ for item in flux_data:
 
 st.write("---")
 
-# --- 4. BLOC ANALYSE & STATS (Le mois) ---
-st.header("📊 Statistiques du Mois")
-st.caption("Données basées sur les 30 derniers jours")
+# --- 4. BLOC ANALYSE & STATS ---
+st.header("📊 Analyse de Performance")
 
-stat_cols = st.columns(3)
-with stat_cols[0]:
-    st.metric("Interruptions totales", "42", delta="+5% vs mois dernier")
-with stat_cols[1]:
-    st.metric("Durée moyenne 101", "24 min", delta="-2 min")
-with stat_cols[2]:
-    st.metric("Attente moy. globale", "35 min")
+# Sélecteurs de granularité
+col_scope, col_target = st.columns(2)
 
-# Graphique d'activité
-st.area_chart(pd.DataFrame([10, 15, 8, 12, 20, 14], columns=["Pannes"]), height=200)
+with col_scope:
+    scope = st.selectbox(
+        "Niveau d'analyse", 
+        ["Global (2 Parcs)", "Disneyland Park", "Disney Adventure World", "Par Land", "Par Attraction"]
+    )
+
+# Logique dynamique pour le deuxième sélecteur
+target_options = []
+if scope == "Par Land":
+    target_options = list(PARKS_DATA["Disneyland Park"].keys()) + list(PARKS_DATA["Disney Adventure World"].keys())
+elif scope == "Par Attraction":
+    target_options = ALL_RIDES_LIST
+
+with col_target:
+    if target_options:
+        target_selection = st.selectbox(f"Choisir l'élément", target_options)
+    else:
+        st.info("Analyse groupée active : " + scope)
+
+# Affichage des Metrics
+st.markdown("#### Indicateurs clés (30 derniers jours)")
+m_cols = st.columns(3)
+
+with m_cols[0]:
+    st.metric("Total Interruptions", "128", delta="-12% (Mois dernier)")
+    
+with m_cols[1]:
+    st.metric("Moyenne 101", "28 min", delta="Stable")
+    
+with m_cols[2]:
+    st.metric("Attente Moyenne", "42 min", delta="+5 min")
+
+# Graphique Temporel
+st.markdown(f"**Évolution des incidents : {scope if not target_options else target_selection}**")
+st.area_chart(pd.DataFrame([2, 5, 1, 4, 3, 6, 4], columns=["Incidents"]), height=200)
