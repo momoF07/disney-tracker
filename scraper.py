@@ -46,14 +46,21 @@ def fetch_and_sync():
                     
         except Exception as e:
             print(f"❌ Erreur critique sur {park_code}: {e}")
-            
+
 def process_ride(item):
     api_name = item['name']
     
-    # --- LOGIQUE DE CORRESPONDANCE ---
-    # On vérifie si l'émoji est déjà dans le nom, sinon on l'ajoute
+    # 1. On récupère l'émoji et on construit le nom complet
     emoji = cfg.get_emoji(api_name)
     full_name = api_name if emoji in api_name else f"{api_name} {emoji}".strip()
+
+    # --- NOUVEAU : FILTRE DE SÉCURITÉ ---
+    # On ne traite l'attraction QUE si elle est dans ta config officielle
+    if full_name not in cfg.ALL_RIDES_LIST:
+        # Optionnel : log pour savoir ce qui est rejeté
+        # print(f"ℹ️ Ignoré (non listé) : {full_name}")
+        return 
+    # ------------------------------------
 
     status = item.get('status', 'CLOSED')
     wait = item.get('queue', {}).get('STANDBY', {}).get('waitTime', 0)
@@ -69,15 +76,12 @@ def process_ride(item):
             "last_updated": datetime.now().isoformat()
         }, on_conflict="ride_name").execute()
         
-        # Log pour confirmer l'envoi
         if res.data:
             print(f"✅ Synced: {full_name} ({wait} min)")
         
-        # Logique de panne
         handle_breakdown_logic(full_name, status)
         
     except Exception as e:
-        # Si ça échoue ici, c'est sûrement la Foreign Key
         print(f"⚠️ Erreur Supabase pour {full_name}: {e}")
 
 def handle_breakdown_logic(name, current_status):
