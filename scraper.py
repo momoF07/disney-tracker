@@ -19,7 +19,6 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 def fetch_and_sync():
     for park_code, park_id in PARKS.items():
         print(f"🔄 Scraping {park_code} ({park_id})...")
-        # Test de l'URL live
         url = f"https://api.themeparks.wiki/v1/entity/{park_id}/live"
         
         try:
@@ -27,29 +26,23 @@ def fetch_and_sync():
             response.raise_for_status()
             raw_data = response.json()
             
-            # --- DEBUG DE STRUCTURE ---
-            # Si data est vide, on affiche les clés du JSON pour comprendre
-            data = raw_data.get('live', [])
+            # L'API utilise 'liveData' au lieu de 'live' sur ces IDs
+            data = raw_data.get('liveData', [])
             
+            # Si jamais c'est encore vide, on tente un dernier repli sur 'live'
             if not data:
-                print(f"❓ 'live' est vide. Clés reçues : {list(raw_data.keys())}")
-                # Tentative de repli si les données sont ailleurs dans le JSON
-                if 'children' in raw_data:
-                    print(f"ℹ️ Tentative via 'children'...")
-                    data = raw_data.get('children', [])
-            
-            print(f"📊 {park_code} : {len(data)} entités reçues.")
+                data = raw_data.get('live', [])
+
+            print(f"📊 {park_code} : {len(data)} entités trouvées dans liveData.")
             
             for item in data:
-                # L'API peut renvoyer 'ATTRACTION' ou 'attraction'
-                e_type = str(item.get('entityType', '')).upper()
-                if e_type == 'ATTRACTION':
+                # Dans liveData, entityType est souvent présent
+                # On traite si c'est une attraction
+                if item.get('entityType', '').upper() == 'ATTRACTION':
                     process_ride(item)
-                # Si on est sur un ID de destination, les attractions sont dans les enfants
-                elif e_type == 'PARK' and 'live' in item:
-                    for sub_item in item.get('live', []):
-                        if str(sub_item.get('entityType', '')).upper() == 'ATTRACTION':
-                            process_ride(sub_item)
+                # Parfois l'API ne met pas entityType dans liveData mais le nom suffit
+                # Si tu vois que le compteur est bon mais rien ne s'insère, 
+                # on pourra retirer la condition entityType.
                     
         except Exception as e:
             print(f"❌ Erreur critique sur {park_code}: {e}")
