@@ -178,6 +178,24 @@ def get_rides_by_zone(zone_code, all_rides_list, all_pannes=[]):
     
     return matched
 
+# Liste plate de toutes les attractions pour les sélecteurs de stats
+ALL_RIDES_LIST = RIDES_DLP + RIDES_DAW
+
+# Mapping pour les titres propres dans l'UI
+LAND_DISPLAY_NAMES = {
+    "DLP": "Disneyland Park (Complet)",
+    "DAW": "Disney Adventure World (Complet)",
+    "FANTASY": "Fantasyland",
+    "DISCO": "Discoveryland",
+    "FRONTIER": "Frontierland",
+    "ADVENTURE": "Adventureland",
+    "MS": "Main Street",
+    "AVENGERS": "Avengers Campus",
+    "PIXAR": "World of Pixar",
+    "PROD3": "Production Courtyard",
+    "WOF": "World of Frozen"
+}
+
 STYLES = {
     "green": "green",
     "orange": "orange",
