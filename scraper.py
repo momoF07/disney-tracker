@@ -121,8 +121,15 @@ def process_ride(item, official_name):
         }).execute()
         
         if res.data:
-            print(f"✅ Synced: {official_name} ({wait} min)")
+        # ON AJOUTE L'HISTORIQUE ICI
+            supabase.table("ride_history").insert({
+                "ride_name": official_name,
+                "wait_time": wait,
+                "last_updated": datetime.now().isoformat()
+            }).execute()
+        
             handle_breakdown_logic(official_name, status)
+            return True
         
     except Exception as e:
         print(f"⚠️ Erreur Supabase pour {official_name}: {e}")

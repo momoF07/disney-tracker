@@ -59,15 +59,33 @@ def render_park_tab(park_key):
             cols = st.columns(4)
             for i, ride_name in enumerate(rides):
                 data = live_data.get(ride_name)
-                if data:
-                    wait = data["wait_time"]
-                    is_open = data["is_open"]
-                    status_text = "Ouvert ✅" if is_open else "Fermé 🔴"
-                    with cols[i % 4]:
-                        st.metric(label=ride_name, value=f"{wait} min" if is_open else "---", 
-                                  delta=status_text, delta_color="normal" if is_open else "inverse")
-                else:
-                    with cols[i % 4]: st.caption(f"⌛ {ride_name}\n(Indisponible)")
+                
+                with cols[i % 4]:
+                    if data:
+                        wait = data["wait_time"]
+                        is_open = data["is_open"]
+                        status_text = "Ouvert ✅" if is_open else "Fermé 🔴"
+                        
+                        st.metric(
+                            label=ride_name, 
+                            value=f"{wait} min" if is_open else "---", 
+                            delta=status_text, 
+                            delta_color="normal" if is_open else "inverse"
+                        )
+                        
+                        # Le popover ne charge les données que si l'on clique dessus
+                        with st.popover("📈 Historique", use_container_width=True):
+                            # On ne fait l'appel Supabase QUE si le popover est ouvert
+                            from data_manager import get_ride_history
+                            h_df = get_ride_history(supabase, ride_name)
+                            
+                            if not h_df.empty:
+                                st.caption(f"Dernières 24h - {ride_name}")
+                                st.line_chart(h_df.set_index("heure")["attente"])
+                            else:
+                                st.write("Aucun historique pour le moment.")
+                    else:
+                        st.caption(f"⌛ {ride_name}\n(Indisponible)")
 
 with tab_wait1: render_park_tab("Disneyland Park")
 with tab_wait2: render_park_tab("Disney Adventure World")

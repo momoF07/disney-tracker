@@ -1,5 +1,7 @@
 # data_manager.py
 import streamlit as st
+import pandas as pd
+import pytz
 from supabase import create_client
 
 @st.cache_resource
@@ -60,3 +62,32 @@ def get_stats_for_rides(supabase, ride_names):
         }
     except Exception:
         return {"total_101": 0, "avg_duration": 0, "avg_wait": 0}
+
+def get_ride_history(supabase, ride_name):
+    """Récupère l'historique des temps d'attente pour le graphique"""
+    try:
+        # On récupère les données des dernières 24h
+        # Note : Assure-toi d'avoir une table 'ride_history' alimentée par ton scraper
+        res = supabase.table("ride_history") \
+            .select("wait_time, last_updated") \
+            .eq("ride_name", ride_name) \
+            .order("last_updated", desc=False) \
+            .execute()
+        
+        if not res.data:
+            return pd.DataFrame()
+
+        df = pd.DataFrame(res.data)
+        
+        # Conversion Heure de Paris pour l'affichage du graphique
+        paris_tz = pytz.timezone("Europe/Paris")
+        df['last_updated'] = pd.to_datetime(df['last_updated']).dt.tz_convert(paris_tz)
+        
+        # On prépare le format pour l'axe X
+        df['Heure'] = df['last_updated'].dt.strftime('%H:%M')
+        df = df.rename(columns={"wait_time": "Minutes"})
+        
+        return df[['Heure', 'Minutes']]
+    except Exception as e:
+        print(f"Erreur historique : {e}")
+        return pd.DataFrame()
