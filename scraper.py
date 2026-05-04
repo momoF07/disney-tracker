@@ -9,8 +9,8 @@ SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 
 # IDs officiels ThemeparksWiki
 PARKS = {
-    "DLP": "e8d0207f-da8a-4048-bec8-117aa946b2c2", # Disneyland Park
-    "DAW": "1c7f55f2-9591-4d3a-b850-89196b05786f"  # Disney Adventure World
+    "DLP": "dae968d5-630d-4719-8b06-3d107e944401", # Disneyland Park
+    "DAW": "ca888437-ebb4-4d50-aed2-d227f7096968"  # Disney Adventure World
 }
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
