@@ -21,7 +21,39 @@ live_data = get_live_wait_times(supabase)
 # --- 1. HEADER (Météo / Horaires / Shows) ---
 st.title("🏰 Disney Live Control Center")
 
+# Configuration du fuseau horaire et de la date
+paris_tz = pytz.timezone("Europe/Paris")
+now_paris = datetime.now(paris_tz)
+today_date = now_paris.date().isoformat()
 now_iso = datetime.now(timezone.utc).isoformat()
+
+# --- A. RÉCUPÉRATION HORAIRES PARC (Schedule) ---
+try:
+    # On récupère les horaires du jour pour le parc principal (DLP)
+    res_sched = supabase.table("park_schedule") \
+        .select("*") \
+        .eq("park_id", "DLP") \
+        .eq("date", today_date) \
+        .execute()
+
+    hours_display = "Fermé"
+    if res_sched.data:
+        s = res_sched.data[0]
+        
+        # Formatage Ouverture Standard
+        open_t = pd.to_datetime(s['opening_time']).astimezone(paris_tz).strftime("%H:%M")
+        close_t = pd.to_datetime(s['closing_time']).astimezone(paris_tz).strftime("%H:%M")
+        
+        # Formatage EMT (si disponible)
+        if s.get('emt_opening_time'):
+            emt_t = pd.to_datetime(s['emt_opening_time']).astimezone(paris_tz).strftime("%H:%M")
+            hours_display = f"✨ {emt_t} | 🏰 {open_t}-{close_t}"
+        else:
+            hours_display = f"🏰 {open_t}-{close_t}"
+except Exception:
+    hours_display = "Horaires indisponibles"
+
+# --- B. RÉCUPÉRATION PROCHAIN SHOW ---
 res_show = supabase.table("show_times") \
     .select("*") \
     .eq("is_performed", False) \
@@ -33,18 +65,17 @@ res_show = supabase.table("show_times") \
 next_show_data = {"name": "Aucun show", "time": "--:--"}
 if res_show.data:
     s = res_show.data[0]
-    # Conversion forcée vers l'heure de Paris
-    dt_utc = pd.to_datetime(s['start_time'])
-    dt_paris = dt_utc.astimezone(paris_tz)
-    
+    dt_paris = pd.to_datetime(s['start_time']).astimezone(paris_tz)
     next_show_data = {
         "name": s['show_name'], 
         "time": dt_paris.strftime("%H:%M")
     }
 
+# --- C. AFFICHAGE FINAL ---
+# Note : Tu peux brancher une API météo réelle ici plus tard
 render_metric_row(
-    {"temp": 18, "status": "Ciel Dégagé"}, 
-    "09:30 - 21:00", 
+    {"temp": 12, "status": "Ciel Étoilé"}, 
+    hours_display, 
     next_show_data
 )
 st.divider()

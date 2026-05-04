@@ -105,6 +105,45 @@ def fetch_shows():
     except Exception as e:
         print(f"❌ Erreur Shows: {e}")
 
+def fetch_park_schedules():
+    PARK_IDS = {
+        "DLP": "dae968d5-630d-4719-8b06-3d107e944401",
+        "DAW": "ca888437-ebb4-4d50-aed2-d227f7096968"
+    }
+    
+    for code, pid in PARK_IDS.items():
+        url = f"https://api.themeparks.wiki/v1/entity/{pid}/schedule"
+        try:
+            response = requests.get(url, timeout=15)
+            schedule_data = response.json()
+            
+            # On traite les entrées de planning (souvent les 30 prochains jours)
+            for entry in schedule_data:
+                day_date = entry.get('date')
+                st = entry.get('openingTime')
+                et = entry.get('closingTime')
+                type_session = entry.get('type')
+
+                # Préparation des données pour l'upsert
+                payload = {
+                    "park_id": code,
+                    "date": day_date,
+                    "updated_at": datetime.now().isoformat()
+                }
+
+                if type_session == "OPERATING":
+                    payload["opening_time"] = st
+                    payload["closing_time"] = et
+                elif type_session == "EXTRA_MAGIC_HOURS":
+                    payload["emt_opening_time"] = st
+                    payload["emt_closing_time"] = et
+
+                supabase.table("park_schedule").upsert(payload, on_conflict="park_id, date").execute()
+            
+            print(f"📅 Horaires synchronisés pour {code}")
+        except Exception as e:
+            print(f"❌ Erreur horaires {code}: {e}")
+
 def process_ride(item, official_name):
     status = item.get('status', 'CLOSED')
     wait = item.get('queue', {}).get('STANDBY', {}).get('waitTime', 0)
@@ -157,5 +196,6 @@ def handle_breakdown_logic(name, current_status):
         pass
 
 if __name__ == "__main__":
-    fetch_and_sync() # Tes attractions
-    fetch_shows()    # Tes spectacles
+    fetch_and_sync()
+    fetch_shows()
+    fetch_park_schedules()
