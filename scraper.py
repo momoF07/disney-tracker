@@ -1,9 +1,9 @@
 import os
 import requests
 import re
-from supabase import create_client
-from datetime import datetime
 import config as cfg
+from supabase import create_client
+from datetime import datetime, timezone
 
 # --- CONFIGURATION ---
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
@@ -54,6 +54,53 @@ def fetch_and_sync():
         except Exception as e:
             print(f"❌ Erreur critique sur {park_code}: {e}")
 
+def fetch_shows():
+    # ID spécifique pour les shows de Paris (Destination)
+    PARIS_ID = "e8d0207f-da8a-4048-bec8-117aa946b2c2"
+    url = f"https://api.themeparks.wiki/v1/entity/{PARIS_ID}/live"
+    
+    try:
+        response = requests.get(url, timeout=15)
+        data = response.json().get('liveData', [])
+        
+        now = datetime.now(timezone.utc)
+        count = 0
+
+        for item in data:
+            # On ne prend que les SHOW (et on ignore les ATTRACTION ici)
+            if item.get('entityType') == 'SHOW':
+                show_name = item.get('name')
+                # On tente de récupérer le parc via la localisation ou un tag
+                location = item.get('location', 'Disneyland Paris')
+                
+                # Parcours des horaires de performances
+                show_times = item.get('showTimes', [])
+                for slot in show_times:
+                    start_str = slot.get('startTime') # Format ISO: 2024-05-20T14:30:00+00:00
+                    if not start_str: continue
+                    
+                    start_dt = datetime.fromisoformat(start_str)
+                    
+                    # Logique is_performed
+                    is_performed = now > start_dt
+
+                    # Upsert dans show_times
+                    supabase.table("show_times").upsert({
+                        "show_name": show_name,
+                        "park": "DLP" if "Disneyland Park" in location else "DAW",
+                        "location": location,
+                        "start_time": start_str,
+                        "is_performed": is_performed,
+                        "updated_at": now.isoformat()
+                    }, on_conflict="show_name, start_time").execute()
+                    
+                    count += 1
+        
+        print(f"🎭 Shows : {count} performances synchronisées.")
+
+    except Exception as e:
+        print(f"❌ Erreur Scraper Shows: {e}")
+
 def process_ride(item, official_name):
     status = item.get('status', 'CLOSED')
     wait = item.get('queue', {}).get('STANDBY', {}).get('waitTime', 0)
@@ -99,4 +146,5 @@ def handle_breakdown_logic(name, current_status):
         pass
 
 if __name__ == "__main__":
-    fetch_and_sync()
+    fetch_and_sync() # Tes attractions
+    fetch_shows()    # Tes spectacles
