@@ -19,11 +19,28 @@ live_data = get_live_wait_times(supabase)
 # --- 1. HEADER (Météo / Horaires / Shows) ---
 st.title("🏰 Disney Live Control Center")
 
-# Ici, tu peux garder tes simulations ou brancher une API météo plus tard
+# Récupération du prochain show via Supabase
+now_iso = datetime.now(timezone.utc).isoformat()
+res_show = supabase.table("show_times") \
+    .select("*") \
+    .eq("is_performed", False) \
+    .gte("start_time", now_iso) \
+    .order("start_time") \
+    .limit(1) \
+    .execute()
+
+next_show_data = {"name": "Aucun show", "time": "--:--"}
+if res_show.data:
+    s = res_show.data[0]
+    next_show_data = {
+        "name": s['show_name'], 
+        "time": pd.to_datetime(s['start_time']).strftime("%H:%M")
+    }
+
 render_metric_row(
     {"temp": 18, "status": "Ciel Dégagé"}, 
     "09:30 - 21:00", 
-    {"name": "Disney Illuminations", "time": "21:00"}
+    next_show_data
 )
 st.divider()
 
