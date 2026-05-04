@@ -72,7 +72,7 @@ flux_data = [
 
 for item in flux_data:
     st.markdown(f"""
-        <div style="background: {item['style']}; padding: 10px; border-radius: 10px; border-left: 5px solid {item['style']}; margin-bottom: 10px;">
+        <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px; border-left: 10px solid {item['style']}; margin-bottom: 10px;">
             <small style="color: #64748b;">{item['time']}</small> | <b>{item['event']}</b> : {item['ride']}
         </div>
     """, unsafe_allow_html=True)
