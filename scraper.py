@@ -53,9 +53,18 @@ def process_ride(item, clean_allowed_list):
     api_name = item['name']
     emoji = cfg.get_emoji(api_name)
     full_name = f"{api_name} {emoji}".strip()
-
-    # Comparaison "propre"
+    
     current_clean_name = clean_text(full_name)
+
+    # --- AJOUTE CE PRINT ICI ---
+    print(f"🔍 Comparaison : API='{current_clean_name}'")
+
+    if current_clean_name in clean_allowed_list:
+        # ... ton code d'insertion ...
+        print(f"✅ MATCH TROUVÉ pour {full_name}")
+    else:
+        # --- ET CELUI-CI AUSSI ---
+        print(f"❌ AUCUN MATCH pour {full_name}")
 
     if current_clean_name in clean_allowed_list:
         # On récupère le nom EXACT tel qu'écrit dans ton config.py
