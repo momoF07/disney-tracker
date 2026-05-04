@@ -74,8 +74,6 @@ with col_target:
     if target_options:
         target_selection = st.selectbox(f"Choisir la cible ({scope})", target_options)
 
-st.info("Analyse groupée sur l'ensemble du complexe.")
-
 # --- RÉCUPÉRATION DES ATTRACTIONS CONCERNÉES ---
 if scope == "Global (2 Parcs)":
     rides_to_analyze = cfg.ALL_RIDES_LIST
