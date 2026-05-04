@@ -55,7 +55,6 @@ def fetch_and_sync():
             print(f"❌ Erreur critique sur {park_code}: {e}")
 
 def fetch_shows():
-    # ID Global de la destination Paris (contient les shows des deux parcs)
     PARIS_ID = "e8d0207f-da8a-4048-bec8-117aa946b2c2"
     url = f"https://api.themeparks.wiki/v1/entity/{PARIS_ID}/live"
     
@@ -63,52 +62,47 @@ def fetch_shows():
         response = requests.get(url, timeout=15)
         response.raise_for_status()
         data = response.json().get('liveData', [])
-        
         now = datetime.now(timezone.utc)
         count = 0
 
         for item in data:
-            # On vérifie si c'est un SHOW ou une PARADE
-            if item.get('entityType') in ['SHOW', 'PARADE']:
+            if item.get('entityType') == 'SHOW':
                 show_name = item.get('name')
-                location = item.get('location', 'Disneyland Paris')
                 
-                # Récupération des horaires (clé showTimes)
-                show_slots = item.get('showTimes', [])
+                # LA CORRECTION EST ICI : 'showtimes' en minuscules
+                slots = item.get('showtimes', [])
                 
-                if not show_slots:
+                if not slots:
                     continue
 
-                for slot in show_slots:
-                    start_str = slot.get('startTime') # Format: 2026-05-04T14:30:00+00:00
+                for slot in slots:
+                    start_str = slot.get('startTime')
                     if not start_str: continue
                     
+                    # Conversion en datetime pour comparer
                     start_dt = datetime.fromisoformat(start_str)
-                    
-                    # Logique is_performed
                     is_performed = now > start_dt
 
-                    # Déduction du parc via la localisation
-                    park_name = "DLP" if "Disneyland Park" in location or "Parc Disneyland" in location else "DAW"
+                    # On récupère le parkId pour déduire le parc
+                    park_id = item.get('parkId', '')
+                    park_name = "DAW" if park_id == "ca888437-ebb4-4d50-aed2-d227f7096968" else "DLP"
 
                     # Upsert dans Supabase
-                    try:
-                        supabase.table("show_times").upsert({
-                            "show_name": show_name,
-                            "park": park_name,
-                            "location": location,
-                            "start_time": start_str,
-                            "is_performed": is_performed,
-                            "updated_at": now.isoformat()
-                        }, on_conflict="show_name, start_time").execute()
-                        count += 1
-                    except Exception as e:
-                        print(f"⚠️ Erreur insertion show {show_name}: {e}")
+                    supabase.table("show_times").upsert({
+                        "show_name": show_name,
+                        "park": park_name,
+                        "location": item.get('location', 'Disneyland Paris'),
+                        "start_time": start_str,
+                        "is_performed": is_performed,
+                        "updated_at": now.isoformat()
+                    }, on_conflict="show_name, start_time").execute()
+                    
+                    count += 1
         
-        print(f"🎭 Shows : {count} performances synchronisées.")
+        print(f"🎭 Shows : {count} performances synchronisées (Clé 'showtimes' détectée).")
 
     except Exception as e:
-        print(f"❌ Erreur critique Scraper Shows: {e}")
+        print(f"❌ Erreur Shows: {e}")
 
 def process_ride(item, official_name):
     status = item.get('status', 'CLOSED')
