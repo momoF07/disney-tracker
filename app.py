@@ -496,7 +496,7 @@ with col_stats:
                     all_lands.extend(lands.keys())
                 available_lands = [l for l in all_lands if not df_30j[df_30j['land'] == l].empty]
                 selected_lands = st.multiselect("", options=available_lands,
-                    default=available_lands[:2] if available_lands else [], key="stats_lands")
+                    default=available_lands[:1] if available_lands else [], key="stats_lands")
                 for land in selected_lands:
                     color = LAND_COLORS.get(land, "#64748b")
                     df_l  = df_30j[df_30j['land'] == land]
@@ -545,7 +545,7 @@ with col_stats:
                 available_rides = (df_30j.groupby('ride_name')['duree_min'].count()
                                 .sort_values(ascending=False).index.tolist())
                 selected_rides = st.multiselect("", options=available_rides,
-                    default=available_rides[:3] if available_rides else [],
+                    default=available_rides[:1] if available_rides else [],
                     format_func=lambda x: f"{get_emoji(x)} {x}", key="stats_rides")
                 for ride in selected_rides:
                     land  = ride_to_land.get(ride, "Inconnu")
