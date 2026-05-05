@@ -452,7 +452,7 @@ with col_stats:
                     )
 
                 st.markdown(
-                    '<div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; width:100%;">'
+                    '<div style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">'
                     + parc_cards +
                     '</div>',
                     unsafe_allow_html=True
