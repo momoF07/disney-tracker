@@ -332,7 +332,7 @@ if not df_live.empty:
 
             # --- FILTRE MODE INCIDENTS : uniquement les pannes en cours ---
             if sort_mode == "⚠️ Incidents":
-                if pill != "INCIDENT" or "RETARDÉ":
+                if pill not in ("INCIDENT", "RETARDÉ"):
                     continue
 
             render_ride_card(ride, sub, wait, bg, style, pill)
