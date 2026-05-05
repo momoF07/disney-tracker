@@ -14,5 +14,8 @@ REHAB_LIST = {
     },
     "Entry to World of Frozen": {
         "msg": "Fermeture définitive, en attente de la supression de l'API."
+    },
+    "Pirate Galleon": {
+        "msg": "Fermeture jusqu'à nouvel ordre."
     }
 }
