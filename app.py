@@ -234,16 +234,32 @@ if not df_live.empty:
             has_incidents = any(
                 any(p['ride'] == r and p['statut'] == "EN_COURS" for p in all_pannes)
                 or any(p['ride'] == r for p in all_pannes)
-                for r in selected_options)
+                for r in selected_options
+            )
             if not has_incidents:
-                st.info("✅ Rien à signaler pour le moment.")
+                st.info("✅ Rien à signaler pour le moment sur la sélection.")
+                selected_options = []
+            else:
+                selected_options = sorted(
+                    selected_options,
+                    key=lambda r: (any(p['ride'] == r and p['statut'] == "EN_COURS" for p in all_pannes), r),
+                    reverse=True
+                )
 
         elif sort_mode == "🛠️ Rehab":
             has_rehab = any(
                 not status_map.get(r, {}).get('opened_yesterday', True)
-                for r in selected_options)
+                for r in selected_options
+            )
             if not has_rehab:
-                st.info("🛠️ Pas de réhabilitations en ce moment.")
+                st.info("🛠️ Pas de réhabilitations en ce moment sur la sélection.")
+                selected_options = []
+            else:
+                selected_options = sorted(
+                    selected_options,
+                    key=lambda r: (not status_map.get(r, {}).get('opened_yesterday', True), r),
+                    reverse=True
+                )
 
         else: # Mode Nom
             selected_options = sorted(selected_options, reverse=is_desc)
