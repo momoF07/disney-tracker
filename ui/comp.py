@@ -77,13 +77,13 @@ def render_weather_card(weather):
         # Droite : température
         '<div style="text-align:right;">'
         '<div style="display:flex; align-items:baseline; gap:6px; justify-content:flex-end;">'
-        '<span style="font-family:Outfit,sans-serif; color:white; font-size:36px; font-weight:800; line-height:1;">'
+        '<span style="font-family:Outfit,sans-serif; color:white; font-size:24px; font-weight:800; line-height:1;">'
         + str(weather['temp']) +
         '</span>'
         '<span style="font-family:Outfit,sans-serif; color:rgba(255,255,255,0.4); font-size:18px; font-weight:700;">°C</span>'
         '</div>'
-        '<div style="color:rgba(255,255,255,0.35); font-size:11px; font-weight:500; margin-top:2px;">'
-        'Ressenti ' + str(ressenti) + '°'
+        '<div style="color:rgba(255,255,255,0.35); font-size:12px; font-weight:500; margin-top:2px;">'
+        'Ressenti ' + str(ressenti) + '°C'
         '</div>'
         '<div style="color:rgba(255,255,255,0.45); font-size:11px; font-weight:500; margin-top:4px; letter-spacing:0.3px;">'
         '💨 ' + weather['wind'] + ' &nbsp;·&nbsp; 🚩 ' + weather['gusts'] +
