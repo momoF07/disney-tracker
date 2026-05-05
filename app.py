@@ -370,7 +370,7 @@ with col_flux:
 
 with col_stats:
     st.subheader("🔧 Statistiques")
-    st.write("Prochaine mise à jour.")
+    st.badge("Prochaine mise à jour.", icon=":material/warning:", color="orange")
 
 st.divider()
 footer_html = f"""
