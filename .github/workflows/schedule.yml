@@ -1,4 +1,4 @@
-name: Disney Schedule Updater
+name: Disney Data Schedule
 
 on:
   schedule:

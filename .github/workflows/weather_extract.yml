@@ -1,4 +1,4 @@
-name: Disney Check
+name: Disney Data Weather
 
 on:
   schedule:

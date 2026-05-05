@@ -1,4 +1,4 @@
-name: Disney Check
+name: Disney Data Wait
 
 on:
   schedule:
