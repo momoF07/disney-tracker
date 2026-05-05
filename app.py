@@ -332,7 +332,6 @@ if not df_live.empty:
 
             # --- FILTRE MODE INCIDENTS : uniquement les pannes en cours ---
             if sort_mode == "⚠️ Incidents":
-                print(f"[DEBUG] {ride} | pill={pill} | is_open={data['is_open']} | has_opened={info.get('has_opened_today')} | h_o={h_o} | heure={heure_actuelle} | rehab={rehab_flag}")
                 if pill not in ("INCIDENT", "RETARDÉ"):
                     continue
 
