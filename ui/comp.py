@@ -209,89 +209,133 @@ def render_park_hours(schedules):
     )
 
     # --- RADIO DISNEY VILLAGE ---
-    # --- RADIO DISNEY VILLAGE ---
-    st.markdown(
-        '<div style="background:rgba(255,255,255,0.03); padding:16px 20px; border-radius:22px;'
-        'border:1px solid rgba(255,255,255,0.07); margin-bottom:16px; backdrop-filter:blur(20px);">'
+    radio_html = """<!DOCTYPE html>
+<html>
+<head>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 22px;
+    font-family: Outfit, sans-serif;
+    padding: 16px 20px;
+    overflow: hidden;
+  }
 
-        '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">'
-        '<div style="font-family:Outfit,sans-serif; color:rgba(255,255,255,0.4); font-size:9.5px;'
-        'font-weight:700; text-transform:uppercase; letter-spacing:2px;">🎵 Radio Disney Village</div>'
-        '<div id="radio-status" style="display:flex; align-items:center; gap:6px;">'
-        '<span id="radio-dot" style="width:6px; height:6px; background:#334155; border-radius:50%; display:inline-block;"></span>'
-        '<span id="radio-label" style="font-family:Outfit,sans-serif; font-size:9px; color:#334155;'
-        'font-weight:600; text-transform:uppercase; letter-spacing:1px;">En veille</span>'
-        '</div>'
-        '</div>'
+  @keyframes rpulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
 
-        '<div style="display:flex; align-items:center; gap:10px;">'
+  .header {
+    display: flex; align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .title {
+    font-size: 9.5px; color: rgba(255,255,255,0.4);
+    font-weight: 700; text-transform: uppercase; letter-spacing: 2px;
+  }
+  .status { display: flex; align-items: center; gap: 6px; }
+  #radio-dot {
+    width: 6px; height: 6px; background: #334155;
+    border-radius: 50%; display: inline-block;
+    transition: background 0.3s, box-shadow 0.3s;
+  }
+  #radio-dot.live { background: #34d399; box-shadow: 0 0 8px #34d399; animation: rpulse 2s infinite; }
+  #radio-label {
+    font-size: 9px; color: #334155; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1px;
+    transition: color 0.3s;
+  }
+  #radio-label.live { color: #34d399; }
 
-        # Bouton Play/Pause
-        '<button id="btn-play" onclick="togglePlay()" style="'
-        'background:linear-gradient(135deg,#c4b5fd,#7dd3fc); border:none; border-radius:50%;'
-        'width:40px; height:40px; cursor:pointer; display:flex; align-items:center; justify-content:center;'
-        'font-size:16px; flex-shrink:0; box-shadow:0 4px 15px rgba(196,181,253,0.3);">▶</button>'
+  .controls { display: flex; align-items: center; gap: 10px; }
 
-        # Barre de volume
-        '<div style="flex:1; display:flex; align-items:center; gap:8px;">'
-        '<span style="font-size:14px; cursor:pointer;" onclick="toggleMute()" id="icon-mute">🔇</span>'
-        '<input id="vol-slider" type="range" min="0" max="100" value="0" oninput="setVolume(this.value)"'
-        ' style="flex:1; height:4px; border-radius:4px; accent-color:#c4b5fd; cursor:pointer;">'
-        '<span style="font-family:Outfit,sans-serif; font-size:10px; color:#475569; min-width:28px;" id="vol-label">0%</span>'
-        '</div>'
+  #btn-mute {
+    background: linear-gradient(135deg, #c4b5fd, #7dd3fc);
+    border: none; border-radius: 50%;
+    width: 40px; height: 40px;
+    cursor: pointer; font-size: 18px; flex-shrink: 0;
+    box-shadow: 0 4px 15px rgba(196,181,253,0.3);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  #btn-mute:hover { transform: scale(1.1); box-shadow: 0 6px 20px rgba(196,181,253,0.5); }
+  #btn-mute:active { transform: scale(0.93); }
 
-        '</div>'
+  .vol-row { flex: 1; display: flex; align-items: center; gap: 8px; }
+  input[type=range] {
+    flex: 1; height: 4px; border-radius: 4px;
+    accent-color: #c4b5fd; cursor: pointer;
+  }
+  #vol-label { font-size: 10px; color: #475569; min-width: 28px; text-align: right; }
+</style>
+</head>
+<body>
 
-        '<audio id="radio-audio" src="https://webradio.ice.infomaniak.ch/webradio-128.mp3" preload="none"></audio>'
+  <div class="header">
+    <span class="title">🎵 Radio Disney Village</span>
+    <div class="status">
+      <span id="radio-dot"></span>
+      <span id="radio-label">En veille</span>
+    </div>
+  </div>
 
-        '<script>'
-        'var audio = document.getElementById("radio-audio");'
-        'var playing = false;'
-        'audio.volume = 0;'  # mute par défaut
+  <div class="controls">
+    <button id="btn-mute" onclick="toggleMute()">🔇</button>
+    <div class="vol-row">
+      <input id="vol-slider" type="range" min="0" max="100" value="0">
+      <span id="vol-label">0%</span>
+    </div>
+  </div>
 
-        'function togglePlay() {'
-        '  var btn = document.getElementById("btn-play");'
-        '  var dot = document.getElementById("radio-dot");'
-        '  var lbl = document.getElementById("radio-label");'
-        '  if (!playing) {'
-        '    audio.play();'
-        '    playing = true;'
-        '    btn.innerHTML = "⏸";'
-        '    dot.style.background = "#34d399";'
-        '    dot.style.boxShadow = "0 0 8px #34d399";'
-        '    lbl.style.color = "#34d399";'
-        '    lbl.innerHTML = "En direct";'
-        '  } else {'
-        '    audio.pause();'
-        '    audio.load();'
-        '    playing = false;'
-        '    btn.innerHTML = "▶";'
-        '    dot.style.background = "#334155";'
-        '    dot.style.boxShadow = "none";'
-        '    lbl.style.color = "#334155";'
-        '    lbl.innerHTML = "En veille";'
-        '  }'
-        '}'
+  <audio id="audio" src="https://webradio.ice.infomaniak.ch/webradio-128.mp3" preload="none"></audio>
 
-        'function setVolume(v) {'
-        '  audio.volume = v / 100;'
-        '  document.getElementById("vol-label").innerHTML = v + "%";'
-        '  document.getElementById("icon-mute").innerHTML = v == 0 ? "🔇" : v < 50 ? "🔉" : "🔊";'
-        '}'
+  <script>
+    var audio   = document.getElementById('audio');
+    var slider  = document.getElementById('vol-slider');
+    var btn     = document.getElementById('btn-mute');
+    var label   = document.getElementById('vol-label');
+    var dot     = document.getElementById('radio-dot');
+    var lbl     = document.getElementById('radio-label');
+    var started = false;
 
-        'function toggleMute() {'
-        '  var slider = document.getElementById("vol-slider");'
-        '  if (audio.volume > 0) {'
-        '    slider.value = 0; setVolume(0);'
-        '  } else {'
-        '    slider.value = 70; setVolume(70);'
-        '  }'
-        '}'
-        '</script>'
+    audio.volume = 0;
 
-        '</div>',
-        unsafe_allow_html=True
-    )
+    function boot() {
+      if (started) return;
+      audio.load();
+      audio.play().catch(function(){});
+      started = true;
+      dot.classList.add('live');
+      lbl.classList.add('live');
+      lbl.textContent = 'En direct';
+    }
+
+    function setVolume(v) {
+      audio.volume = v / 100;
+      label.textContent = v + '%';
+      btn.textContent = v == 0 ? '🔇' : v < 50 ? '🔉' : '🔊';
+    }
+
+    function toggleMute() {
+      boot();
+      if (audio.volume > 0) {
+        slider.value = 0; setVolume(0);
+      } else {
+        slider.value = 70; setVolume(70);
+      }
+    }
+
+    slider.addEventListener('input', function() {
+      boot();
+      setVolume(parseInt(this.value));
+    });
+  </script>
+</body>
+</html>"""
+
+    st.iframe(radio_html, height=110)
 
 
 def render_upcoming_shows(schedules):
