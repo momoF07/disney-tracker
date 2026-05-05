@@ -138,34 +138,53 @@ def render_upcoming_shows(schedules):
     HIDDEN_SHOWS = ["reserved viewing", "animation academy"]
 
     PARKS = [
-        {"label": "Disneyland Park",  "prefix": "Disneyland Park",  "color": "#ffb3d1"},
-        {"label": "Adventure World",  "prefix": "Adventure World",  "color": "#fb923c"},
+        {"label": "Disneyland Park", "prefix": "Disneyland Park", "color": "#ffb3d1"},
+        {"label": "Adventure World", "prefix": "Adventure World", "color": "#fb923c"},
     ]
 
     now_paris = dt.datetime.now(ZoneInfo("Europe/Paris"))
     now_str   = now_paris.strftime("%H:%M")
 
-    def to_paris_time(hhmm):
-        naive  = dt.datetime.combine(now_paris.date(), dt.time.fromisoformat(hhmm))
-        utc_dt = naive.replace(tzinfo=ZoneInfo("UTC"))
-        return utc_dt.astimezone(ZoneInfo("Europe/Paris")).strftime("%H:%M")
-
-    def get_shows_for_park(prefix):
-        result = []
+    # Collecte et tri global : parc d'abord, heure ensuite
+    all_shows = []
+    for park_index, park in enumerate(PARKS):
         for s in schedules:
             if s.get('type') != 'SHOW':
                 continue
-            if f"[{prefix}]" not in s['ride_name']:
+            if f"[{park['prefix']}]" not in s['ride_name']:
                 continue
-            paris_time = to_paris_time(s['opening_time'][:5])
-            if paris_time < now_str:
+
+            hhmm = s['opening_time'][:5]
+            if hhmm < now_str:
                 continue
+
             clean_name = re.sub(r'^\[.*?\]\s*', '', s['ride_name'])
             clean_name = re.sub(r'\s*\(\d{2}:\d{2}\)$', '', clean_name)
+
             if any(clean_name.lower().startswith(h) for h in HIDDEN_SHOWS):
                 continue
-            result.append({**s, '_paris_time': paris_time, '_clean_name': clean_name})
-        return sorted(result, key=lambda x: x['_paris_time'])[:3]
+
+            all_shows.append({
+                **s,
+                '_park_index': park_index,
+                '_paris_time': hhmm,
+                '_clean_name': clean_name,
+                '_color':      park['color'],
+                '_park_label': park['label'],
+            })
+
+    # Tri : parc → heure
+    all_shows = sorted(all_shows, key=lambda x: (x['_park_index'], x['_paris_time']))
+
+    # Groupement par parc (3 max par parc)
+    from itertools import groupby
+    grouped = {}
+    for show in all_shows:
+        key = show['_park_label']
+        if key not in grouped:
+            grouped[key] = []
+        if len(grouped[key]) < 3:
+            grouped[key].append(show)
 
     def render_show_rows(shows, color):
         if not shows:
@@ -187,9 +206,8 @@ def render_upcoming_shows(schedules):
 
     sections_html = ""
     for i, park in enumerate(PARKS):
-        shows = get_shows_for_park(park["prefix"])
-        rows  = render_show_rows(shows, park["color"])
-
+        shows  = grouped.get(park['label'], [])
+        rows   = render_show_rows(shows, park['color'])
         divider = '<div style="border-top: 1px solid rgba(255,255,255,0.08); margin: 15px 0;"></div>' if i > 0 else ""
 
         sections_html += f"""{divider}
