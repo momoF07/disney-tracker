@@ -12,4 +12,7 @@ REHAB_LIST = {
         "fin": date(2026, 5, 22),
         "msg": "Réouverture prévue le 23 mai"
     },
+    "Entry to World of Frozen": {
+        "msg": "Fermeture définitive, en attente de la supression de l'API."
+    }
 }
