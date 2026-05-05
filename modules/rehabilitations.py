@@ -17,9 +17,7 @@ REHAB_LIST = {
         "fin": date(2026, 7, 2),
         "msg": "Réouverture prévue le 03 juillet."
     },
-    "Entry to World of Frozen": {
-        "msg": "Fermeture définitive, en attente de la supression de l'API."
-    },
+    #"Entry to World of Frozen": {"msg": "Fermeture définitive, en attente de la supression de l'API."},
     "Pirate Galleon": {
         "msg": "Fermeture jusqu'à nouvel ordre."
     },
