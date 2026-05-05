@@ -217,7 +217,8 @@ def render_upcoming_shows(schedules):
             </div>
             {rows}"""
 
-    st.markdown(f"""<div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 24px;
+    st.markdown(f"""
+    <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 24px;
                     border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;
                     backdrop-filter: blur(10px);">
             <div style="color: white; font-size: 14px; font-weight: 700; margin-bottom: 15px;">
