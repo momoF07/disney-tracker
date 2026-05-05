@@ -338,7 +338,7 @@ def render_park_hours(schedules):
         'border:1px solid rgba(255,255,255,0.07); box-shadow:0 20px 40px rgba(0,0,0,0.3);">',
         unsafe_allow_html=True
     )
-    #st.iframe(radio_html, height=110)
+    st.iframe(radio_html, height=110)
     st.markdown('</div>', unsafe_allow_html=True)
 
 
