@@ -1,0 +1,44 @@
+name: 🔴 Hard Reset DB
+
+on:
+  workflow_dispatch:
+
+jobs:
+  hard-reset:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: 📦 Install Dependencies
+        run: pip install requests supabase pytz
+
+      - name: 🔴 Hard Reset DB
+        run: python reset_db.py
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+
+      - name: ⏳ Run Worker (Live Data)
+        run: python worker.py
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+
+      - name: 🌤️ Run Weather
+        run: python weather_data.py
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+
+      - name: 📅 Run Scheduler (Horaires & Shows)
+        run: python scheduler.py
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
