@@ -333,7 +333,7 @@ if not df_live.empty:
 
 # --- SECTION FLUX & STATISTIQUES ---
 st.write("---")
-col_flux, col_stats = st.columns([1, 1.2], gap="large")
+col_flux, col_stats = st.columns([1.5, 1], gap="large")
 
 # ==========================================
 # GAUCHE : FLUX DES ACTIVITÉS (JOURNÉE)
