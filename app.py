@@ -491,20 +491,22 @@ with col_stats:
                     color = LAND_COLORS.get(land, "#64748b")
                     nb, total, moy = stats_block(df_30j[df_30j['ride_name'] == ride])
 
-                    # Badge land
-                    st.badge(f"{land.title()}", color=color if color.startswith("#") else "gray")
-
                     st.markdown(
-                        '<div style="padding:10px 14px; background:' + color + '08;'
-                        'border:1px solid ' + color + '20; border-left:3px solid ' + color + ';'
+                        '<div style="padding:10px 14px; background:rgba(255,255,255,0.02);'
+                        'border:1px solid rgba(255,255,255,0.06);'
                         'border-radius:12px; margin-bottom:10px;">'
-                        '<div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">'
+                        '<div style="display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;">'
                         '<span style="font-size:18px;">' + get_emoji(ride) + '</span>'
                         '<span style="font-family:Outfit,sans-serif; color:rgba(255,255,255,0.75);'
                         'font-size:12px; font-weight:600;">' + ride + '</span>'
+                        '<span style="font-size:9px; font-weight:700; padding:2px 9px; border-radius:20px;'
+                        'background:' + color + '20; color:' + color + '; border:1px solid ' + color + '40;'
+                        'font-family:Outfit,sans-serif; text-transform:uppercase; letter-spacing:0.8px;">'
+                        + land.title() +
+                        '</span>'
                         '</div>'
                         '<div style="display:flex; gap:6px; flex-wrap:wrap;">'
-                        + stat_pill("101", nb, color)
+                        + stat_pill("101", nb, "#c4b5fd")
                         + stat_pill("min total", total, "#7dd3fc")
                         + stat_pill("moy. min", moy, "#6ee7b7")
                         + '</div></div>',
