@@ -54,11 +54,14 @@ def update_daily_schedules():
                 if item.get('entityType') == "SHOW":
                     showtimes = item.get('showtimes', [])
                     for stime in showtimes:
-                        # On ne garde que les horaires de la journée en cours
                         if stime.get('startTime', '').startswith(current_day):
                             start = stime['startTime'].split('T')[1][:5]
+
+                            # Clé unique : parc + nom + heure → élimine les doublons inter-parcs
+                            unique_name = f"[{p_name}] {item.get('name')} ({start})"
+
                             all_updates.append({
-                                "ride_name": item.get('name'),
+                                "ride_name": unique_name,
                                 "opening_time": start, "closing_time": start,
                                 "type": "SHOW", "updated_at": datetime.now().isoformat()
                             })
@@ -67,8 +70,24 @@ def update_daily_schedules():
 
     # --- UPSERT FINAL ---
     if all_updates:
-        supabase.table("ride_schedules").upsert(all_updates).execute()
-        print(f"✅ [SCHEDULER] Synchro terminée : {len(all_updates)} lignes.")
+        # Dédoublonnage par ride_name avant l'upsert (protection contre doublons API)
+        seen = set()
+        deduped = []
+        for row in all_updates:
+            key = row["ride_name"]
+            if key not in seen:
+                seen.add(key)
+                deduped.append(row)
+
+        duplicates = len(all_updates) - len(deduped)
+        if duplicates:
+            print(f"⚠️ [SCHEDULER] {duplicates} doublon(s) ignoré(s).")
+
+        try:
+            supabase.table("ride_schedules").upsert(deduped).execute()
+            print(f"✅ [SCHEDULER] Synchro terminée : {len(deduped)} lignes insérées.")
+        except Exception as e:
+            print(f"❌ Erreur Supabase : {e}")
     else:
         print("⚠️ [SCHEDULER] Aucune donnée trouvée.")
 
