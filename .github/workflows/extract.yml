@@ -5,7 +5,7 @@ on:
     - cron: '*/10 * * * *'    # Relance automatique toutes les 10 min
   workflow_dispatch:          # Pour lancer manuellement depuis GitHub ou ton bouton Streamlit
   repository_dispatch:        # Pour les appels externes (Cron-job.org, etc.)
-    types: [run-disney-bot]
+    types: [run-data-disney-bot]
 
 jobs:
   run-robot:

@@ -5,6 +5,8 @@ on:
     # S'exécute à 07:00 UTC tous les jours
     - cron: '0 5 * * *'
   workflow_dispatch: # Permet de lancer le worker manuellement depuis l'onglet Actions
+  repository_dispatch:        # Pour les appels externes (Cron-job.org, etc.)
+    types: [run-schedule-disney-bot]
 
 jobs:
   update-schedules:
