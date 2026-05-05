@@ -127,8 +127,6 @@ render_weather_card(get_disney_weather())
 #render_weather_card(get_maintenance_weather())
 
 # --- BLOC HORAIRES ---
-
-# --- RÉCUPÉRATION DES DONNÉES DEPUIS SUPABASE ---
 try:
     # On récupère les horaires et les shows stockés par scheduler.py
     res = supabase.table("ride_schedules").select("*").execute()
@@ -233,20 +231,19 @@ if not df_live.empty:
             selected_options = sorted(opened, key=lambda x: df_live[df_live['ride_name'] == x]['wait_time'].iloc[0], reverse=is_desc) + closed
 
         elif sort_mode == "⚠️ Incidents":
-            # Tri : Incidents en haut, puis alphabétique pour le reste
-            selected_options = sorted(
-                selected_options, 
-                key=lambda r: (any(p['ride'] == r and p['statut'] == "EN_COURS" for p in all_pannes), r), 
-                reverse=is_desc # True (en panne) sera en haut
-            )
+            has_incidents = any(
+                any(p['ride'] == r and p['statut'] == "EN_COURS" for p in all_pannes)
+                or any(p['ride'] == r for p in all_pannes)
+                for r in selected_options)
+            if not has_incidents:
+                st.info("✅ Rien à signaler pour le moment.")
 
         elif sort_mode == "🛠️ Rehab":
-            # Tri : Rehab en haut, puis alphabétique
-            selected_options = sorted(
-                selected_options, 
-                key=lambda r: (not status_map.get(r, {}).get('opened_yesterday', True), r), 
-                reverse=is_desc
-            )
+            has_rehab = any(
+                not status_map.get(r, {}).get('opened_yesterday', True)
+                for r in selected_options)
+            if not has_rehab:
+                st.info("🛠️ Pas de réhabilitations en ce moment.")
 
         else: # Mode Nom
             selected_options = sorted(selected_options, reverse=is_desc)
