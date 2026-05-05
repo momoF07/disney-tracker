@@ -26,7 +26,7 @@ PARKS_DATA = {
         },
         "FANTASYLAND": {
             "Peter Pan's Flight": "🧚",
-            "it's a small world": "🌍",
+            "\u201cit\u2019s a small world\u201d": "🌍",
             "Dumbo the Flying Elephant": "🐘",
             "Mad Hatter's Tea Cups": "☕",
             "Le Carrousel de Lancelot": "🎠",
