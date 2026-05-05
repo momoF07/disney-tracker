@@ -308,8 +308,8 @@ if not df_live.empty:
 
             if rehab_flag and rehab_info:
                 debut     = rehab_info.get('debut')
-                debut_str = debut.strftime('🛠️ En réhabilitation depuis le %d/%m') if debut else ""
-                st.caption(f"{debut_str} — {rehab_info['msg']}")
+                debut_str = debut.strftime('🛠️ En réhabilitation depuis le %d/%m —') if debut else ""
+                st.caption(f"{debut_str} {rehab_info['msg']}")
 
             with st.expander("📜 Historique"):
                 h_p_clean = [p for p in all_pannes if p['ride'] == ride and (p['statut'] == "EN_COURS" or p['duree'] >= 2)]
