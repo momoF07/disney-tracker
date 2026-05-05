@@ -73,9 +73,9 @@ def get_maintenance_weather():
         "success": False
     }
 
-def info_weather_code(feels_like, weather_code=None):
+def info_weather_code(feels_like, code=None):
     # --- ORAGE (prioritaire sur la chaleur) ---
-    if weather_code in [95, 96, 99, 999]:
+    if code in [95, 96, 99, 999]:
         return {
             "code": "Orage",
             "color": "#7C3AED",
