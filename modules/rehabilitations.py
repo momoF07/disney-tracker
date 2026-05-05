@@ -17,5 +17,8 @@ REHAB_LIST = {
     },
     "Pirate Galleon": {
         "msg": "Fermeture jusqu'à nouvel ordre."
+    },
+    "Pirates' Beach": {
+        "msg": "Fermeture jusqu'à nouvel ordre."
     }
 }
