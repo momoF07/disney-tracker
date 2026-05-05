@@ -209,14 +209,34 @@ def render_park_hours(schedules):
     )
 
     # --- RADIO DISNEY VILLAGE ---
+    # --- RADIO DISNEY VILLAGE ---
     st.markdown(
-        '<div style="background:rgba(255,255,255,0.03); padding:14px 18px; border-radius:22px;'
-        'border:1px solid rgba(255,255,255,0.07); margin-bottom:16px; backdrop-filter:blur(20px);">'
-        '<div style="font-family:Outfit,sans-serif; color:rgba(255,255,255,0.4); font-size:9.5px;'
-        'font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-bottom:12px;">🎵 Radio Disney Village</div>'
+        '<div style="background:rgba(255,255,255,0.03); padding:16px 20px; border-radius:22px;'
+        'border:1px solid rgba(255,255,255,0.07); margin-bottom:16px; backdrop-filter:blur(20px);'
+        'box-shadow:0 20px 40px rgba(0,0,0,0.3);">'
+
+        '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">'
+        '<div style="display:flex; align-items:center; gap:8px;">'
+        '<span style="font-size:14px;">🎵</span>'
+        '<span style="font-family:Outfit,sans-serif; color:rgba(255,255,255,0.4); font-size:9.5px;'
+        'font-weight:700; text-transform:uppercase; letter-spacing:2px;">Radio Disney Village</span>'
+        '</div>'
+        '<div style="display:flex; align-items:center; gap:5px;">'
+        '<span style="width:5px; height:5px; background:#34d399; border-radius:50%;'
+        'box-shadow:0 0 8px #34d399; display:inline-block; animation:rpulse 2s infinite;"></span>'
+        '<span style="font-family:Outfit,sans-serif; font-size:8.5px; color:#34d399;'
+        'font-weight:700; text-transform:uppercase; letter-spacing:1px;">En direct</span>'
+        '</div>'
+        '</div>'
+
+        '<style>@keyframes rpulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }</style>'
+
+        '<div style="border-radius:16px; overflow:hidden; border:1px solid rgba(255,255,255,0.05);">'
         '<iframe src="https://static.infomaniak.ch/infomaniak/radio/html/webradio_player.html"'
-        ' width="100%" height="60" frameborder="0" scrolling="no"'
-        ' style="border-radius:14px; overflow:hidden;"></iframe>'
+        ' width="100%" height="52" frameborder="0" scrolling="no"'
+        ' style="display:block; border-radius:16px;"></iframe>'
+        '</div>'
+
         '</div>',
         unsafe_allow_html=True
     )
