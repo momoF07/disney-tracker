@@ -14,7 +14,14 @@ def render_weather_card(weather):
     # Construction sécurisée du HTML
     alert_html = ""
     if alert_77:
-        alert_html = f"""<div style="margin-top: 15px; padding: 12px; background: {alert_77['color']}; border-radius: 12px; text-align: center; color: white; font-size: 13px; font-weight: 600;">⚠️ {alert_77['code']} : {alert_77['sub']}</div>"""
+        alert_html = f"""<div style="margin-top: 15px; padding: 12px; background: {alert_77['color']}; 
+        border-radius: 12px; 
+        text-align: center; 
+        color: white; 
+        font-size: 13px; 
+        font-weight: 600;">
+        ⚠️ {alert_77['code']} : {alert_77['sub']}
+        </div>"""
 
     shows_html = ""
     if msc or dsp:
@@ -22,15 +29,18 @@ def render_weather_card(weather):
             if not data: return ""
             return f"""<div style="flex: 1; min-width: 180px; padding: 12px; background: {data['bg']}; border-radius: 15px; border: 1px solid {data['color']}; color: {data['color']}; font-size: 11px; line-height: 1.4;"><b style="font-size: 13px; display: block; margin-bottom: 4px; text-transform: uppercase;">{title} • {data['t']}</b><span style="opacity: 0.9;">{data['msg']}</span></div>"""
         
-        shows_html = f"""<div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">{get_box("🎨 MSC", msc)}{get_box("🎭 DSP", dsp)}</div>"""
+        shows_html = f"""<div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
+        {get_box("🎨 MSC", msc)}{get_box("🎭 DSP", dsp)}
+        </div>"""
 
     html_final = f"""<div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 24px;
-            border: 1px solid rgba(255,255,255,0.1); margin-bottom: 25px;
-            backdrop-filter: blur(10px);">
-    <div style="display: flex; align-items: center; justify-content: space-between;
-                flex-wrap: wrap; gap: 15px;">
+        border: 1px solid rgba(255,255,255,0.1); margin-bottom: 25px;
+        backdrop-filter: blur(10px);">
+
+        <div style="display: flex; align-items: center; justify-content: space-between;
+        flex-wrap: wrap; gap: 15px;">
         <div style="display: flex; align-items: center; gap: 20px;">
-            <span style="font-size: 50px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2));">
+        <span style="font-size: 50px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2));">
                 {weather['emoji']}
             </span>
             <div>
