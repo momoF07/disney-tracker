@@ -272,7 +272,7 @@ def render_park_hours(schedules):
 <body>
 
   <div class="header">
-    <span class="title">🎵 Radio Disney Village</span>
+    <span class="title">🎵 Radio Disney Village (Ne pas utiliser sur mobile pour le moment)</span>
     <div class="status">
       <span id="radio-dot"></span>
       <span id="radio-label">En veille</span>
