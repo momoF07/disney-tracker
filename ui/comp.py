@@ -91,8 +91,8 @@ def render_park_hours(schedules):
 
     for p in parks:
         is_dlp  = "Disneyland" in p['ride_name']
-        name    = "Disneyland Park" if is_dlp else "Adventure World"
-        color   = "#4facfe" if is_dlp else "#fb923c"
+        name    = "Disneyland Park" if is_dlp else "Disney Adventure World"
+        color   = "#ffb3d1" if is_dlp else "#fb923c"
         emt_time = emts.get(p['ride_name'])
 
         # Suppression des secondes (HH:MM:SS → HH:MM)
@@ -129,15 +129,18 @@ def render_park_hours(schedules):
 
 
 def render_upcoming_shows(schedules):
-
     import datetime as dt
     import re
     from zoneinfo import ZoneInfo
 
     if not schedules: return
 
-    SMALL_SHOWS  = []
     HIDDEN_SHOWS = ["reserved viewing", "animation academy"]
+
+    PARKS = [
+        {"label": "Disneyland Park",  "prefix": "Disneyland Park",  "color": "#ffb3d1"},
+        {"label": "Adventure World",  "prefix": "Adventure World",  "color": "#fb923c"},
+    ]
 
     now_paris = dt.datetime.now(ZoneInfo("Europe/Paris"))
     now_str   = now_paris.strftime("%H:%M")
@@ -147,48 +150,54 @@ def render_upcoming_shows(schedules):
         utc_dt = naive.replace(tzinfo=ZoneInfo("UTC"))
         return utc_dt.astimezone(ZoneInfo("Europe/Paris")).strftime("%H:%M")
 
-    # Collecte, conversion et filtrage
-    shows = []
-    for s in schedules:
-        if s.get('type') != 'SHOW':
-            continue
-        paris_time = to_paris_time(s['opening_time'][:5])
-        if paris_time < now_str:
-            continue
+    def get_shows_for_park(prefix):
+        result = []
+        for s in schedules:
+            if s.get('type') != 'SHOW':
+                continue
+            if f"[{prefix}]" not in s['ride_name']:
+                continue
+            paris_time = to_paris_time(s['opening_time'][:5])
+            if paris_time < now_str:
+                continue
+            clean_name = re.sub(r'^\[.*?\]\s*', '', s['ride_name'])
+            clean_name = re.sub(r'\s*\(\d{2}:\d{2}\)$', '', clean_name)
+            if any(clean_name.lower().startswith(h) for h in HIDDEN_SHOWS):
+                continue
+            result.append({**s, '_paris_time': paris_time, '_clean_name': clean_name})
+        return sorted(result, key=lambda x: x['_paris_time'])[:3]
 
-        # Nettoyage D'ABORD
-        clean_name = re.sub(r'^\[.*?\]\s*', '', s['ride_name'])
-        clean_name = re.sub(r'\s*\(\d{2}:\d{2}\)$', '', clean_name)
-
-        # Filtrage ENSUITE sur le nom propre
-        if any(clean_name.lower().startswith(h) for h in HIDDEN_SHOWS):
-            continue
-
-        shows.append({**s, '_paris_time': paris_time, '_clean_name': clean_name})
-
-    shows = sorted(shows, key=lambda x: x['_paris_time'])[:10]
-
-    show_items = ""
-    if not shows:
-        show_items = '<div style="color: #64748b; font-size: 12px; padding: 10px;">Plus de spectacles aujourd\'hui.</div>'
-    else:
+    def render_show_rows(shows, color):
+        if not shows:
+            return '<div style="color: #64748b; font-size: 12px; padding: 10px;">Plus de spectacles aujourd\'hui.</div>'
+        rows = ""
         for s in shows:
-            clean_name = s['_clean_name']
-            is_small   = clean_name.lower() in SMALL_SHOWS
-            font_size  = "8.5px" if is_small else "13px"
-            opacity    = "0.5"   if is_small else "1"
-
-            show_items += f"""<div style="display: flex; justify-content: space-between; align-items: center;
+            rows += f"""<div style="display: flex; justify-content: space-between; align-items: center;
                             padding: 10px; background: rgba(255,255,255,0.02);
-                            border-radius: 12px; margin-bottom: 8px; opacity: {opacity};">
-                    <span style="color: white; font-size: {font_size}; font-weight: 600;">
-                        🎭 {clean_name}
+                            border-radius: 12px; margin-bottom: 8px;">
+                    <span style="color: white; font-size: 13px; font-weight: 600;">
+                        🎭 {s['_clean_name']}
                     </span>
-                    <span style="color: #00f2fe; font-size: {font_size}; font-weight: 800;
-                                 background: rgba(0, 242, 254, 0.1); padding: 2px 8px; border-radius: 6px;">
+                    <span style="color: {color}; font-size: 13px; font-weight: 800;
+                                 background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 6px;">
                         {s['_paris_time']}
                     </span>
                 </div>"""
+        return rows
+
+    sections_html = ""
+    for i, park in enumerate(PARKS):
+        shows = get_shows_for_park(park["prefix"])
+        rows  = render_show_rows(shows, park["color"])
+
+        divider = '<div style="border-top: 1px solid rgba(255,255,255,0.08); margin: 15px 0;"></div>' if i > 0 else ""
+
+        sections_html += f"""{divider}
+            <div style="font-size: 11px; font-weight: 800; letter-spacing: 1px;
+                        color: {park['color']}; margin-bottom: 10px;">
+                {park['label'].upper()}
+            </div>
+            {rows}"""
 
     st.markdown(f"""<div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 24px;
                     border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;
@@ -196,6 +205,6 @@ def render_upcoming_shows(schedules):
             <div style="color: white; font-size: 14px; font-weight: 700; margin-bottom: 15px;">
                 ✨ PROCHAINES REPRÉSENTATIONS
             </div>
-            {show_items}
+            {sections_html}
         </div>
     """, unsafe_allow_html=True)
