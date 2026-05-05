@@ -25,6 +25,7 @@ def get_disney_weather():
         wind = clean_val(data.get('wind_speed_10m'), 0)
         gusts = clean_val(data.get('wind_gusts_10m'), 0)
         code = data.get('weather_code', -1)
+        code = 999
         
         # Map étendue pour éviter le "Inconnu" sur les codes intermédiaires
         weather_map = {
@@ -35,7 +36,8 @@ def get_disney_weather():
             61: ("🌧️", "Pluie faible"), 63: ("🌧️", "Pluie modérée"), 65: ("🌧️", "Pluie forte"),
             71: ("❄️", "Neige faible"), 73: ("❄️", "Neige"), 75: ("❄️", "Neige forte"),
             80: ("🌦️", "Averses"), 81: ("🌦️", "Averses"), 82: ("🌦️", "Averses"),
-            95: ("⛈️", "Orage"), 96: ("⛈️", "Orage"), 99: ("⛈️", "Orage")
+            95: ("⛈️", "Orage"), 96: ("⛈️", "Orage"), 99: ("⛈️", "Orage"),
+            999:("⚠️", "TEST")
         }
         
         emoji, desc = weather_map.get(code, ("🌡️", "Météo stable"))
@@ -47,6 +49,7 @@ def get_disney_weather():
             "gusts": f"{round(gusts)} km/h",
             "desc": desc,
             "emoji": emoji,
+            "code": code,
             "success": True
         }
     except Exception as e:
@@ -70,16 +73,25 @@ def get_maintenance_weather():
         "success": False
     }
 
-def info_weather_code(feels_like):
+def info_weather_code(feels_like, weather_code=None):
+    # --- ORAGE (prioritaire sur la chaleur) ---
+    if weather_code in [95, 96, 99, 999]:
+        return {
+            "code": "Orage",
+            "color": "#7C3AED",
+            "msg": "⛈️ ALERTE ORAGE EN COURS",
+            "sub": "Évitez les zones exposées. Suivez les consignes du parc."
+        }
+
     if feels_like is None or feels_like == "XX":
         return None
     try:
         val = float(feels_like)
         
         # 1. TEST
-        if val >= 9:
+        if val >= 999:
             return {
-                "code": "Test",
+                "code": "⚠️ Test",
                 "color": "#3B82F6", # Ton bleu aléatoire
                 "msg": "🌟 ALERTE CHALEUR DE TEST : CODE TEST",
                 "sub": "Pensez à désactiver."
