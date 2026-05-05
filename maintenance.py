@@ -249,7 +249,7 @@ def show_maintenance():
             <div class="maint-title">Mise à jour en cours</div>
             <div class="maint-sub">
                 Le Disney Tracker se refait une beauté.<br>
-                Revenez dans quelques instants.
+                Revenez plus tard.
             </div>
             <div class="maint-divider"></div>
             <div class="maint-hint">Accès restreint</div>
