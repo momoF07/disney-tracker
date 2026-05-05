@@ -368,6 +368,10 @@ with col_flux:
     else:
         st.caption("Aucune activité majeure aujourd'hui.")
 
+with col_stats:
+    st.subheader("🔧 Statistiques")
+    st.write("Prochaine mise à jour.")
+
 st.divider()
 footer_html = f"""
 <style>
@@ -400,7 +404,7 @@ footer_html = f"""
 
 <div class="main-footer">
     <div class="footer-item">
-        <span class="version-tag">v4.0</span>
+        <span class="version-tag">v2.0</span>
         <span class="footer-separator">|</span>
         Disney Wait Time Tool
     </div>
