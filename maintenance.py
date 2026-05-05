@@ -157,6 +157,12 @@ def show_maintenance():
                 ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.restore();
+                // Halo secondaire
+                ctx.shadowBlur  = 16;
+                ctx.globalAlpha = Math.max(0, this.life * 0.3);
+                ctx.arc(this.x, this.y, this.size * 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
             }
         }
 
