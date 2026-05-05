@@ -183,15 +183,18 @@ def send_park_embed(park_name, lands, webhook_url, all_pannes, schedules, weathe
 
     # Attractions par land
     for land, attractions in lands.items():
-        chunk = f"**{land.title()}**\n"
+        lines = []
         for attr_name in attractions:
             e, d  = get_ride_status(attr_name)
-            line  = f"{e} {attr_name} — `{d}`\n"
-            if len(chunk) + len(line) > 1020:
+            lines.append(f"{e} {attr_name} — `{d}`")
+
+        chunk = ""
+        for line in lines:
+            if len(chunk) + len(line) + 1 > 1020:
                 fields.append({"name": land.title(), "value": chunk.strip(), "inline": False})
-                chunk = line
+                chunk = line + "\n"
             else:
-                chunk += line
+                chunk += line + "\n"
         if chunk.strip():
             fields.append({"name": land.title(), "value": chunk.strip(), "inline": False})
 
