@@ -102,7 +102,7 @@ def is_during_rehab(row):
 
 # --- DÉBUT DE L'INTERFACE ---
 st.write("")
-st.title("🏰 Disney Wait Time")
+st.title("🏰 Disney Ultime Dashboard")
 
 # --- CONFIGURATION DU FILTRAGE ---
 heure_actuelle = maintenant.time()
