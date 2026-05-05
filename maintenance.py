@@ -184,7 +184,7 @@ def show_maintenance():
                 this.delay     = delay !== undefined ? delay : Math.random() * 200 + 60;
             }
             explode() {
-                const n = Math.floor(Math.random() * 100) + 80;
+                const n = Math.floor(Math.random() * 70) + 50;
                 for (let i = 0; i < n; i++)
                     this.particles.push(new Particle(this.x, this.y, this.color));
                 this.exploded = true;
