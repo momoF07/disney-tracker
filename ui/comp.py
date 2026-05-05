@@ -7,49 +7,81 @@ def render_weather_card(weather):
     from modules.weather import info_weather_code, info_msc, info_dsp
     ressenti = weather.get('feels_like')
     
+    # Récupération des protocoles basés sur le ressenti
     alert_77 = info_weather_code(ressenti)
     msc = info_msc(ressenti)
     dsp = info_dsp(ressenti)
 
-    # --- BLOC ALERTE 77 ---
+    # --- BLOC ALERTE 77 (CHALEUR) ---
     alert_html = ""
     if alert_77:
-        alert_html = f'<div style="margin-top: 10px; padding: 10px; background: {alert_77["color"]}; border-radius: 10px; text-align: center; color: white; font-size: 13px;"><b>⚠️ {alert_77["code"]}</b> : {alert_77["sub"]}</div>'
+        alert_html = f"""
+        <div style="margin-top: 15px; padding: 12px; background: {alert_77['color']}; 
+                    border-radius: 12px; text-align: center; color: white; 
+                    font-size: 13px; font-weight: 600; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+            ⚠️ {alert_77['code']} : {alert_77['sub']}
+        </div>"""
 
-    # --- BLOC SHOWS ---
+    # --- BLOC PROTOCOLES SHOWS ---
     shows_html = ""
     if msc or dsp:
         def get_box(title, data):
             if not data: return ""
-            return f"""<div style="flex: 1; min-width: 160px; padding: 10px; background: {data['bg']}; border-radius: 10px; border: 1px solid {data['color']}; color: {data['color']}; font-size: 11px; line-height: 1.3;">
-                <b style="font-size: 12px; display: block; margin-bottom: 2px;">{title} : {data['t']}</b>
-                {data['msg']}
+            return f"""
+            <div style="flex: 1; min-width: 180px; padding: 12px; background: {data['bg']}; 
+                        border-radius: 15px; border: 1px solid {data['color']}; 
+                        color: {data['color']}; font-size: 11px; line-height: 1.4;
+                        backdrop-filter: blur(5px);">
+                <b style="font-size: 13px; display: block; margin-bottom: 4px; text-transform: uppercase;">
+                    {title} • {data['t']}
+                </b>
+                <span style="opacity: 0.9;">{data['msg']}</span>
             </div>"""
         
-        shows_html = f"""<div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
+        shows_html = f"""
+        <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
             {get_box("🎨 MSC", msc)}
             {get_box("🎭 DSP", dsp)}
         </div>"""
 
+    # --- RENDU FINAL (GLASSMORPHISM) ---
     st.markdown(f"""
-<div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;">
-<div style="display: flex; align-items: center; justify-content: space-between;">
-<div style="display: flex; align-items: center; gap: 15px;">
-<span style="font-size: 30px;">{weather['emoji']}</span>
-<div>
-<b style="color: white; font-size: 16px;">{weather['desc']}</b><br>
-<span style="color: #94a3b8; font-size: 11px;">Marne-la-Vallée - Disneyland Paris</span>
-</div>
-</div>
-<div style="text-align: right;">
-                <b style="color: white; font-size: 16px;">Température : {weather['temp']}°C --</b>
-                <span style="color: white; font-size: 16px; opacity: 0.8;">Ressenti : {ressenti}°C</span><br>
-                <span style="color: white; font-size: 12px;">Vent : {weather['wind']} --</span>
-                <span style="color: white; font-size: 12px; opacity: 0.8;">Rafale : {weather['gusts']}</span>
+    <div style="background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05)); 
+                padding: 20px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.1); 
+                margin-bottom: 25px; backdrop-filter: blur(10px); box-shadow: 0 8px 32px 0 rgba(0,0,0,0.3);">
+        
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+            <!-- Partie Gauche : Icône et Description -->
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <span style="font-size: 50px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2));">
+                    {weather['emoji']}
+                </span>
+                <div>
+                    <b style="color: white; font-size: 20px; display: block;">{weather['desc']}</b>
+                    <span style="color: rgba(148, 163, 184, 0.8); font-size: 12px; font-weight: 500;">
+                        📍 Marne-la-Vallée, France
+                    </span>
+                </div>
             </div>
-</div>{alert_html}{shows_html}
-</div>
-""", unsafe_allow_html=True)
+
+            <!-- Partie Droite : Données Chiffrées -->
+            <div style="text-align: right; min-width: 150px;">
+                <div style="margin-bottom: 8px;">
+                    <span style="color: white; font-size: 24px; font-weight: 800;">{weather['temp']}°C</span>
+                    <span style="color: rgba(255,255,255,0.5); font-size: 14px; margin-left: 5px;">
+                        (Feels {ressenti}°)
+                    </span>
+                </div>
+                <div style="color: rgba(255,255,255,0.7); font-size: 12px; font-weight: 600; letter-spacing: 0.5px;">
+                    💨 {weather['wind']} <span style="opacity:0.4; margin: 0 5px;">|</span> 🚩 {weather['gusts']}
+                </div>
+            </div>
+        </div>
+
+        {alert_html}
+        {shows_html}
+    </div>
+    """, unsafe_allow_html=True)
 
 def render_api_info(api_time, refresh_time):
     """Affiche le bandeau d'état de l'API et du dernier refresh"""
