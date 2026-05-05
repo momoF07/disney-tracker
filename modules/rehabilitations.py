@@ -12,6 +12,11 @@ REHAB_LIST = {
         "fin": date(2026, 5, 22),
         "msg": "Réouverture prévue le 23 mai"
     },
+    "Alice's Curious Labyrinth": {
+        "debut": date(2026, 5, 4),
+        "fin": date(2026, 7, 2),
+        "msg": "Réouverture prévue le 03 juillet."
+    },
     "Entry to World of Frozen": {
         "msg": "Fermeture définitive, en attente de la supression de l'API."
     },
