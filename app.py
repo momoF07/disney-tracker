@@ -385,7 +385,6 @@ with col_flux:
 with col_stats:
     st.subheader("📊 Statistiques — 30 derniers jours")
 
-    # --- CHARGEMENT DES DONNÉES 30J ---
     try:
         resp_30j = supabase.table("logs_101").select("*").gte("start_time", date_30j).execute()
         df_30j = pd.DataFrame(resp_30j.data)
@@ -398,10 +397,10 @@ with col_stats:
     else:
         # --- PRÉPARATION ---
         df_30j = df_30j[df_30j['end_time'].notna()].copy()
-        df_30j['start_dt'] = pd.to_datetime(df_30j['start_time']).dt.tz_convert('Europe/Paris')
-        df_30j['end_dt']   = pd.to_datetime(df_30j['end_time']).dt.tz_convert('Europe/Paris')
+        df_30j['start_dt'] = pd.to_datetime(df_30j['start_time']).dt.tz_localize('UTC').dt.tz_convert('Europe/Paris')
+        df_30j['end_dt']   = pd.to_datetime(df_30j['end_time']).dt.tz_localize('UTC').dt.tz_convert('Europe/Paris')
         df_30j['duree_min'] = (df_30j['end_dt'] - df_30j['start_dt']).dt.total_seconds() / 60
-        df_30j = df_30j[df_30j['duree_min'] >= 2]  # filtre bruit
+        df_30j = df_30j[df_30j['duree_min'] >= 2]
 
         # Mapping ride → parc & land
         ride_to_park = {}
