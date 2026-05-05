@@ -5,4 +5,3 @@ requests
 pytz
 streamlit-autorefresh
 altair
-discord.py>=2.3.0
