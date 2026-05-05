@@ -142,7 +142,7 @@ with t2: render_advanced_cards("Disney Adventure World")
 
 # --- FOOTER (Inspiré de l'ancien v4.0) ---
 st.markdown(f"""
-    <div style="text-align:right; color:#64748b; font-size:10px; margin-top:40px;">
+    <div style="text-align:left; color:#64748b; font-size:10px; margin-top:40px;">
         v5.0 Premium | Actualisé à {maintenant.strftime('%H:%M:%S')} | © Disney Wait Time
     </div>
 """, unsafe_allow_html=True)
