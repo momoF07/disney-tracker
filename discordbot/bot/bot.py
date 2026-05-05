@@ -1,11 +1,14 @@
 # bot/bot.py
+import sys
+import os
+
+# Racine du repo → accès à config.py et modules/
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+# discordbot/ → accès à cogs/ et utils/
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import discord
 from discord.ext import commands
-import os
-import sys
-
-# Ajoute le dossier parent au path pour trouver cogs/ et utils/
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 intents = discord.Intents.default()
 intents.message_content = True
