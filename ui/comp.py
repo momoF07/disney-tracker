@@ -212,63 +212,96 @@ def render_park_hours(schedules):
     st.markdown(
         '<div style="background:rgba(255,255,255,0.03); padding:16px 20px; border-radius:22px;'
         'border:1px solid rgba(255,255,255,0.07); margin-bottom:16px; backdrop-filter:blur(20px);">'
-
-        '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">'
         '<div style="font-family:Outfit,sans-serif; color:rgba(255,255,255,0.4); font-size:9.5px;'
-        'font-weight:700; text-transform:uppercase; letter-spacing:2px;">🎵 Radio Disney Village</div>'
-        '<div style="display:flex; align-items:center; gap:6px;">'
-        '<span id="radio-dot" style="width:6px; height:6px; background:#34d399; border-radius:50%;'
-        'display:inline-block; box-shadow:0 0 8px #34d399; animation:pulse 2s infinite;"></span>'
-        '<span style="font-family:Outfit,sans-serif; font-size:9px; color:#34d399;'
-        'font-weight:600; text-transform:uppercase; letter-spacing:1px;">En direct</span>'
-        '</div>'
-        '</div>'
-
-        '<style>@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }</style>'
-
-        '<div style="display:flex; align-items:center; gap:12px;">'
-
-        # Bouton mute
-        '<button id="btn-mute" onclick="toggleMute()" style="'
-        'background:linear-gradient(135deg,#c4b5fd,#7dd3fc); border:none; border-radius:50%;'
-        'width:40px; height:40px; cursor:pointer; display:flex; align-items:center; justify-content:center;'
-        'font-size:18px; flex-shrink:0; box-shadow:0 4px 15px rgba(196,181,253,0.3);">🔇</button>'
-
-        # Slider volume
-        '<div style="flex:1; display:flex; align-items:center; gap:8px;">'
-        '<input id="vol-slider" type="range" min="0" max="100" value="0" oninput="setVolume(this.value)"'
-        ' style="flex:1; height:4px; border-radius:4px; accent-color:#c4b5fd; cursor:pointer;">'
-        '<span style="font-family:Outfit,sans-serif; font-size:10px; color:#475569; min-width:28px;" id="vol-label">0%</span>'
-        '</div>'
-
-        '</div>'
-
-        '<audio id="radio-audio" src="http://streaming.infomaniak.com/disneyvillage_high" preload="auto" autoplay></audio>'
-
-        '<script>'
-        'var audio = document.getElementById("radio-audio");'
-        'audio.volume = 20;'
-
-        'function setVolume(v) {'
-        '  audio.volume = v / 100;'
-        '  var btn = document.getElementById("btn-mute");'
-        '  document.getElementById("vol-label").innerHTML = v + "%";'
-        '  btn.innerHTML = v == 0 ? "🔇" : v < 50 ? "🔉" : "🔊";'
-        '}'
-
-        'function toggleMute() {'
-        '  var slider = document.getElementById("vol-slider");'
-        '  if (audio.volume > 0) {'
-        '    slider.value = 0; setVolume(0);'
-        '  } else {'
-        '    slider.value = 70; setVolume(70);'
-        '  }'
-        '}'
-        '</script>'
-
+        'font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-bottom:12px;">🎵 Radio Disney Village</div>'
         '</div>',
         unsafe_allow_html=True
     )
+
+    radio_html = """<!DOCTYPE html>
+<html>
+<head>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:transparent; font-family:Outfit,sans-serif; display:flex; align-items:center; gap:12px; padding:4px; }
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&display=swap');
+
+  #btn-mute {
+    background: linear-gradient(135deg, #c4b5fd, #7dd3fc);
+    border: none; border-radius: 50%;
+    width: 40px; height: 40px;
+    cursor: pointer; font-size: 18px;
+    flex-shrink: 0;
+    box-shadow: 0 4px 15px rgba(196,181,253,0.3);
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .live-dot {
+    width: 6px; height: 6px; background: #34d399;
+    border-radius: 50%; box-shadow: 0 0 8px #34d399;
+    animation: pulse 2s infinite; flex-shrink:0;
+  }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+  .live-label {
+    font-size: 9px; color: #34d399; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+
+  input[type=range] {
+    flex:1; height:4px; border-radius:4px;
+    accent-color:#c4b5fd; cursor:pointer;
+  }
+
+  #vol-label {
+    font-size:10px; color:#475569; min-width:28px;
+  }
+
+  .right { display:flex; align-items:center; gap:8px; flex:1; }
+  .live  { display:flex; align-items:center; gap:5px; margin-left:auto; }
+</style>
+</head>
+<body>
+  <button id="btn-mute" onclick="toggleMute()">🔇</button>
+  <div class="right">
+    <input id="vol-slider" type="range" min="0" max="100" value="0" oninput="setVolume(this.value)">
+    <span id="vol-label">0%</span>
+  </div>
+  <div class="live">
+    <div class="live-dot"></div>
+    <span class="live-label">En direct</span>
+  </div>
+
+  <audio id="radio-audio" src="http://streaming.infomaniak.com/disneyvillage_high" preload="auto" autoplay></audio>
+
+  <script>
+    var audio  = document.getElementById('radio-audio');
+    var slider = document.getElementById('vol-slider');
+    var label  = document.getElementById('vol-label');
+    var btn    = document.getElementById('btn-mute');
+
+    audio.volume = 0;
+
+    function setVolume(v) {
+      audio.volume = v / 100;
+      label.innerHTML = v + '%';
+      btn.innerHTML = v == 0 ? '🔇' : v < 50 ? '🔉' : '🔊';
+    }
+
+    function toggleMute() {
+      if (audio.volume > 0) {
+        slider.value = 0;
+        setVolume(0);
+      } else {
+        slider.value = 70;
+        setVolume(70);
+      }
+    }
+  </script>
+</body>
+</html>"""
+
+    st.iframe(radio_html, height=60)
 
 
 def render_upcoming_shows(schedules):
