@@ -51,7 +51,6 @@ apply_custom_style()
 paris_tz = pytz.timezone('Europe/Paris')
 maintenant = datetime.now(paris_tz)
 heure_refresh = maintenant.strftime("%H:%M:%S")
-derniere_maj = "--:--:--"
 
 st.session_state.last_refresh = heure_refresh
 st_autorefresh(interval=60000, key="datarefresh")
@@ -87,7 +86,7 @@ def is_in_rehab(ride):
     debut = r.get('debut')
     fin   = r.get('fin')
     if not debut or not fin:
-        return True  # Rehab permanente
+        return True
     return debut <= today <= fin
 
 def is_during_rehab(row):
@@ -97,7 +96,7 @@ def is_during_rehab(row):
     debut = rehab.get('debut')
     fin   = rehab.get('fin')
     if not debut or not fin:
-        return True  # Rehab permanente
+        return True
     start_date = row['start_dt'].date()
     return debut <= start_date <= fin
 
@@ -107,9 +106,15 @@ st.title("🏰 Disney Wait Time")
 
 # --- CONFIGURATION DU FILTRAGE ---
 heure_actuelle = maintenant.time()
-heure_reset = maintenant.replace(hour=2, minute=30, second=0, microsecond=0)
-debut_journee = heure_reset if maintenant >= heure_reset else heure_reset - timedelta(days=1)
-date_30j = (maintenant - timedelta(days=30)).isoformat()
+heure_reset    = maintenant.replace(hour=2, minute=30, second=0, microsecond=0)
+debut_journee  = heure_reset if maintenant >= heure_reset else heure_reset - timedelta(days=1)
+date_30j       = (maintenant - timedelta(days=30)).isoformat()
+
+# --- VALEURS PAR DÉFAUT ---
+derniere_maj    = "--:--:--"
+df_live         = pd.DataFrame()
+df_pannes_brutes = pd.DataFrame()
+status_map      = {}
 
 try:
     resp_live = supabase.table("disney_live").select("*").execute()
@@ -121,14 +126,10 @@ try:
     resp_101 = supabase.table("logs_101").select("*").gte("start_time", debut_journee.isoformat()).execute()
     df_pannes_brutes = pd.DataFrame(resp_101.data)
 
-    resp_info = supabase.table("rides_info").select("*").execute()
-    df_info = pd.DataFrame(resp_info.data)
-
     derniere_maj = pd.to_datetime(df_live['updated_at']).dt.tz_convert('Europe/Paris').max().strftime("%H:%M:%S") if not df_live.empty else "--:--:--"
 
 except Exception as e:
     st.error(f"❌ Erreur critique base de données : {e}")
-    df_live, df_pannes_brutes = pd.DataFrame(), pd.DataFrame()
 
 all_pannes = []
 if not df_live.empty and not df_pannes_brutes.empty:
@@ -265,8 +266,8 @@ if not df_live.empty:
             if ride_data.empty:
                 continue
 
-            data     = ride_data.iloc[0]
-            info     = status_map.get(ride, {})
+            data      = ride_data.iloc[0]
+            info      = status_map.get(ride, {})
             panne_act = next((p for p in all_pannes if p['ride'] == ride and p['statut'] == "EN_COURS"), None)
 
             # --- HEURE DE FERMETURE ---
@@ -309,8 +310,8 @@ if not df_live.empty:
 
             if rehab_flag and rehab_info:
                 debut     = rehab_info.get('debut')
-                debut_str = debut.strftime('🛠️ En réhabilitation depuis le %d/%m —') if debut else ""
-                st.caption(f"{debut_str} {rehab_info['msg']}")
+                debut_str = debut.strftime('%d/%m') if debut else "date inconnue"
+                st.caption(f"🛠️ En réhabilitation depuis le {debut_str} — {rehab_info['msg']}")
 
             with st.expander("📜 Historique"):
                 h_p_clean = [p for p in all_pannes if p['ride'] == ride and (p['statut'] == "EN_COURS" or p['duree'] >= 2)]
@@ -328,7 +329,7 @@ with col_flux:
     if not df_pannes_brutes.empty:
         flux = df_pannes_brutes.copy()
         flux['dt'] = pd.to_datetime(flux['start_time'])
-        flux = flux.sort_values('dt', ascending=False).head(90)  # ← plus de drop_duplicates
+        flux = flux.sort_values('dt', ascending=False).head(90)
 
         with st.container(height=425):
             for _, p in flux.iterrows():
@@ -373,11 +374,8 @@ with col_stats:
         )
         df_30j['duree_min'] = (df_30j['end_dt'] - df_30j['start_dt']).dt.total_seconds() / 60
         df_30j = df_30j[df_30j['duree_min'] >= 2]
-
-        # Exclusion des périodes de rehab
         df_30j = df_30j[~df_30j.apply(is_during_rehab, axis=1)]
 
-        # Mapping ride → parc & land
         ride_to_park = {}
         ride_to_land = {}
         for park, lands in PARKS_DATA.items():
