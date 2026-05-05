@@ -15,7 +15,7 @@ def render_weather_card(weather):
     # Construction sécurisée du HTML
     alert_html = ""
     if alert:
-        alert_html = f"""<div style="margin-top: 15px; padding: 12px; background: {alert['color']}; border-radius: 12px; text-align: center; color: white; font-size: 13px; font-weight: 600;">⚠️ {alert_77['code']} : {alert_77['sub']}</div>"""
+        alert_html = f"""<div style="margin-top: 15px; padding: 12px; background: {alert['color']}; border-radius: 12px; text-align: center; color: white; font-size: 13px; font-weight: 600;">⚠️ {alert['code']} : {alert['sub']}</div>"""
 
     shows_html = ""
     if msc or dsp:
