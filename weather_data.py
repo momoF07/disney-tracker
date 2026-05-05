@@ -18,6 +18,7 @@ def sync_weather():
         data = response.json()['current']
         
         entry = {
+            "id": 1,
             "created_at": datetime.now(pytz.timezone('Europe/Paris')).isoformat(),
             "temp": data['temperature_2m'],
             "feels_like": data['apparent_temperature'],
@@ -26,7 +27,7 @@ def sync_weather():
             "weather_code": data['weather_code']
         }
         
-        supabase.table("weather_logs").insert(entry).execute()
+        supabase.table("weather_logs").upsert(entry, on_conflict="id").execute()
         print(f"✅ Sync OK : {data['temperature_2m']}°C | Rafales : {data['wind_gusts_10m']} km/h")
         
     except Exception as e:
