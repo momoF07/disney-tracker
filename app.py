@@ -20,6 +20,9 @@ from config import PARK_OPENING, DLP_CLOSING, DAW_CLOSING, EMT_OPENING
 from ui.filters import render_quick_filters
 from maintenance import show_maintenance
 
+# --- VERSION ---
+webversion ="V2.5"
+
 # --- RÉFÉRENTIEL DES ATTRACTIONS ---
 # On fusionne tes deux listes de Disneyland Park et Disney Adventure World
 ALL_RIDES_LIST = sorted(list(set(RIDES_DLP + RIDES_DAW)))
@@ -415,7 +418,7 @@ footer_html = f"""
 
 <div class="main-footer">
     <div class="footer-item">
-        <span class="version-tag">v2.0</span>
+        <span class="version-tag">{webversion}</span>
         <span class="footer-separator">|</span>
         Disney Wait Time Tool
     </div>
