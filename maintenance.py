@@ -152,14 +152,9 @@ def show_maintenance():
                 ctx.globalAlpha = Math.max(0, this.life);
                 ctx.fillStyle   = this.color;
                 ctx.shadowColor = this.color;
-                ctx.shadowBlur  = 20;          // ← était 8, maintenant 20
+                ctx.shadowBlur  = 8;
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fill();
-                // Halo secondaire
-                ctx.shadowBlur  = 40;
-                ctx.globalAlpha = Math.max(0, this.life * 0.3);
-                ctx.arc(this.x, this.y, this.size * 2, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.restore();
             }
