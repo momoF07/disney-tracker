@@ -155,10 +155,15 @@ def render_upcoming_shows(schedules):
         paris_time = to_paris_time(s['opening_time'][:5])
         if paris_time < now_str:
             continue
+
+        # Nettoyage D'ABORD
         clean_name = re.sub(r'^\[.*?\]\s*', '', s['ride_name'])
         clean_name = re.sub(r'\s*\(\d{2}:\d{2}\)$', '', clean_name)
+
+        # Filtrage ENSUITE sur le nom propre
         if any(clean_name.lower().startswith(h) for h in HIDDEN_SHOWS):
             continue
+
         shows.append({**s, '_paris_time': paris_time, '_clean_name': clean_name})
 
     shows = sorted(shows, key=lambda x: x['_paris_time'])[:3]
