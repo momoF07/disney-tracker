@@ -339,8 +339,8 @@ if not df_live.empty:
 
             if rehab_flag and rehab_info:
                 debut     = rehab_info.get('debut')
-                debut_str = debut.strftime('%d/%m') if debut else "date inconnue"
-                st.caption(f"🛠️ En réhabilitation depuis le {debut_str} — {rehab_info['msg']}")
+                debut_str = debut.strftime('🛠️ En réhabilitation depuis le %d/%m —') if debut else ""
+                st.caption(f"{debut_str} {rehab_info['msg']}")
 
             # --- HISTORIQUE : masqué si en réhab ---
             if not rehab_flag:
