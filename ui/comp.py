@@ -349,7 +349,8 @@ def render_upcoming_shows(schedules):
 
     if not schedules: return
 
-    HIDDEN_SHOWS = ["philharmagic", "reserved viewing", "animation academy"]
+    #HIDDEN_SHOWS = ["philharmagic", "reserved viewing", "animation academy"]
+    HIDDEN_SHOWS = []
     PARKS = [
         {"label": "Disneyland Park", "prefix": "Disneyland Park", "color": "#ffb3d1"},
         {"label": "Adventure World",  "prefix": "Adventure World",  "color": "#fb923c"},
@@ -377,7 +378,7 @@ def render_upcoming_shows(schedules):
     for show in all_shows:
         key = show['_park_label']
         if key not in grouped: grouped[key] = []
-        if len(grouped[key]) < 3: grouped[key].append(show)
+        if len(grouped[key]) < 50: grouped[key].append(show)
 
     def make_rows(shows, color):
         if not shows:
