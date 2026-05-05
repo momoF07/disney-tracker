@@ -29,7 +29,7 @@ def update_daily_schedules():
                 f"https://api.themeparks.wiki/v1/entity/{pid}/schedule",
                 timeout=20
             )
-            schedules = res_sched.json().get('schedules', [])
+            schedules = res_sched.json().get('schedule', [])
             print(f"   → {len(schedules)} entrée(s) reçue(s) depuis l'API")
 
             for entry in schedules:
@@ -49,7 +49,7 @@ def update_daily_schedules():
                         all_updates.append(row)
                         print(f"   ✅ PARK     | {p_name} | {o_time} → {c_time}")
 
-                    elif raw_type == 'EXTRA_MAGIC_HOURS':
+                    elif raw_type == 'EXTRA_HOURS':
                         row = {
                             "ride_name": f"EMT {p_name}",
                             "opening_time": o_time,
