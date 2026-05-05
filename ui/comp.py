@@ -154,7 +154,7 @@ def render_upcoming_shows(schedules):
             if f"[{park['prefix']}]" not in s['ride_name']:
                 continue
 
-            hhmm = s['opening_time'][:5]
+            hhmm = s['opening_time'][:3]
             if hhmm < now_str:
                 continue
 
