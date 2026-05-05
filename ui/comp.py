@@ -1,5 +1,6 @@
 import streamlit as st
 from modules.emojis import get_emoji
+from datetime import datetime
 
 def render_weather_card(weather):
     if not weather: return
