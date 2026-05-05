@@ -26,7 +26,7 @@ def get_disney_weather():
         gusts = clean_val(data.get('wind_gusts_10m'), 0)
         code = data.get('weather_code', -1)
         #code = 999
-        apparent_temp = 33
+        apparent_temp = 40
         
         # Map étendue pour éviter le "Inconnu" sur les codes intermédiaires
         weather_map = {
