@@ -269,38 +269,30 @@ def apply_custom_style():
         .bg-bordeaux { background: linear-gradient(135deg, #dc2626, #991b1b); }
         .bg-purple   { background: linear-gradient(135deg, #7c3aed, #6d28d9); }
 
-        /* === BOUTONS D'ACTION === */
-        .action-buttons-container div[data-testid="stColumn"] button {
-            height: 50px !important;
-            border-radius: 15px !important;
-            font-family: 'Outfit
-        ', sans-serif !important;
-            font-size: 13px !important;
-            font-weight: 700 !important;
-            transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1) !important;
-            border: 1px solid rgba(255,255,255,0.08) !important;
-            letter-spacing: 0.3px !important;
-        }
-
-        div[data-testid="stButton"] button:hover {
-            transform: translateY(-2px) scale(1.02);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.4) !important;
-        }
-
         /* === FILTRES RAPIDES === */
         .filter-container div[data-testid="stColumn"] button {
             background: rgba(255,255,255,0.03) !important;
             color: #64748b !important;
-            border-radius: 11px !important;
+            border-radius: 10px !important;
             border: 1px solid rgba(255,255,255,0.05) !important;
-            font-family: 'Outfit
-        ', sans-serif !important;
-            font-size: 9.5px !important;
-            height: 34px !important;
+            font-family: 'Outfit', sans-serif !important;
+            font-size: 9px !important;
+            height: 30px !important;
             text-transform: uppercase !important;
             letter-spacing: 0.8px !important;
             font-weight: 700 !important;
-            transition: all 0.15s ease !important;
+            padding: 0 8px !important;
+        }
+
+        /* === BOUTONS D'ACTION === */
+        .action-buttons-container div[data-testid="stColumn"] button {
+            height: 44px !important;
+            border-radius: 13px !important;
+            font-family: 'Outfit', sans-serif !important;
+            font-size: 13px !important;
+            font-weight: 600 !important;
+            transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1) !important;
+            border: 1px solid rgba(255,255,255,0.08) !important;
         }
 
         /* === DIVIDERS PARCS === */

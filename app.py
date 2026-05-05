@@ -355,7 +355,7 @@ with col_flux:
         st.caption("Aucune activité majeure aujourd'hui.")
 
 with col_stats:
-    st.subheader("📊 Statistiques — 30 derniers jours")
+    st.subheader("📊 Stats — 30 jours")
 
     try:
         resp_30j = supabase.table("logs_101").select("*").gte("start_time", date_30j).execute()
@@ -365,7 +365,7 @@ with col_stats:
         df_30j = pd.DataFrame()
 
     if df_30j.empty:
-        st.caption("Pas de données sur les 30 derniers jours.")
+        st.caption("Pas de données.")
     else:
         df_30j = df_30j.copy()
         df_30j['start_dt'] = pd.to_datetime(df_30j['start_time']).dt.tz_convert('Europe/Paris')
@@ -393,57 +393,86 @@ with col_stats:
             moy   = int(df['duree_min'].mean()) if nb > 0 else 0
             return nb, total, moy
 
-        def fmt(nb, total, moy):
-            return f"**{nb}** interruptions · **{total}** min · moy. **{moy}** min"
+        def stat_pill(label, value, color="#64748b"):
+            return (
+                '<div style="display:inline-flex; flex-direction:column; align-items:center;'
+                'background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06);'
+                'border-radius:12px; padding:8px 14px; min-width:70px;">'
+                '<span style="font-family:Outfit,sans-serif; font-size:18px; font-weight:800; color:' + color + '; line-height:1;">' + str(value) + '</span>'
+                '<span style="font-size:9px; color:#334155; font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:3px;">' + label + '</span>'
+                '</div>'
+            )
 
-        with st.expander("🌍 Global (DLP + DAW)", expanded=True):
+        with st.expander("🌍 Global", expanded=True):
             nb, total, moy = stats_block(df_30j)
-            st.markdown(fmt(nb, total, moy))
-            col_dlp, col_daw = st.columns(2)
-            for col, parc_name, label in [
-                (col_dlp, "Disneyland Park", "🏰 DLP"),
-                (col_daw, "Disney Adventure World", "🎬 DAW")
+            st.markdown(
+                '<div style="display:flex; gap:8px; flex-wrap:wrap; padding:4px 0;">'
+                + stat_pill("interruptions", nb, "#c4b5fd")
+                + stat_pill("min total", total, "#7dd3fc")
+                + stat_pill("moy. min", moy, "#6ee7b7")
+                + '</div>'
+                '<div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">',
+                unsafe_allow_html=True
+            )
+            for parc_name, label, color in [
+                ("Disneyland Park", "🏰 DLP", "#ffb3d1"),
+                ("Disney Adventure World", "🎬 DAW", "#fb923c")
             ]:
-                with col:
-                    df_p = df_30j[df_30j['parc'] == parc_name]
-                    nb, total, moy = stats_block(df_p)
-                    st.markdown(f"**{label}**")
-                    st.markdown(fmt(nb, total, moy))
+                df_p = df_30j[df_30j['parc'] == parc_name]
+                nb_p, total_p, moy_p = stats_block(df_p)
+                st.markdown(
+                    '<div style="flex:1; min-width:120px; background:rgba(255,255,255,0.02);'
+                    'border:1px solid rgba(255,255,255,0.05); border-top:2px solid ' + color + '55;'
+                    'border-radius:14px; padding:10px 12px;">'
+                    '<div style="font-family:Outfit,sans-serif; font-size:10px; font-weight:700;'
+                    'color:' + color + '; opacity:0.8; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">' + label + '</div>'
+                    '<div style="display:flex; gap:6px;">'
+                    + stat_pill("101", nb_p, color)
+                    + stat_pill("min", total_p, "#94a3b8")
+                    + stat_pill("moy", moy_p, "#94a3b8")
+                    + '</div>'
+                    '</div>',
+                    unsafe_allow_html=True
+                )
+            st.markdown('</div>', unsafe_allow_html=True)
 
         with st.expander("🗺️ Par land"):
             all_lands = []
             for lands in PARKS_DATA.values():
                 all_lands.extend(lands.keys())
             available_lands = [l for l in all_lands if not df_30j[df_30j['land'] == l].empty]
-            selected_lands = st.multiselect(
-                "Sélectionner des lands",
-                options=available_lands,
-                default=available_lands[:2] if available_lands else [],
-                key="stats_lands"
-            )
+            selected_lands = st.multiselect("", options=available_lands,
+                default=available_lands[:2] if available_lands else [], key="stats_lands")
             for land in selected_lands:
-                df_l = df_30j[df_30j['land'] == land]
-                nb, total, moy = stats_block(df_l)
-                st.markdown(f"**{land.title()}** — {fmt(nb, total, moy)}")
+                nb, total, moy = stats_block(df_30j[df_30j['land'] == land])
+                st.markdown(
+                    '<div style="display:flex; justify-content:space-between; align-items:center;'
+                    'padding:8px 12px; background:rgba(255,255,255,0.02); border-radius:10px; margin-bottom:6px;">'
+                    '<span style="color:rgba(255,255,255,0.6); font-size:12px; font-weight:600;">' + land.title() + '</span>'
+                    '<div style="display:flex; gap:6px;">'
+                    + stat_pill("101", nb, "#c4b5fd") + stat_pill("min", total, "#7dd3fc") + stat_pill("moy", moy, "#6ee7b7")
+                    + '</div></div>',
+                    unsafe_allow_html=True
+                )
 
         with st.expander("🎢 Par attraction"):
-            available_rides = (
-                df_30j.groupby('ride_name')['duree_min']
-                .count()
-                .sort_values(ascending=False)
-                .index.tolist()
-            )
-            selected_rides = st.multiselect(
-                "Sélectionner des attractions",
-                options=available_rides,
+            available_rides = (df_30j.groupby('ride_name')['duree_min'].count()
+                               .sort_values(ascending=False).index.tolist())
+            selected_rides = st.multiselect("", options=available_rides,
                 default=available_rides[:3] if available_rides else [],
-                format_func=lambda x: f"{get_emoji(x)} {x}",
-                key="stats_rides"
-            )
+                format_func=lambda x: f"{get_emoji(x)} {x}", key="stats_rides")
             for ride in selected_rides:
-                df_r = df_30j[df_30j['ride_name'] == ride]
-                nb, total, moy = stats_block(df_r)
-                st.markdown(f"{get_emoji(ride)} **{ride}** — {fmt(nb, total, moy)}")
+                nb, total, moy = stats_block(df_30j[df_30j['ride_name'] == ride])
+                st.markdown(
+                    '<div style="display:flex; justify-content:space-between; align-items:center;'
+                    'padding:8px 12px; background:rgba(255,255,255,0.02); border-radius:10px; margin-bottom:6px;">'
+                    '<span style="color:rgba(255,255,255,0.6); font-size:12px; font-weight:600;">'
+                    + get_emoji(ride) + ' ' + ride + '</span>'
+                    '<div style="display:flex; gap:6px;">'
+                    + stat_pill("101", nb, "#c4b5fd") + stat_pill("min", total, "#7dd3fc") + stat_pill("moy", moy, "#6ee7b7")
+                    + '</div></div>',
+                    unsafe_allow_html=True
+                )
 
 st.divider()
 footer_html = f"""
