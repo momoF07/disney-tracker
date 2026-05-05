@@ -166,7 +166,7 @@ def render_upcoming_shows(schedules):
 
         shows.append({**s, '_paris_time': paris_time, '_clean_name': clean_name})
 
-    shows = sorted(shows, key=lambda x: x['_paris_time'])[:3]
+    shows = sorted(shows, key=lambda x: x['_paris_time'])[:10]
 
     show_items = ""
     if not shows:
