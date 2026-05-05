@@ -83,39 +83,57 @@ def render_ride_card(ride, sub, wait, bg, card_style, pill, show_wait=True):
 
 def render_park_hours(schedules):
     if not schedules: return
-    
+
     parks = [s for s in schedules if s.get('type') == 'PARK']
+    emts  = {s['ride_name'].replace('EMT ', ''): s['opening_time'] for s in schedules if s.get('type') == 'EMT'}
+
     html_boxes = ""
-    
+
     for p in parks:
-        is_dlp = "Disneyland" in p['ride_name']
-        name = "Disneyland Park" if is_dlp else "Adventure World"
-        color = "#4facfe" if is_dlp else "#fb923c"
-        # On définit l'EMT (statique ou à chercher en base si tu l'as)
-        emt_time = "08:30" 
+        is_dlp  = "Disneyland" in p['ride_name']
+        name    = "Disneyland Park" if is_dlp else "Adventure World"
+        color   = "#4facfe" if is_dlp else "#fb923c"
+        emt_time = emts.get(p['ride_name'])
 
-        html_boxes += f"""<div style="flex: 1; min-width: 140px; padding: 15px; background: rgba(255,255,255,0.03); 
-                    border-radius: 18px; border-left: 4px solid {color};">
-            <div style="font-size: 10px; color: #94a3b8; font-weight: 800; letter-spacing: 1px;">{name.upper()}</div>
-            <div style="font-size: 18px; color: white; font-weight: 700; margin-top: 5px;">{p['opening_time']} — {p['closing_time']}</div>
-            <div style="font-size: 10px; color: #a78bfa; font-weight: 600; margin-top: 2px; opacity: 0.8;">✨ EMT : {emt_time}</div>
-        </div>"""
+        # Suppression des secondes (HH:MM:SS → HH:MM)
+        opening = p['opening_time'][:5]
+        closing = p['closing_time'][:5]
 
-    st.markdown(f"""<div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; backdrop-filter: blur(10px);">
-        <div style="color: white; font-size: 14px; font-weight: 700; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
-            🕒 HORAIRES DES PARCS
+        emt_html = ""
+        if emt_time:
+            emt_html = f'<div style="font-size: 10px; color: #a78bfa; font-weight: 600; margin-top: 2px; opacity: 0.8;">✨ EMT : {emt_time[:5]}</div>'
+
+        html_boxes += f"""
+            <div style="flex: 1; min-width: 140px; padding: 15px; background: rgba(255,255,255,0.03);
+                        border-radius: 18px; border-left: 4px solid {color};">
+                <div style="font-size: 10px; color: #94a3b8; font-weight: 800; letter-spacing: 1px;">
+                    {name.upper()}
+                </div>
+                <div style="font-size: 18px; color: white; font-weight: 700; margin-top: 5px;">
+                    {opening} — {closing}
+                </div>
+                {emt_html}
+            </div>"""
+
+    st.markdown(f"""
+        <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 24px;
+                    border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;
+                    backdrop-filter: blur(10px);">
+            <div style="color: white; font-size: 14px; font-weight: 700; margin-bottom: 15px;
+                        display: flex; align-items: center; gap: 10px;">
+                🕒 HORAIRES DES PARCS
+            </div>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">{html_boxes}</div>
         </div>
-        <div style="display: flex; gap: 12px; flex-wrap: wrap;">{html_boxes}</div>
-    </div>
     """, unsafe_allow_html=True)
+
 
 def render_upcoming_shows(schedules):
     import datetime as dt
     if not schedules: return
-    
+
     now_str = dt.datetime.now().strftime("%H:%M")
-    # On filtre les shows qui n'ont pas encore commencé
-    shows = [s for s in schedules if s.get('type') == 'SHOW' and s['opening_time'] >= now_str]
+    shows = [s for s in schedules if s.get('type') == 'SHOW' and s['opening_time'][:5] >= now_str]
     shows = sorted(shows, key=lambda x: x['opening_time'])[:3]
 
     show_items = ""
@@ -123,13 +141,26 @@ def render_upcoming_shows(schedules):
         show_items = '<div style="color: #64748b; font-size: 12px; padding: 10px;">Plus de spectacles aujourd\'hui.</div>'
     else:
         for s in shows:
-            show_items += f"""<div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(255,255,255,0.02); border-radius: 12px; margin-bottom: 8px;">
-                <span style="color: white; font-size: 13px; font-weight: 600;">🎭 {s['ride_name']}</span>
-                <span style="color: #00f2fe; font-size: 13px; font-weight: 800; background: rgba(0, 242, 254, 0.1); padding: 2px 8px; border-radius: 6px;">{s['opening_time']}</span>
-            </div>"""
+            show_items += f"""
+                <div style="display: flex; justify-content: space-between; align-items: center;
+                            padding: 10px; background: rgba(255,255,255,0.02);
+                            border-radius: 12px; margin-bottom: 8px;">
+                    <span style="color: white; font-size: 13px; font-weight: 600;">
+                        🎭 {s['ride_name']}
+                    </span>
+                    <span style="color: #00f2fe; font-size: 13px; font-weight: 800;
+                                 background: rgba(0, 242, 254, 0.1); padding: 2px 8px; border-radius: 6px;">
+                        {s['opening_time'][:5]}
+                    </span>
+                </div>"""
 
-    st.markdown(f"""<div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; backdrop-filter: blur(10px);">
-        <div style="color: white; font-size: 14px; font-weight: 700; margin-bottom: 15px;">✨ PROCHAINES REPRÉSENTATIONS</div>
-        {show_items}
-    </div>
+    st.markdown(f"""
+        <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 24px;
+                    border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;
+                    backdrop-filter: blur(10px);">
+            <div style="color: white; font-size: 14px; font-weight: 700; margin-bottom: 15px;">
+                ✨ PROCHAINES REPRÉSENTATIONS
+            </div>
+            {show_items}
+        </div>
     """, unsafe_allow_html=True)
