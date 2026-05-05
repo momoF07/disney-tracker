@@ -321,7 +321,7 @@ if not df_live.empty:
 
 # --- SECTION FLUX & STATISTIQUES ---
 st.write("---")
-col_flux, col_stats = st.columns([1.5, 1], gap="large")
+col_flux, col_stats = st.columns([1, 1.5], gap="large")
 
 with col_flux:
     st.subheader("🚨 Flux du jour")
