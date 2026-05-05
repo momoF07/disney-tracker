@@ -1,8 +1,11 @@
 # bot/bot.py
 import discord
-from discord.ext import commands, tasks
+from discord.ext import commands
 import os
-from supabase_client import get_supabase
+import sys
+
+# Ajoute le dossier parent au path pour trouver cogs/ et utils/
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 intents = discord.Intents.default()
 intents.message_content = True
