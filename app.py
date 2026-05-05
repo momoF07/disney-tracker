@@ -450,7 +450,7 @@ with col_stats:
                     'padding:8px 12px; background:rgba(255,255,255,0.02); border-radius:10px; margin-bottom:6px;">'
                     '<span style="color:rgba(255,255,255,0.6); font-size:12px; font-weight:600;">' + land.title() + '</span>'
                     '<div style="display:flex; gap:6px;">'
-                    + stat_pill("101", nb, "#c4b5fd") + stat_pill("min", total, "#7dd3fc") + stat_pill("moy", moy, "#6ee7b7")
+                    + stat_pill("101", nb, "#c4b5fd") + stat_pill("min total", total, "#7dd3fc") + stat_pill("moy. min", moy, "#6ee7b7")
                     + '</div></div>',
                     unsafe_allow_html=True
                 )
@@ -469,7 +469,7 @@ with col_stats:
                     '<span style="color:rgba(255,255,255,0.6); font-size:12px; font-weight:600;">'
                     + get_emoji(ride) + ' ' + ride + '</span>'
                     '<div style="display:flex; gap:6px;">'
-                    + stat_pill("101", nb, "#c4b5fd") + stat_pill("min", total, "#7dd3fc") + stat_pill("moy", moy, "#6ee7b7")
+                    + stat_pill("101", nb, "#c4b5fd") + stat_pill("min total", total, "#7dd3fc") + stat_pill("moy. min", moy, "#6ee7b7")
                     + '</div></div>',
                     unsafe_allow_html=True
                 )
