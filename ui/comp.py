@@ -208,6 +208,19 @@ def render_park_hours(schedules):
         unsafe_allow_html=True
     )
 
+    # --- RADIO DISNEY VILLAGE ---
+    st.markdown(
+        '<div style="background:rgba(255,255,255,0.03); padding:14px 18px; border-radius:22px;'
+        'border:1px solid rgba(255,255,255,0.07); margin-bottom:16px; backdrop-filter:blur(20px);">'
+        '<div style="font-family:Outfit,sans-serif; color:rgba(255,255,255,0.4); font-size:9.5px;'
+        'font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-bottom:12px;">🎵 Radio Disney Village</div>'
+        '<iframe src="https://static.infomaniak.ch/infomaniak/radio/html/webradio_player.html"'
+        ' width="100%" height="60" frameborder="0" scrolling="no"'
+        ' style="border-radius:14px; overflow:hidden;"></iframe>'
+        '</div>',
+        unsafe_allow_html=True
+    )
+
 
 def render_upcoming_shows(schedules):
     import datetime as dt
