@@ -3,297 +3,383 @@ import streamlit as st
 def apply_custom_style():
     st.markdown("""
     <style>
-        /* --- 0. FONT & GLOBAL --- */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
 
-        * { box-sizing: border-box; }
+        /* === BASE === */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         .stApp {
-            background: radial-gradient(ellipse at top right, #1a2744 0%, #0f172a 50%, #0a0f1e 100%) !important;
-            font-family: 'Inter', sans-serif;
+            background:
+                radial-gradient(ellipse 80% 50% at 20% -10%, rgba(120,80,255,0.15) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 80% 110%, rgba(255,100,150,0.1) 0%, transparent 55%),
+                radial-gradient(ellipse 100% 80% at 50% 50%, #090d1a 0%, #060910 100%);
+            font-family: 'DM Sans', sans-serif;
         }
 
-        /* --- 1. LAYOUT --- */
+        /* Grain texture overlay */
+        .stApp::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.4;
+        }
+
+        /* === LAYOUT === */
         .block-container {
-            padding-top: 1rem;
-            padding-bottom: 2rem;
-            padding-left: 2rem;
-            padding-right: 2rem;
+            padding-top: 1.5rem !important;
+            padding-bottom: 3rem !important;
+            padding-left: 2.5rem !important;
+            padding-right: 2.5rem !important;
             max-width: 100% !important;
         }
 
-        /* --- 2. TITRE PRINCIPAL --- */
+        /* === TITRE === */
         h1 {
-            background: linear-gradient(120deg, #4facfe 0%, #a78bfa 50%, #00f2fe 100%);
-            background-size: 200% auto;
+            font-family: 'Syne', sans-serif !important;
+            font-weight: 800 !important;
+            font-size: 2.2rem !important;
+            letter-spacing: -2px !important;
+            text-align: center;
+            padding-bottom: 0.75rem;
+            background: linear-gradient(135deg, #ffd6e7 0%, #c4b5fd 35%, #7dd3fc 65%, #ffd6e7 100%);
+            background-size: 300% auto;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            font-weight: 900 !important;
-            letter-spacing: -1.5px;
-            text-align: center;
-            padding-bottom: 0.5rem;
-            animation: shimmer 4s linear infinite;
+            animation: titleFlow 6s ease infinite;
         }
 
-        @keyframes shimmer {
-            0%   { background-position: 0% center; }
-            100% { background-position: 200% center; }
+        @keyframes titleFlow {
+            0%   { background-position: 0% 50%; }
+            50%  { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
-        /* Sous-titres (subheader) */
         h2 {
-            color: rgba(255,255,255,0.85) !important;
+            font-family: 'Syne', sans-serif !important;
             font-weight: 700 !important;
-            font-size: 1.1rem !important;
-            letter-spacing: -0.3px;
+            font-size: 1rem !important;
+            color: rgba(255,255,255,0.7) !important;
+            letter-spacing: 0.5px !important;
         }
 
-        /* --- 3. CONTAINERS SORT / SELECTION --- */
+        /* === CONTAINERS SORT / SELECTION === */
         .sort-container, .selection-container {
-            background: rgba(255,255,255,0.03) !important;
-            backdrop-filter: blur(16px);
-            padding: 20px;
-            border-radius: 24px;
-            border: 1px solid rgba(255,255,255,0.08);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
-            margin-bottom: 20px;
+            background: rgba(255,255,255,0.025) !important;
+            backdrop-filter: blur(20px) saturate(180%);
+            padding: 18px 20px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.07);
+            box-shadow:
+                0 0 0 1px rgba(255,255,255,0.03) inset,
+                0 20px 40px rgba(0,0,0,0.4),
+                0 1px 0 rgba(255,255,255,0.06) inset;
+            margin-bottom: 16px;
         }
 
         .sort-label, .order-label {
-            color: #64748b;
-            font-size: 0.7rem;
-            font-weight: 800;
+            font-family: 'Syne', sans-serif;
+            color: #475569;
+            font-size: 0.65rem;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.2em;
+            letter-spacing: 0.25em;
             margin-bottom: 10px;
-            margin-top: 5px;
+            margin-top: 4px;
             display: block;
         }
 
-        /* --- 4. SEGMENTED CONTROL --- */
+        /* === SEGMENTED CONTROL === */
         div[data-baseweb="segmented-control"] {
-            background-color: rgba(0,0,0,0.25) !important;
+            background: rgba(0,0,0,0.3) !important;
             border-radius: 14px !important;
-            padding: 4px !important;
-            border: 1px solid rgba(255,255,255,0.06) !important;
+            padding: 3px !important;
+            border: 1px solid rgba(255,255,255,0.05) !important;
         }
 
         div[data-baseweb="segmented-control"] button {
             border: none !important;
             background: transparent !important;
-            color: #64748b !important;
+            color: #475569 !important;
+            font-family: 'DM Sans', sans-serif !important;
             font-weight: 600 !important;
-            font-size: 13px !important;
-            transition: all 0.25s ease !important;
+            font-size: 12px !important;
+            transition: all 0.2s ease !important;
         }
 
         div[data-baseweb="segmented-control"] button[aria-selected="true"] {
-            background: rgba(255,255,255,0.1) !important;
+            background: linear-gradient(135deg, rgba(196,181,253,0.2), rgba(125,211,252,0.15)) !important;
             color: white !important;
-            border-radius: 10px !important;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
+            border-radius: 11px !important;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.4), 0 1px 0 rgba(255,255,255,0.08) inset;
         }
 
-        /* --- 5. MULTISELECT CHIPS --- */
+        /* === MULTISELECT === */
         span[data-baseweb="tag"] {
-            background: rgba(79,172,254,0.12) !important;
-            border: 1px solid rgba(79,172,254,0.35) !important;
+            background: linear-gradient(135deg, rgba(196,181,253,0.15), rgba(125,211,252,0.1)) !important;
+            border: 1px solid rgba(196,181,253,0.3) !important;
             border-radius: 10px !important;
-            padding: 2px 10px !important;
+            padding: 1px 10px !important;
         }
 
         span[data-baseweb="tag"] span {
             color: #e2e8f0 !important;
-            font-size: 13px !important;
+            font-size: 12px !important;
             font-weight: 500 !important;
+            font-family: 'DM Sans', sans-serif !important;
         }
 
-        /* --- 6. CARTES D'ATTRACTIONS --- */
+        /* === CARTES ATTRACTIONS === */
         .ride-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             width: 100%;
-            gap: 10px;
-            transition: transform 0.25s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease;
+            gap: 8px;
+            transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
         }
 
-        .ride-row:hover {
-            transform: translateY(-3px) scale(1.005);
-        }
+        .ride-row:hover { transform: translateY(-2px) scale(1.003); }
 
         .ride-left-card {
-            background: rgba(255,255,255,0.03) !important;
-            backdrop-filter: blur(16px);
-            border-radius: 20px;
-            padding: 12px 18px;
+            background: rgba(255,255,255,0.025) !important;
+            backdrop-filter: blur(20px);
+            border-radius: 18px;
+            padding: 11px 16px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             flex-grow: 1;
-            height: 70px;
-            border: 1px solid rgba(255,255,255,0.08) !important;
-            transition: border-color 0.25s ease, background 0.25s ease;
+            height: 68px;
+            border: 1px solid rgba(255,255,255,0.07) !important;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ride-left-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(105deg, rgba(255,255,255,0.03) 0%, transparent 60%);
+            pointer-events: none;
         }
 
         .ride-left-card:hover {
-            border-color: rgba(255,255,255,0.15) !important;
-            background: rgba(255,255,255,0.05) !important;
+            border-color: rgba(255,255,255,0.12) !important;
+            background: rgba(255,255,255,0.04) !important;
         }
 
-        .ride-info-meta { display: flex; align-items: center; gap: 14px; }
+        .ride-info-meta { display: flex; align-items: center; gap: 13px; z-index: 1; }
         .ride-titles { display: flex; flex-direction: column; }
+
         .ride-main-name {
-            color: white;
-            font-size: 14px;
-            font-weight: 700;
+            font-family: 'DM Sans', sans-serif;
+            color: rgba(255,255,255,0.92);
+            font-size: 13.5px;
+            font-weight: 600;
             margin: 0;
             line-height: 1.2;
         }
+
         .ride-sub-status {
-            color: rgba(255,255,255,0.5);
-            font-size: 11px;
+            font-family: 'DM Sans', sans-serif;
+            color: rgba(255,255,255,0.38);
+            font-size: 10.5px;
             margin: 2px 0 0 0;
-            font-weight: 500;
+            font-weight: 400;
         }
 
         .state-pill {
-            background: rgba(0,0,0,0.35);
-            color: rgba(255,255,255,0.8);
-            font-size: 8px;
-            font-weight: 800;
-            padding: 3px 10px;
+            font-family: 'Syne', sans-serif;
+            background: rgba(0,0,0,0.4);
+            color: rgba(255,255,255,0.65);
+            font-size: 7.5px;
+            font-weight: 700;
+            padding: 3px 9px;
             border-radius: 20px;
             text-transform: uppercase;
-            border: 1px solid rgba(255,255,255,0.1);
-            letter-spacing: 1.2px;
+            border: 1px solid rgba(255,255,255,0.08);
+            letter-spacing: 1.5px;
             white-space: nowrap;
+            z-index: 1;
         }
 
         .ride-right-wait {
-            min-width: 76px;
-            height: 70px;
-            border-radius: 20px;
+            min-width: 72px;
+            height: 68px;
+            border-radius: 18px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             color: white;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.35);
             border: 1px solid rgba(255,255,255,0.08);
+            position: relative;
+            overflow: hidden;
         }
 
-        .wait-val { font-size: 22px; font-weight: 900; line-height: 1; }
-        .wait-unit { font-size: 9px; font-weight: 700; opacity: 0.65; text-transform: uppercase; letter-spacing: 0.5px; }
+        .ride-right-wait::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 50%;
+            background: rgba(255,255,255,0.06);
+            pointer-events: none;
+        }
 
-        /* --- 7. COULEURS CARTES --- */
-        .card-green   { border-left: 4px solid #10b981 !important; background: rgba(16,185,129,0.06) !important; }
-        .card-orange  { border-left: 4px solid #f59e0b !important; background: rgba(245,158,11,0.06) !important; }
-        .card-blue    { border-left: 4px solid #3b82f6 !important; background: rgba(59,130,246,0.06) !important; }
-        .card-grey    { border-left: 4px solid #64748b !important; background: rgba(100,116,139,0.06) !important; }
-        .card-bordeaux{ border-left: 4px solid #ef4444 !important; background: rgba(239,68,68,0.06) !important; }
-        .card-purple  { border-left: 4px solid #a78bfa !important; background: rgba(167,139,250,0.06) !important; }
+        .wait-val {
+            font-family: 'Syne', sans-serif;
+            font-size: 20px;
+            font-weight: 800;
+            line-height: 1;
+            z-index: 1;
+        }
+        .wait-unit {
+            font-size: 8px;
+            font-weight: 600;
+            opacity: 0.6;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            z-index: 1;
+        }
 
-        .bg-green    { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
-        .bg-orange   { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
-        .bg-blue     { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
-        .bg-grey     { background: linear-gradient(135deg, #64748b 0%, #475569 100%); }
-        .bg-bordeaux { background: linear-gradient(135deg, #ef4444 0%, #991b1b 100%); }
-        .bg-purple   { background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%); }
+        /* === COULEURS CARTES === */
+        .card-green    { border-left: 3px solid #34d399 !important; background: rgba(52,211,153,0.04) !important; }
+        .card-orange   { border-left: 3px solid #fbbf24 !important; background: rgba(251,191,36,0.04) !important; }
+        .card-blue     { border-left: 3px solid #60a5fa !important; background: rgba(96,165,250,0.04) !important; }
+        .card-grey     { border-left: 3px solid #64748b !important; background: rgba(100,116,139,0.04) !important; }
+        .card-bordeaux { border-left: 3px solid #f87171 !important; background: rgba(248,113,113,0.04) !important; }
+        .card-purple   { border-left: 3px solid #a78bfa !important; background: rgba(167,139,250,0.04) !important; }
 
-        /* --- 8. BOUTONS D'ACTION --- */
+        .bg-green    { background: linear-gradient(135deg, #059669, #047857); }
+        .bg-orange   { background: linear-gradient(135deg, #d97706, #b45309); }
+        .bg-blue     { background: linear-gradient(135deg, #2563eb, #1d4ed8); }
+        .bg-grey     { background: linear-gradient(135deg, #475569, #334155); }
+        .bg-bordeaux { background: linear-gradient(135deg, #dc2626, #991b1b); }
+        .bg-purple   { background: linear-gradient(135deg, #7c3aed, #6d28d9); }
+
+        /* === BOUTONS D'ACTION === */
         .action-buttons-container div[data-testid="stColumn"] button {
-            height: 52px !important;
-            border-radius: 16px !important;
-            font-size: 14px !important;
+            height: 50px !important;
+            border-radius: 15px !important;
+            font-family: 'Syne', sans-serif !important;
+            font-size: 13px !important;
             font-weight: 700 !important;
-            transition: all 0.25s cubic-bezier(0.4,0,0.2,1) !important;
-            border: 1px solid rgba(255,255,255,0.1) !important;
+            transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1) !important;
+            border: 1px solid rgba(255,255,255,0.08) !important;
+            letter-spacing: 0.3px !important;
         }
 
         div[data-testid="stButton"] button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.35) !important;
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4) !important;
         }
 
-        /* --- 9. FILTRES RAPIDES --- */
+        /* === FILTRES RAPIDES === */
         .filter-container div[data-testid="stColumn"] button {
-            background: rgba(255,255,255,0.04) !important;
-            color: #94a3b8 !important;
-            border-radius: 12px !important;
-            border: 1px solid rgba(255,255,255,0.07) !important;
-            font-size: 10px !important;
-            height: 36px !important;
+            background: rgba(255,255,255,0.03) !important;
+            color: #64748b !important;
+            border-radius: 11px !important;
+            border: 1px solid rgba(255,255,255,0.05) !important;
+            font-family: 'Syne', sans-serif !important;
+            font-size: 9.5px !important;
+            height: 34px !important;
             text-transform: uppercase !important;
-            letter-spacing: 0.6px;
+            letter-spacing: 0.8px !important;
             font-weight: 700 !important;
+            transition: all 0.15s ease !important;
         }
 
-        /* --- 10. DIVIDERS PARCS --- */
+        /* === DIVIDERS PARCS === */
         .park-divider {
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin: 14px 0 10px 0;
+            gap: 10px;
+            margin: 16px 0 10px 0;
         }
 
         .park-divider::before, .park-divider::after {
             content: '';
             flex: 1;
             height: 1px;
-            background: rgba(255,255,255,0.07);
+            background: rgba(255,255,255,0.05);
         }
 
-        .park-name {
-            color: #475569;
-            font-size: 9px;
-            font-weight: 800;
+        .park-name, .class-name {
+            font-family: 'Syne', sans-serif;
+            color: #334155;
+            font-size: 8.5px;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 1.5px;
+            letter-spacing: 2px;
             white-space: nowrap;
         }
 
-        /* --- 11. EXPANDER --- */
+        /* === EXPANDER === */
         div[data-testid="stExpander"] {
-            background: rgba(255,255,255,0.02) !important;
-            border: 1px solid rgba(255,255,255,0.06) !important;
-            border-radius: 16px !important;
-            margin-bottom: 4px;
+            background: rgba(255,255,255,0.015) !important;
+            border: 1px solid rgba(255,255,255,0.05) !important;
+            border-radius: 14px !important;
+            margin-bottom: 3px !important;
         }
 
         div[data-testid="stExpander"] summary {
-            color: rgba(255,255,255,0.5) !important;
-            font-size: 12px !important;
-            font-weight: 600 !important;
+            color: rgba(255,255,255,0.35) !important;
+            font-size: 11px !important;
+            font-weight: 500 !important;
+            font-family: 'DM Sans', sans-serif !important;
         }
 
-        /* --- 12. INFO / CAPTION --- */
+        div[data-testid="stExpander"] summary:hover {
+            color: rgba(255,255,255,0.6) !important;
+        }
+
+        /* === INFO / CAPTION === */
         div[data-testid="stCaptionContainer"] p {
-            color: #64748b !important;
-            font-size: 11px !important;
+            color: #475569 !important;
+            font-size: 10.5px !important;
+            font-family: 'DM Sans', sans-serif !important;
         }
 
         div[data-testid="stInfo"] {
-            background: rgba(59,130,246,0.08) !important;
-            border: 1px solid rgba(59,130,246,0.2) !important;
+            background: rgba(96,165,250,0.06) !important;
+            border: 1px solid rgba(96,165,250,0.15) !important;
             border-radius: 14px !important;
-            color: #93c5fd !important;
         }
 
-        /* --- 13. SCROLLBAR --- */
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+        /* === DIVIDER ST === */
+        hr {
+            border-color: rgba(255,255,255,0.05) !important;
+            margin: 2rem 0 !important;
+        }
 
-        /* --- 14. RESPONSIVE --- */
+        /* === SCROLLBAR === */
+        ::-webkit-scrollbar { width: 3px; height: 3px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+
+        /* === TOAST === */
+        div[data-testid="stToast"] {
+            background: rgba(15,20,40,0.95) !important;
+            border: 1px solid rgba(255,255,255,0.1) !important;
+            border-radius: 14px !important;
+            backdrop-filter: blur(20px) !important;
+        }
+
+        /* === RESPONSIVE === */
         @media (max-width: 768px) {
-            .block-container { padding-left: 0.75rem; padding-right: 0.75rem; }
-            .ride-left-card, .ride-right-wait { height: 62px; }
+            .block-container { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
+            .ride-left-card, .ride-right-wait { height: 60px; }
             .ride-main-name { font-size: 12px; }
-            .wait-val { font-size: 18px; }
-            .ride-row { gap: 8px; }
+            .wait-val { font-size: 16px; }
+            .ride-row { gap: 6px; }
+            h1 { font-size: 1.6rem !important; }
         }
     </style>
     """, unsafe_allow_html=True)
