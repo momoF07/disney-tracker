@@ -342,29 +342,28 @@ with col_flux:
     st.subheader("🚨 Flux du jour")
     
     if not df_pannes_brutes.empty:
-        # On utilise df_pannes_brutes qui est déjà filtré depuis 02h30 dans Data Recovery
         flux = df_pannes_brutes.copy()
         flux['dt'] = pd.to_datetime(flux['start_time'])
-        flux = flux.sort_values('dt', ascending=False).drop_duplicates(subset=['ride_name']).head(8)
+        flux = flux.sort_values('dt', ascending=False).drop_duplicates(subset=['ride_name']).head(5)
         
+        st.markdown('<div style="max-height: 400px; overflow-y: auto; padding-right: 5px;">', unsafe_allow_html=True)
         for _, p in flux.iterrows():
             r_n = p['ride_name']
             d_p = pd.to_datetime(p['start_time']).astimezone(paris_tz)
             h_f_p = pd.to_datetime(p['end_time']).astimezone(paris_tz).strftime("%H:%M") if pd.notna(p['end_time']) else None
             
-            # Calcul de l'heure de fermeture théorique
             is_daw_p = any(a.lower() in r_n.lower() for a in RIDES_DAW)
             if r_n in ANTICIPATED_CLOSINGS: h_f_limit = ANTICIPATED_CLOSINGS[r_n]
             elif r_n in FANTASYLAND_EARLY_CLOSE: h_f_limit = time(DLP_CLOSING.hour - 1, DLP_CLOSING.minute)
             else: h_f_limit = DAW_CLOSING if is_daw_p else DLP_CLOSING
 
-            # Rendu des cartes selon le statut
             if heure_actuelle >= h_f_limit:
                 render_ride_card(r_n, f"Fermeture à {h_f_limit.strftime('%H:%M')}", "FIN", "bg-bordeaux", "card-bordeaux", "FERMETURE", False)
             elif not h_f_p:
                 render_ride_card(r_n, f"En panne à {d_p.strftime('%H:%M')}", "101", "bg-orange", "card-orange", "INTERRUPTION", False)
             else:
                 render_ride_card(r_n, f"Réouvert à {h_f_p}", "OK", "bg-green", "card-green", "REOUVERTURE", False)
+        st.markdown('</div>', unsafe_allow_html=True)
     else:
         st.caption("Aucune activité majeure aujourd'hui.")
 
