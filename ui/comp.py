@@ -242,7 +242,7 @@ def render_park_hours(schedules):
 
         '</div>'
 
-        '<audio id="radio-audio" src="http://streaming.infomaniak.com/disneyvillage_high" preload="none"></audio>'
+        '<audio id="radio-audio" src="https://webradio.ice.infomaniak.ch/webradio-128.mp3" preload="none"></audio>'
 
         '<script>'
         'var audio = document.getElementById("radio-audio");'
