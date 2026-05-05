@@ -180,7 +180,7 @@ def render_upcoming_shows(schedules):
         key = show['_park_label']
         if key not in grouped:
             grouped[key] = []
-        if len(grouped[key]) < 20:
+        if len(grouped[key]) < 3:
             grouped[key].append(show)
 
     def render_show_rows(shows, color):
