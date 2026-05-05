@@ -287,7 +287,7 @@ def render_park_hours(schedules):
     </div>
   </div>
 
-  <audio id="audio" src="https://webradio.ice.infomaniak.ch/webradio-128.mp3" preload="none"></audio>
+  <audio id="audio" src="https://webradio.ice.infomaniak.ch/webradio-128.mp3" preload="auto"></audio>
 
   <script>
     var audio   = document.getElementById('audio');
