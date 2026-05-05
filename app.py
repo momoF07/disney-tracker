@@ -537,7 +537,7 @@ with col_stats:
                         '<span style="font-family:Outfit,sans-serif; color:rgba(255,255,255,0.75);'
                         'font-size:12px; font-weight:600;">' + ride + '</span>'
                         '</div>'
-                        '<div style="margin-bottom:10px; margin-left:26px;">'  # ← badge sur ligne séparée
+                        '<div style="margin-bottom:10px; margin-left:10px;">'  # ← badge sur ligne séparée
                         '<span style="font-size:9px; font-weight:700; padding:2px 9px; border-radius:20px;'
                         'background:' + color + '20; color:' + color + '; border:1px solid ' + color + '40;'
                         'font-family:Outfit,sans-serif; text-transform:uppercase; letter-spacing:0.8px;">'
