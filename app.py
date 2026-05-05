@@ -499,11 +499,12 @@ with col_stats:
                     default=available_lands[:2] if available_lands else [], key="stats_lands")
                 for land in selected_lands:
                     color = LAND_COLORS.get(land, "#64748b")
-                    nb, total, moy = stats_block(df_30j[df_30j['land'] == land])
+                    df_l  = df_30j[df_30j['land'] == land]
+                    nb, total, moy = stats_block(df_l)
                     st.markdown(
                         '<div style="padding:10px 14px; background:' + color + '08;'
                         'border:1px solid ' + color + '25; border-left:3px solid ' + color + ';'
-                        'border-radius:12px; margin-bottom:8px;">'
+                        'border-radius:12px; margin-bottom:4px;">'
                         '<div style="font-family:Outfit,sans-serif; font-size:10px; font-weight:700;'
                         'color:' + color + '; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">'
                         + land.title() +
@@ -515,29 +516,52 @@ with col_stats:
                         + '</div></div>',
                         unsafe_allow_html=True
                     )
+                    with st.expander(f"📋 Détail des interruptions — {land.title()}"):
+                        df_l_sorted = df_l.sort_values('start_dt', ascending=False)
+                        for _, row in df_l_sorted.iterrows():
+                            debut = row['start_dt'].strftime('%d/%m %H:%M')
+                            duree = int(row['duree_min'])
+                            ride_name = row['ride_name']
+                            ride_color = LAND_COLORS.get(row['land'], "#64748b")
+                            st.markdown(
+                                '<div style="display:flex; justify-content:space-between; align-items:center;'
+                                'padding:6px 10px; background:rgba(255,255,255,0.02); border-radius:8px; margin-bottom:4px;">'
+                                '<div style="display:flex; align-items:center; gap:8px;">'
+                                '<span style="font-size:14px;">' + get_emoji(ride_name) + '</span>'
+                                '<span style="color:rgba(255,255,255,0.65); font-size:11px; font-weight:500;">' + ride_name + '</span>'
+                                '</div>'
+                                '<div style="display:flex; align-items:center; gap:8px;">'
+                                '<span style="color:#475569; font-size:10px;">' + debut + '</span>'
+                                '<span style="font-family:Outfit,sans-serif; font-size:11px; font-weight:700;'
+                                'color:#fbbf24; background:rgba(251,191,36,0.1); border:1px solid rgba(251,191,36,0.2);'
+                                'padding:1px 8px; border-radius:8px;">' + str(duree) + ' min</span>'
+                                '</div>'
+                                '</div>',
+                                unsafe_allow_html=True
+                            )
 
             # --- PAR ATTRACTION ---
             with st.expander("🎢 Par attraction"):
                 available_rides = (df_30j.groupby('ride_name')['duree_min'].count()
-                                   .sort_values(ascending=False).index.tolist())
+                                .sort_values(ascending=False).index.tolist())
                 selected_rides = st.multiselect("", options=available_rides,
                     default=available_rides[:3] if available_rides else [],
                     format_func=lambda x: f"{get_emoji(x)} {x}", key="stats_rides")
                 for ride in selected_rides:
                     land  = ride_to_land.get(ride, "Inconnu")
                     color = LAND_COLORS.get(land, "#64748b")
-                    nb, total, moy = stats_block(df_30j[df_30j['ride_name'] == ride])
-
+                    df_r  = df_30j[df_30j['ride_name'] == ride]
+                    nb, total, moy = stats_block(df_r)
                     st.markdown(
                         '<div style="padding:10px 14px; background:rgba(255,255,255,0.02);'
                         'border:1px solid rgba(255,255,255,0.06);'
-                        'border-radius:12px; margin-bottom:10px;">'
+                        'border-radius:12px; margin-bottom:4px;">'
                         '<div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">'
                         '<span style="font-size:18px;">' + get_emoji(ride) + '</span>'
                         '<span style="font-family:Outfit,sans-serif; color:rgba(255,255,255,0.75);'
-                        'font-size:12.5px; font-weight:600;">' + ride + '</span>'
+                        'font-size:12px; font-weight:600;">' + ride + '</span>'
                         '</div>'
-                        '<div style="margin-bottom:10px; margin-left:10px;">'  # ← badge sur ligne séparée
+                        '<div style="margin-bottom:10px; margin-left:26px;">'
                         '<span style="font-size:9px; font-weight:700; padding:2px 9px; border-radius:20px;'
                         'background:' + color + '20; color:' + color + '; border:1px solid ' + color + '40;'
                         'font-family:Outfit,sans-serif; text-transform:uppercase; letter-spacing:0.8px;">'
@@ -551,6 +575,26 @@ with col_stats:
                         + '</div></div>',
                         unsafe_allow_html=True
                     )
+                    with st.expander(f"📋 Détail des interruptions — {ride}"):
+                        df_r_sorted = df_r.sort_values('start_dt', ascending=False)
+                        for _, row in df_r_sorted.iterrows():
+                            debut = row['start_dt'].strftime('%d/%m %H:%M')
+                            fin   = row['end_dt'].strftime('%H:%M') if pd.notna(row['end_time']) else "En cours"
+                            duree = int(row['duree_min'])
+                            fin_color = "#f87171" if fin == "En cours" else "#94a3b8"
+                            st.markdown(
+                                '<div style="display:flex; justify-content:space-between; align-items:center;'
+                                'padding:6px 10px; background:rgba(255,255,255,0.02); border-radius:8px; margin-bottom:4px;">'
+                                '<div>'
+                                '<span style="color:#475569; font-size:10px; display:block;">' + debut + ' → '
+                                '<span style="color:' + fin_color + ';">' + fin + '</span></span>'
+                                '</div>'
+                                '<span style="font-family:Outfit,sans-serif; font-size:11px; font-weight:700;'
+                                'color:#fbbf24; background:rgba(251,191,36,0.1); border:1px solid rgba(251,191,36,0.2);'
+                                'padding:1px 8px; border-radius:8px;">' + str(duree) + ' min</span>'
+                                '</div>',
+                                unsafe_allow_html=True
+                            )
 
 st.divider()
 footer_html = f"""
