@@ -127,6 +127,16 @@ render_weather_card(get_disney_weather())
 #render_weather_card(get_maintenance_weather())
 
 # --- BLOC HORAIRES ---
+
+# --- RÉCUPÉRATION DES DONNÉES DEPUIS SUPABASE ---
+try:
+    # On récupère les horaires et les shows stockés par scheduler.py
+    res = supabase.table("ride_schedules").select("*").execute()
+    schedules_data = res.data if res.data else []
+except Exception as e:
+    st.error(f"Erreur de connexion aux horaires : {e}")
+    schedules_data = []
+
 col_h1, col_h2 = st.columns(2)
 with col_h1:
     render_park_hours(schedules_data)
