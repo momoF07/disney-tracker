@@ -51,6 +51,7 @@ apply_custom_style()
 paris_tz = pytz.timezone('Europe/Paris')
 maintenant = datetime.now(paris_tz)
 heure_refresh = maintenant.strftime("%H:%M:%S")
+derniere_maj = "--:--:--"
 
 st.session_state.last_refresh = heure_refresh
 st_autorefresh(interval=60000, key="datarefresh")
@@ -111,8 +112,6 @@ debut_journee = heure_reset if maintenant >= heure_reset else heure_reset - time
 date_30j = (maintenant - timedelta(days=30)).isoformat()
 
 try:
-    derniere_maj = pd.to_datetime(df_live['updated_at']).dt.tz_convert('Europe/Paris').max().strftime("%H:%M:%S") if not df_live.empty else "--:--:--"
-    
     resp_live = supabase.table("disney_live").select("*").execute()
     df_live = pd.DataFrame(resp_live.data)
 
@@ -125,6 +124,7 @@ try:
     resp_info = supabase.table("rides_info").select("*").execute()
     df_info = pd.DataFrame(resp_info.data)
 
+    derniere_maj = pd.to_datetime(df_live['updated_at']).dt.tz_convert('Europe/Paris').max().strftime("%H:%M:%S") if not df_live.empty else "--:--:--"
 
 except Exception as e:
     st.error(f"❌ Erreur critique base de données : {e}")
