@@ -7,85 +7,68 @@ from datetime import datetime
 # --- CONFIGURATION ---
 URL = os.environ.get("SUPABASE_URL")
 KEY = os.environ.get("SUPABASE_KEY")
-
-if not URL or not KEY:
-    print("❌ ERREUR : SUPABASE_URL ou KEY manquante dans l'environnement.")
-    sys.exit(1)
-
 supabase = create_client(URL, KEY)
 
-def update_schedules():
-    print("🚀 Démarrage du script de mise à jour...")
+def update_daily_schedules():
+    print("🚀 [SCHEDULER] Mise à jour des horaires parcs et shows...")
     
-    # Définition de la variable park_ids à l'INTÉRIEUR de la fonction
-    park_ids = [
-        "dae968d5-630d-4719-8b06-3d107e944401", # Disneyland Park
-        "ca888437-ebb4-4d50-aed2-d227f7096968"  # Disney Adventure World
-    ]
+    park_ids = {
+        "dae968d5-630d-4719-8b06-3d107e944401": "Disneyland Park",
+        "ca888437-ebb4-4d50-aed2-d227f7096968": "Adventure World"
+    }
     
     all_updates = []
-    # On récupère la date du jour au format ISO YYYY-MM-DD
     current_day = datetime.now().strftime('%Y-%m-%d')
-    print(f"📅 Recherche des horaires pour le : {current_day}")
 
-    for pid in park_ids:
+    for pid, p_name in park_ids.items():
         api_url = f"https://api.themeparks.wiki/v1/entity/{pid}/schedule"
-        print(f"🔍 Scan de l'entité : {pid}")
-        sys.stdout.flush() 
         
         try:
             response = requests.get(api_url, timeout=20)
-            response.raise_for_status()
-            data = response.json()
-            
-            schedules = data.get('schedules', [])
-            print(f"📊 {len(schedules)} créneaux trouvés dans l'API.")
+            data = response.json().get('schedules', [])
 
-            for entry in schedules:
-                # Filtrage strict sur la date du jour
-                if not entry.get('openingTime', '').startswith(current_day):
-                    continue
-                
-                raw_type = str(entry.get('type')).upper()
-                
-                # Détermination du type pour Supabase
-                if raw_type == 'OPERATING':
-                    final_type = "PARK"
-                elif raw_type in ['PERFORMANCE', 'SHOW', 'EVENT']:
-                    final_type = "SHOW"
-                else:
-                    continue
-
-                try:
-                    # Extraction HH:MM depuis le format ISO
+            for entry in data:
+                if entry.get('date') == current_day:
+                    raw_type = str(entry.get('type')).upper()
                     o_time = entry['openingTime'].split('T')[1][:5]
                     c_time = entry['closingTime'].split('T')[1][:5]
-                    
-                    all_updates.append({
-                        "ride_name": entry.get('description', 'Sans nom'),
-                        "opening_time": o_time,
-                        "closing_time": c_time,
-                        "type": final_type,
-                        "updated_at": datetime.now().isoformat()
-                    })
-                    print(f"✅ Trouvé : {entry.get('description')} ({final_type})")
-                except Exception as e:
-                    print(f"⚠️ Erreur parsing ligne : {e}")
-                    
-        except Exception as e:
-            print(f"❌ Erreur réseau/API sur {pid} : {e}")
 
-    # --- UPSERT SUPABASE ---
-    if all_updates:
-        print(f"📦 Envoi de {len(all_updates)} lignes vers Supabase...")
-        try:
-            # L'upsert met à jour si ride_name existe déjà, sinon insère
-            supabase.table("ride_schedules").upsert(all_updates).execute()
-            print("✅ Mise à jour réussie !")
+                    # 1. Horaires du Parc
+                    if raw_type == 'OPERATING':
+                        all_updates.append({
+                            "ride_name": p_name,
+                            "opening_time": o_time,
+                            "closing_time": c_time,
+                            "type": "PARK",
+                            "updated_at": datetime.now().isoformat()
+                        })
+                    
+                    # 2. Extra Magic Time (EMT)
+                    elif raw_type == 'EXTRA_MAGIC_HOURS':
+                        all_updates.append({
+                            "ride_name": f"EMT {p_name}",
+                            "opening_time": o_time,
+                            "closing_time": c_time,
+                            "type": "EMT",
+                            "updated_at": datetime.now().isoformat()
+                        })
+
+                    # 3. Spectacles programmés (SHOW)
+                    elif raw_type in ['PERFORMANCE', 'SHOW']:
+                        all_updates.append({
+                            "ride_name": entry.get('description'),
+                            "opening_time": o_time,
+                            "closing_time": c_time,
+                            "type": "SHOW",
+                            "updated_at": datetime.now().isoformat()
+                        })
+
         except Exception as e:
-            print(f"❌ Erreur Supabase : {e}")
-    else:
-        print("⚠️ Aucune donnée pertinente trouvée pour aujourd'hui.")
+            print(f"❌ Erreur sur {p_name}: {e}")
+
+    if all_updates:
+        supabase.table("ride_schedules").upsert(all_updates).execute()
+        print(f"✅ [SCHEDULER] {len(all_updates)} entrées synchronisées.")
 
 if __name__ == "__main__":
-    update_schedules()
+    update_daily_schedules()
