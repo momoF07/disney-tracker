@@ -51,7 +51,7 @@ def show_maintenance():
         # Utilisation d'une clé spécifique pour Streamlit
         code = st.text_input("Accès", type="password", label_visibility="collapsed", placeholder="...", key="maint_password")
         
-    if code == "AdminPass": # Ton code secret
+    if code == "123456789": # Ton code secret
         st.session_state.bypass_maintenance = True
         st.rerun() 
     
