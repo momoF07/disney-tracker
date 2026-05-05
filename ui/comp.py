@@ -154,7 +154,7 @@ def render_upcoming_shows(schedules):
             if f"[{park['prefix']}]" not in s['ride_name']:
                 continue
 
-            hhmm = s['opening_time'][:3]
+            hhmm = s['opening_time'][:5]
             if hhmm < now_str:
                 continue
 
@@ -180,7 +180,7 @@ def render_upcoming_shows(schedules):
         key = show['_park_label']
         if key not in grouped:
             grouped[key] = []
-        if len(grouped[key]) < 5:
+        if len(grouped[key]) < 3:
             grouped[key].append(show)
 
     def render_show_rows(shows, color):
