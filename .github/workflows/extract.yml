@@ -22,8 +22,8 @@ jobs:
       - name: 📦 Install Dependencies
         run: pip install requests supabase pytz
 
-      - name: 🚀 Run Worker
-        run: python worker.py
+      - name: 🚀 Run Worker and Weather
+        run: python worker.py weather_data.py
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
