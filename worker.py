@@ -292,6 +292,9 @@ def run_worker():
         try:
             response  = requests.get(f"https://api.themeparks.wiki/v1/entity/{p_id}/live", timeout=15)
             live_data = response.json().get('liveData', [])
+            for item in live_data:
+                if "small" in item.get('name', '').lower():
+                    print(f"[DEBUG] Nom exact API : '{item.get('name')}'")
 
             for item in live_data:
                 if item.get('entityType') == "ATTRACTION":
