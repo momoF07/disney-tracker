@@ -21,7 +21,7 @@ from ui.filters import render_quick_filters
 from maintenance import show_maintenance
 
 # --- VERSION ---
-webversion = "v3"
+webversion = "v5 Premium"
 
 # --- RÉFÉRENTIEL DES ATTRACTIONS ---
 ALL_RIDES_LIST = sorted(list(set(RIDES_DLP + RIDES_DAW)))
