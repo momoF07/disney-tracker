@@ -346,7 +346,7 @@ with col_flux:
         flux['dt'] = pd.to_datetime(flux['start_time'])
         flux = flux.sort_values('dt', ascending=False).drop_duplicates(subset=['ride_name']).head(90)
         
-        with st.container(height=420):
+        with st.container(height=425):
             for _, p in flux.iterrows():
                 r_n = p['ride_name']
                 d_p = pd.to_datetime(p['start_time']).astimezone(paris_tz)
