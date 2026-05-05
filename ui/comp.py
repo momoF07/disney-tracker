@@ -209,7 +209,6 @@ def render_park_hours(schedules):
     )
 
     # --- RADIO DISNEY VILLAGE ---
-    # --- RADIO DISNEY VILLAGE ---
     radio_html = """<!DOCTYPE html>
 <html>
 <head>
@@ -217,7 +216,7 @@ def render_park_hours(schedules):
   @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&display=swap');
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
-    background: #090d1a;
+    background: transparent;
     font-family: Outfit, sans-serif;
     padding: 16px 20px;
     overflow: hidden;
