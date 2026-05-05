@@ -222,65 +222,110 @@ def render_park_hours(schedules):
 <html>
 <head>
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { background:transparent; font-family:Outfit,sans-serif; display:flex; align-items:center; gap:12px; padding:4px; }
   @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 22px;
+    font-family: Outfit, sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 18px;
+    overflow: hidden;
+    height: 100vh;
+  }
 
   #btn-mute {
     background: linear-gradient(135deg, #c4b5fd, #7dd3fc);
     border: none; border-radius: 50%;
-    width: 40px; height: 40px;
-    cursor: pointer; font-size: 18px;
+    width: 36px; height: 36px;
+    cursor: pointer; font-size: 16px;
     flex-shrink: 0;
     box-shadow: 0 4px 15px rgba(196,181,253,0.3);
-    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
   }
-
-  .live-dot {
-    width: 6px; height: 6px; background: #34d399;
-    border-radius: 50%; box-shadow: 0 0 8px #34d399;
-    animation: pulse 2s infinite; flex-shrink:0;
+  #btn-mute:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(196,181,253,0.5);
   }
-  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+  #btn-mute:active { transform: scale(0.95); }
 
-  .live-label {
-    font-size: 9px; color: #34d399; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 1px;
+  .title {
+    font-size: 9px; color: rgba(255,255,255,0.3);
+    font-weight: 700; text-transform: uppercase;
+    letter-spacing: 2px; flex-shrink: 0;
+    white-space: nowrap;
   }
 
   input[type=range] {
-    flex:1; height:4px; border-radius:4px;
-    accent-color:#c4b5fd; cursor:pointer;
+    flex: 1; height: 3px; border-radius: 4px;
+    accent-color: #c4b5fd; cursor: pointer;
+    min-width: 60px;
   }
 
   #vol-label {
-    font-size:10px; color:#475569; min-width:28px;
+    font-size: 10px; color: #475569;
+    min-width: 30px; text-align: right;
   }
 
-  .right { display:flex; align-items:center; gap:8px; flex:1; }
-  .live  { display:flex; align-items:center; gap:5px; margin-left:auto; }
+  .live { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+  .live-dot {
+    width: 6px; height: 6px; background: #34d399;
+    border-radius: 50%; box-shadow: 0 0 8px #34d399;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+  .live-label {
+    font-size: 9px; color: #34d399; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px;
+    white-space: nowrap;
+  }
 </style>
 </head>
 <body>
+  <span class="title">🎵 Radio Disney Village</span>
   <button id="btn-mute" onclick="toggleMute()">🔇</button>
-  <div class="right">
-    <input id="vol-slider" type="range" min="0" max="100" value="0" oninput="setVolume(this.value)">
-    <span id="vol-label">0%</span>
-  </div>
+  <input id="vol-slider" type="range" min="0" max="100" value="0">
+  <span id="vol-label">0%</span>
   <div class="live">
     <div class="live-dot"></div>
     <span class="live-label">En direct</span>
   </div>
 
-  <audio id="radio-audio" src="https://static.infomaniak.ch/infomaniak/radio/html/webradio_player.html" preload="auto" autoplay></audio>
+  <audio id="radio-audio" preload="none"></audio>
 
   <script>
-    var audio  = document.getElementById('radio-audio');
-    var slider = document.getElementById('vol-slider');
-    var label  = document.getElementById('vol-label');
-    var btn    = document.getElementById('btn-mute');
+    var audio   = document.getElementById('radio-audio');
+    var slider  = document.getElementById('vol-slider');
+    var label   = document.getElementById('vol-label');
+    var btn     = document.getElementById('btn-mute');
+    var started = false;
 
     audio.volume = 0;
+
+    // On charge directement le player officiel comme source
+    var STREAM = 'https://static.infomaniak.ch/infomaniak/radio/html/webradio_player.html';
+
+    function startRadio() {
+      if (started) return;
+      // Fallback streams HTTPS
+      var streams = [
+        'https://streaming.infomaniak.com/disneyvillage_high',
+        'https://streaming.infomaniak.com/disneyvillage_low',
+        'https://streaming.infomaniak.com/disneyvillage'
+      ];
+      var idx = 0;
+      function tryNext() {
+        if (idx >= streams.length) return;
+        audio.src = streams[idx++];
+        audio.load();
+        audio.play().catch(function() { tryNext(); });
+      }
+      tryNext();
+      started = true;
+    }
 
     function setVolume(v) {
       audio.volume = v / 100;
@@ -289,19 +334,23 @@ def render_park_hours(schedules):
     }
 
     function toggleMute() {
+      startRadio();
       if (audio.volume > 0) {
-        slider.value = 0;
-        setVolume(0);
+        slider.value = 0; setVolume(0);
       } else {
-        slider.value = 70;
-        setVolume(70);
+        slider.value = 70; setVolume(70);
       }
     }
+
+    slider.addEventListener('input', function() {
+      startRadio();
+      setVolume(parseInt(this.value));
+    });
   </script>
 </body>
 </html>"""
 
-    st.iframe(radio_html, height=60)
+    st.iframe(radio_html, height=62)
 
 
 def render_upcoming_shows(schedules):
