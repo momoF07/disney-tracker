@@ -73,3 +73,8 @@ def get_stats_history_30d(_supabase, ride_names):
         df['date'] = pd.to_datetime(df['last_updated']).dt.date
         return df.groupby('date')['wait_time'].mean().reset_index()
     except: return pd.DataFrame()
+
+def get_weather():
+    """Récupère la météo réelle ou simulée pour Marne-la-Vallée"""
+    # Tu pourras connecter une API réelle ici plus tard
+    return {"temp": 12, "status": "Ciel Étoilé", "icon": "✨"}
