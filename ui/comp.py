@@ -135,7 +135,7 @@ def render_upcoming_shows(schedules):
 
     if not schedules: return
 
-    HIDDEN_SHOWS = ["mickey's philharmagic", "reserved viewing area", "animation academy"]
+    HIDDEN_SHOWS = ["philharmagic", "reserved viewing", "animation academy"]
 
     PARKS = [
         {"label": "Disneyland Park", "prefix": "Disneyland Park", "color": "#ffb3d1"},
@@ -161,7 +161,7 @@ def render_upcoming_shows(schedules):
             clean_name = re.sub(r'^\[.*?\]\s*', '', s['ride_name'])
             clean_name = re.sub(r'\s*\(\d{2}:\d{2}\)$', '', clean_name)
 
-            if any(clean_name.lower().startswith(h) for h in HIDDEN_SHOWS):
+            if any(h in clean_name.lower() for h in HIDDEN_SHOWS):
                 continue
 
             all_shows.append({
