@@ -6,13 +6,26 @@ def show_maintenance():
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Mulish:wght@300;400;500&display=swap');
 
         .stApp {
-            background:
-                radial-gradient(ellipse 80% 50% at 20% -10%, rgba(120,80,255,0.15) 0%, transparent 60%),
-                radial-gradient(ellipse 60% 40% at 80% 110%, rgba(255,100,150,0.1) 0%, transparent 55%),
-                radial-gradient(ellipse 100% 80% at 50% 50%, #090d1a 0%, #060910 100%);
+            background: radial-gradient(ellipse 80% 50% at 20% -10%, rgba(120,80,255,0.15) 0%, transparent 60%),
+                        radial-gradient(ellipse 60% 40% at 80% 110%, rgba(255,100,150,0.1) 0%, transparent 55%),
+                        radial-gradient(ellipse 100% 80% at 50% 50%, #090d1a 0%, #060910 100%);
+            overflow: hidden;
+        }
+
+        /* === CANVAS FEUX D'ARTIFICE === */
+        #fireworks-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(2px);
+            opacity: 0.5;
         }
 
         .maint-wrap {
+            position: relative;
+            z-index: 1;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -21,12 +34,10 @@ def show_maintenance():
         }
 
         .maint-card {
-            background: rgba(255,255,255,0.03);
-            backdrop-filter: blur(24px);
-            border: 1px solid rgba(255,255,255,0.07);
-            box-shadow:
-                0 40px 80px rgba(0,0,0,0.6),
-                0 1px 0 rgba(255,255,255,0.06) inset;
+            background: rgba(255,255,255,0.04);
+            backdrop-filter: blur(28px) saturate(180%);
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.06) inset;
             padding: 3rem 3.5rem;
             border-radius: 28px;
             max-width: 480px;
@@ -38,7 +49,7 @@ def show_maintenance():
             font-size: 72px;
             line-height: 1;
             margin-bottom: 24px;
-            filter: drop-shadow(0 0 30px rgba(196,181,253,0.4));
+            filter: drop-shadow(0 0 30px rgba(196,181,253,0.5));
             animation: float 4s ease-in-out infinite;
         }
 
@@ -82,7 +93,6 @@ def show_maintenance():
             font-family: 'Outfit', sans-serif;
         }
 
-        /* Champ password discret */
         div[data-baseweb="input"] {
             background: rgba(255,255,255,0.03) !important;
             border: 1px solid rgba(255,255,255,0.06) !important;
@@ -104,13 +114,142 @@ def show_maintenance():
         input::placeholder { color: rgba(255,255,255,0.1) !important; }
     </style>
 
+    <canvas id="fireworks-canvas"></canvas>
+
+    <script>
+        (function() {
+            const canvas = document.getElementById('fireworks-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            function resize() {
+                canvas.width  = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            const COLORS = [
+                '#ffb3d1', '#c4b5fd', '#7dd3fc', '#6ee7b7',
+                '#fbbf24', '#f87171', '#a78bfa', '#38bdf8',
+                '#fcd34d', '#86efac', '#fb923c'
+            ];
+
+            class Particle {
+                constructor(x, y, color) {
+                    this.x = x;
+                    this.y = y;
+                    this.color = color;
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = Math.random() * 3 + 0.5;
+                    this.vx = Math.cos(angle) * speed;
+                    this.vy = Math.sin(angle) * speed;
+                    this.life = 1;
+                    this.decay = Math.random() * 0.015 + 0.008;
+                    this.size = Math.random() * 2.5 + 1;
+                    this.gravity = 0.04;
+                }
+
+                update() {
+                    this.x  += this.vx;
+                    this.y  += this.vy;
+                    this.vy += this.gravity;
+                    this.vx *= 0.99;
+                    this.life -= this.decay;
+                }
+
+                draw() {
+                    ctx.save();
+                    ctx.globalAlpha = this.life;
+                    ctx.fillStyle   = this.color;
+                    ctx.shadowColor = this.color;
+                    ctx.shadowBlur  = 6;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+
+            class Firework {
+                constructor() {
+                    this.reset();
+                }
+
+                reset() {
+                    // Position aléatoire dans la moitié haute/basse de l'écran, loin du centre
+                    const side = Math.random() < 0.5 ? 'left' : 'right';
+                    this.x = side === 'left'
+                        ? Math.random() * canvas.width * 0.35
+                        : canvas.width * 0.65 + Math.random() * canvas.width * 0.35;
+                    this.y = Math.random() * canvas.height * 0.6 + canvas.height * 0.05;
+                    this.color     = COLORS[Math.floor(Math.random() * COLORS.length)];
+                    this.particles = [];
+                    this.exploded  = false;
+                    this.delay     = Math.random() * 180 + 60;
+                    this.timer     = 0;
+                }
+
+                explode() {
+                    const count = Math.floor(Math.random() * 60) + 40;
+                    for (let i = 0; i < count; i++) {
+                        this.particles.push(new Particle(this.x, this.y, this.color));
+                    }
+                    this.exploded = true;
+                }
+
+                update() {
+                    this.timer++;
+                    if (!this.exploded && this.timer >= this.delay) {
+                        this.explode();
+                    }
+                    this.particles = this.particles.filter(p => p.life > 0);
+                    this.particles.forEach(p => p.update());
+                }
+
+                draw() {
+                    this.particles.forEach(p => p.draw());
+                }
+
+                isDone() {
+                    return this.exploded && this.particles.length === 0;
+                }
+            }
+
+            let fireworks = [];
+
+            // Lance 3 feux au départ
+            for (let i = 0; i < 3; i++) {
+                const fw = new Firework();
+                fw.delay = i * 80 + 30;
+                fireworks.push(fw);
+            }
+
+            function loop() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                fireworks.forEach(fw => { fw.update(); fw.draw(); });
+                fireworks = fireworks.filter(fw => !fw.isDone());
+
+                // Maintenir 2-4 feux actifs en permanence
+                while (fireworks.length < 3) {
+                    fireworks.push(new Firework());
+                }
+
+                requestAnimationFrame(loop);
+            }
+
+            loop();
+        })();
+    </script>
+
     <div class="maint-wrap">
         <div class="maint-card">
             <div class="maint-emoji">🏰</div>
             <div class="maint-title">Mise à jour en cours</div>
             <div class="maint-sub">
                 Le Disney Tracker se refait une beauté.<br>
-                Revenez plus tard.
+                Revenez dans quelques instants.
             </div>
             <div class="maint-divider"></div>
             <div class="maint-hint">Accès restreint</div>
