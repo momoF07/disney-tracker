@@ -150,7 +150,7 @@ def render_upcoming_shows(schedules):
             clean_name = re.sub(r'\s*\(\d{2}:\d{2}\)$', '', clean_name)  # supprime (12:30)
 
             is_small = clean_name.lower() in SMALL_SHOWS
-            font_size = "6.5px" if is_small else "13px"
+            font_size = "8px" if is_small else "13px"
             opacity   = "0.6"  if is_small else "1"
 
             show_items += f"""<div style="display: flex; justify-content: space-between; align-items: center;
