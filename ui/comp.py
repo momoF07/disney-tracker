@@ -247,7 +247,7 @@ def render_park_hours(schedules):
 
         '<script>'
         'var audio = document.getElementById("radio-audio");'
-        'audio.volume = 0;'
+        'audio.volume = 20;'
 
         'function setVolume(v) {'
         '  audio.volume = v / 100;'
