@@ -148,6 +148,12 @@ def send_park_embed(park_name, lands, webhook_url, all_pannes, schedules, weathe
 
     def get_ride_status(name):
         data = live_map.get(name)
+        if not data:
+            clean = name.lower().strip('"\u201c\u201d\u2018\u2019')
+            for key, val in live_map.items():
+                if key.lower().strip('"\u201c\u201d\u2018\u2019') == clean:
+                    data = val
+                    break
         if not data: return "⚪", "--"
 
         is_open = data.get('is_open', False)
@@ -180,7 +186,6 @@ def send_park_embed(park_name, lands, webhook_url, all_pannes, schedules, weathe
             return "🟠", f"101 depuis {debut_p}"
         else:
             return "🟢", f"{int(wait)} min"
-
     # Attractions par land
     for land, attractions in lands.items():
         lines = []
