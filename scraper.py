@@ -3,7 +3,7 @@ import requests
 import re
 import config as cfg
 from supabase import create_client
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 # --- CONFIGURATION ---
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
@@ -15,21 +15,24 @@ PARKS = {
 }
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
 
-def send_discord_alert(ride_name, is_open, wait_time):
-    if not DISCORD_WEBHOOK_URL:
-        return
+def clean_old_data():
+    """Conserve 30 jours de données pour les statistiques mensuelles"""
+    limit = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+    try:
+        supabase.table("ride_history").delete().lt("last_updated", limit).execute()
+        print(f"🧹 Nettoyage : Données antérieures au {limit} supprimées.")
+    except Exception as e:
+        print(f"⚠️ Erreur nettoyage : {e}")
 
-    # Style du message
-    color = 0x2ECC71 if is_open else 0xE74C3C # Vert pour réouverture, Rouge pour panne
+def send_discord_alert(ride_name, is_open, wait_time):
+    if not DISCORD_WEBHOOK_URL: return
+    color = 0x2ECC71 if is_open else 0xE74C3C
     status_text = "✅ RÉOUVERTURE" if is_open else "⚠️ INTERRUPTION"
-    emoji = "🎢"
-    
     payload = {
         "embeds": [{
-            "title": f"{emoji} {status_text}",
+            "title": f"🎢 {status_text}",
             "description": f"**{ride_name}** est désormais {'ouvert' if is_open else 'en panne'}.",
             "color": color,
             "fields": [
@@ -39,192 +42,89 @@ def send_discord_alert(ride_name, is_open, wait_time):
             "footer": {"text": "Disney Tracker Live Update"}
         }]
     }
-    
-    try:
-        requests.post(DISCORD_WEBHOOK_URL, json=payload)
-    except Exception as e:
-        print(f"Erreur Webhook: {e}")
+    try: requests.post(DISCORD_WEBHOOK_URL, json=payload)
+    except: pass
 
 def super_clean(text):
-    """Garde uniquement les lettres et chiffres (ignore émojis, accents, symboles)"""
     if not text: return ""
-    # On met en minuscule et on ne garde que a-z et 0-9
     return re.sub(r'[^a-z0-9]', '', text.lower())
 
 def fetch_and_sync():
-    # On prépare un dictionnaire de correspondance : { 'nomnettoye': 'Nom Réel 🎡' }
     clean_allowed_map = {super_clean(name): name for name in cfg.ALL_RIDES_LIST}
-    
     for park_code, park_id in PARKS.items():
-        print(f"🔄 Scraping {park_code}...")
         url = f"https://api.themeparks.wiki/v1/entity/{park_id}/live"
-        
         try:
             response = requests.get(url, timeout=15)
-            response.raise_for_status()
-            raw_data = response.json()
-            
-            data = raw_data.get('liveData', []) or raw_data.get('live', [])
-            print(f"📊 {park_code} : {len(data)} entités trouvées.")
-            
+            data = response.json().get('liveData', [])
             for item in data:
                 if item.get('entityType', '').upper() == 'ATTRACTION':
-                    api_name = item.get('name', '')
-                    api_name_clean = super_clean(api_name)
-
-                    # On compare le nom de l'API nettoyé avec notre map
+                    api_name_clean = super_clean(item.get('name', ''))
                     if api_name_clean in clean_allowed_map:
-                        official_name = clean_allowed_map[api_name_clean]
-                        process_ride(item, official_name)
-                    else:
-                        # Log pour voir ce qui ne matche toujours pas (ex: noms anglais vs français)
-                        print(f"❌ AUCUN MATCH pour : {api_name}")
-                        
-        except Exception as e:
-            print(f"❌ Erreur critique sur {park_code}: {e}")
-
-def fetch_shows():
-    PARIS_ID = "e8d0207f-da8a-4048-bec8-117aa946b2c2"
-    url = f"https://api.themeparks.wiki/v1/entity/{PARIS_ID}/live"
-    
-    try:
-        response = requests.get(url, timeout=15)
-        response.raise_for_status()
-        data = response.json().get('liveData', [])
-        
-        # On récupère l'heure actuelle AVEC information de timezone (UTC)
-        now = datetime.now(timezone.utc)
-        count = 0
-
-        for item in data:
-            if item.get('entityType') == 'SHOW':
-                show_name = item.get('name')
-                slots = item.get('showtimes', [])
-                
-                if not slots:
-                    continue
-
-                for slot in slots:
-                    start_str = slot.get('startTime')
-                    if not start_str: continue
-                    
-                    # L'API renvoie "2026-05-04T22:30:00+02:00"
-                    # fromisoformat() comprend le "+02:00" et crée un objet offset-aware
-                    start_dt = datetime.fromisoformat(start_str)
-                    
-                    # La comparaison est maintenant safe : UTC vs UTC+2 géré par Python
-                    is_performed = now > start_dt
-
-                    park_id = item.get('parkId', '')
-                    park_name = "DAW" if park_id == "ca888437-ebb4-4d50-aed2-d227f7096968" else "DLP"
-
-                    supabase.table("show_times").upsert({
-                        "show_name": show_name,
-                        "park": park_name,
-                        "location": item.get('location', 'Disneyland Paris'),
-                        "start_time": start_str, # On garde le string original avec l'offset (+02:00)
-                        "is_performed": is_performed,
-                        "updated_at": now.isoformat()
-                    }, on_conflict="show_name, start_time").execute()
-                    
-                    count += 1
-        
-        print(f"🎭 Shows : {count} performances synchronisées (TimeZone Corrected).")
-
-    except Exception as e:
-        print(f"❌ Erreur Shows: {e}")
-
-def fetch_park_schedules():
-    PARK_IDS = {
-        "DLP": "dae968d5-630d-4719-8b06-3d107e944401",
-        "DAW": "ca888437-ebb4-4d50-aed2-d227f7096968"
-    }
-    
-    for code, pid in PARK_IDS.items():
-        url = f"https://api.themeparks.wiki/v1/entity/{pid}/schedule"
-        try:
-            response = requests.get(url, timeout=15)
-            schedule_data = response.json()
-            
-            # On traite les entrées de planning (souvent les 30 prochains jours)
-            for entry in schedule_data:
-                day_date = entry.get('date')
-                st = entry.get('openingTime')
-                et = entry.get('closingTime')
-                type_session = entry.get('type')
-
-                # Préparation des données pour l'upsert
-                payload = {
-                    "park_id": code,
-                    "date": day_date,
-                    "updated_at": datetime.now().isoformat()
-                }
-
-                if type_session == "OPERATING":
-                    payload["opening_time"] = st
-                    payload["closing_time"] = et
-                elif type_session == "EXTRA_MAGIC_HOURS":
-                    payload["emt_opening_time"] = st
-                    payload["emt_closing_time"] = et
-
-                supabase.table("park_schedule").upsert(payload, on_conflict="park_id, date").execute()
-            
-            print(f"📅 Horaires synchronisés pour {code}")
-        except Exception as e:
-            print(f"❌ Erreur horaires {code}: {e}")
+                        process_ride(item, clean_allowed_map[api_name_clean])
+        except Exception as e: print(f"❌ Erreur {park_code}: {e}")
 
 def process_ride(item, official_name):
     status = item.get('status', 'CLOSED')
     wait = item.get('queue', {}).get('STANDBY', {}).get('waitTime', 0)
     is_open = (status == 'OPERATING')
+    now = datetime.now(timezone.utc).isoformat()
 
     try:
-        # Upsert vers Supabase
-        res = supabase.table("disney_live").upsert({
-            "ride_name": official_name,
-            "wait_time": wait,
-            "is_open": is_open,
-            "status": status,
-            "last_updated": datetime.now().isoformat()
+        supabase.table("disney_live").upsert({
+            "ride_name": official_name, "wait_time": wait, "is_open": is_open, 
+            "status": status, "last_updated": now
         }).execute()
         
-        if res.data:
-        # ON AJOUTE L'HISTORIQUE ICI
+        if is_open:
             supabase.table("ride_history").insert({
-                "ride_name": official_name,
-                "wait_time": wait,
-                "last_updated": datetime.now().isoformat()
+                "ride_name": official_name, "wait_time": wait, "last_updated": now
             }).execute()
         
-            handle_breakdown_logic(official_name, status)
-            return True
-        
-    except Exception as e:
-        print(f"⚠️ Erreur Supabase pour {official_name}: {e}")
+        handle_breakdown_logic(official_name, status, wait)
+    except Exception as e: print(f"⚠️ Erreur Supabase {official_name}: {e}")
 
-def handle_breakdown_logic(name, current_status):
+def handle_breakdown_logic(name, current_status, current_wait):
     try:
         open_log = supabase.table("logs_101").select("*").eq("ride_name", name).is_("end_time", "null").execute()
-
         if current_status == "DOWN" and not open_log.data:
-            supabase.table("logs_101").insert({
-                "ride_name": name, 
-                "start_time": datetime.now().isoformat(),
-                "reason": "Technical"
-            }).execute()
-            print(f"🚨 PANNE DÉTECTÉE : {name}")
-
+            supabase.table("logs_101").insert({"ride_name": name, "start_time": datetime.now().isoformat()}).execute()
+            send_discord_alert(name, False, current_wait)
         elif current_status == "OPERATING" and open_log.data:
-            log_id = open_log.data[0]['id']
-            supabase.table("logs_101").update({
-                "end_time": datetime.now().isoformat(),
-                "duration_minutes": 0 
-            }).eq("id", log_id).execute()
-            print(f"✅ RÉOUVERTURE : {name}")
-    except:
-        pass
+            supabase.table("logs_101").update({"end_time": datetime.now().isoformat()}).eq("id", open_log.data[0]['id']).execute()
+            send_discord_alert(name, True, current_wait)
+    except: pass
+
+def fetch_shows():
+    url = "https://api.themeparks.wiki/v1/entity/e8d0207f-da8a-4048-bec8-117aa946b2c2/live"
+    try:
+        data = requests.get(url).json().get('liveData', [])
+        now = datetime.now(timezone.utc)
+        for item in data:
+            if item.get('entityType') == 'SHOW':
+                for slot in item.get('showtimes', []):
+                    start_dt = datetime.fromisoformat(slot.get('startTime'))
+                    park_name = "DAW" if item.get('parkId') == "ca888437-ebb4-4d50-aed2-d227f7096968" else "DLP"
+                    supabase.table("show_times").upsert({
+                        "show_name": item.get('name'), "park": park_name, "start_time": slot.get('startTime'),
+                        "is_performed": now > start_dt, "updated_at": now.isoformat()
+                    }, on_conflict="show_name, start_time").execute()
+    except: pass
+
+def fetch_park_schedules():
+    for code, pid in PARKS.items():
+        try:
+            res = requests.get(f"https://api.themeparks.wiki/v1/entity/{pid}/schedule").json()
+            for entry in res:
+                payload = {"park_id": code, "date": entry.get('date'), "updated_at": datetime.now().isoformat()}
+                if entry.get('type') == "OPERATING":
+                    payload.update({"opening_time": entry.get('openingTime'), "closing_time": entry.get('closingTime')})
+                elif entry.get('type') == "EXTRA_MAGIC_HOURS":
+                    payload.update({"emt_opening_time": entry.get('openingTime'), "emt_closing_time": entry.get('closingTime')})
+                supabase.table("park_schedule").upsert(payload, on_conflict="park_id, date").execute()
+        except: pass
 
 if __name__ == "__main__":
     fetch_and_sync()
     fetch_shows()
     fetch_park_schedules()
+    clean_old_data()

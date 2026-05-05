@@ -1,93 +1,75 @@
-# data_manager.py
 import streamlit as st
 import pandas as pd
 import pytz
 from supabase import create_client
+from datetime import datetime, timedelta
 
 @st.cache_resource
 def init_supabase():
-    """Initialise la connexion à Supabase avec mise en cache"""
     url = st.secrets["SUPABASE_URL"]
     key = st.secrets["SUPABASE_KEY"]
     return create_client(url, key)
 
-def get_live_wait_times(supabase):
-    """Récupère tous les temps d'attente actuels"""
+@st.cache_data(ttl=300)
+def get_live_wait_times(_supabase):
     try:
-        res = supabase.table("disney_live").select("*").execute()
-        # Transforme la liste en dictionnaire pour un accès rapide : { "Nom": {données} }
+        res = _supabase.table("disney_live").select("*").execute()
         return {item["ride_name"]: item for item in res.data}
-    except Exception as e:
-        st.error(f"Erreur lors de la récupération des temps : {e}")
-        return {}
+    except: return {}
 
-def get_recent_logs(supabase, limit=10):
-    """Récupère les derniers incidents (pannes et réouvertures)"""
+def get_recent_logs(_supabase, limit=10):
     try:
-        res = supabase.table("logs_101") \
-            .select("*") \
-            .order("start_time", desc=True) \
-            .limit(limit) \
-            .execute()
+        res = _supabase.table("logs_101").select("*").order("start_time", desc=True).limit(limit).execute()
         return res.data
-    except Exception as e:
-        return []
+    except: return []
 
-def get_stats_for_rides(supabase, ride_names):
-    """Calcule les statistiques agrégées pour une liste d'attractions"""
+@st.cache_data(ttl=3600)
+def get_stats_30d(_supabase, ride_names):
+    """Calcule les statistiques précises sur les 30 derniers jours"""
     try:
-        # 1. Total pannes et durée moyenne
-        logs_res = supabase.table("logs_101") \
-            .select("duration_minutes") \
-            .in_("ride_name", ride_names) \
-            .execute()
+        start_date = (datetime.now() - timedelta(days=30)).isoformat()
         
-        durations = [l["duration_minutes"] for l in logs_res.data if l["duration_minutes"] is not None]
-        total_101 = len(durations)
-        avg_duration = round(sum(durations) / total_101) if total_101 > 0 else 0
-
-        # 2. Moyenne d'attente actuelle
-        live_res = supabase.table("disney_live") \
-            .select("wait_time") \
-            .in_("ride_name", ride_names) \
-            .execute()
+        # Logs pannes
+        logs = _supabase.table("logs_101").select("duration_minutes").in_("ride_name", ride_names).gte("start_time", start_date).execute()
+        durations = [l["duration_minutes"] for l in logs.data if l["duration_minutes"] is not None]
+        nb_pannes = len(durations)
+        total_m = sum(durations)
         
-        waits = [r["wait_time"] for r in live_res.data]
-        avg_wait = round(sum(waits) / len(waits)) if waits else 0
+        # Historique attentes
+        hist = _supabase.table("ride_history").select("wait_time, last_updated").in_("ride_name", ride_names).gte("last_updated", start_date).execute()
+        attente_moy = 0
+        if hist.data:
+            df = pd.DataFrame(hist.data)
+            df['date'] = pd.to_datetime(df['last_updated']).dt.date
+            attente_moy = round(df.groupby('date')['wait_time'].mean().mean())
 
         return {
-            "total_101": total_101,
-            "avg_duration": avg_duration,
-            "avg_wait": avg_wait
+            "nb_pannes": nb_pannes, "total_duree": total_m,
+            "moy_duree": round(total_m / nb_pannes) if nb_pannes > 0 else 0,
+            "attente_moy": attente_moy
         }
-    except Exception:
-        return {"total_101": 0, "avg_duration": 0, "avg_wait": 0}
+    except: return {"nb_pannes": 0, "total_duree": 0, "moy_duree": 0, "attente_moy": 0}
 
-def get_ride_history(supabase, ride_name):
-    """Récupère l'historique des temps d'attente pour le graphique"""
+@st.cache_data(ttl=600)
+def get_ride_history_24h(_supabase, ride_name):
+    """Historique précis pour le graphique sous l'attraction"""
     try:
-        # On récupère les données des dernières 24h
-        # Note : Assure-toi d'avoir une table 'ride_history' alimentée par ton scraper
-        res = supabase.table("ride_history") \
-            .select("wait_time, last_updated") \
-            .eq("ride_name", ride_name) \
-            .order("last_updated", desc=False) \
-            .execute()
-        
-        if not res.data:
-            return pd.DataFrame()
-
+        res = _supabase.table("ride_history").select("wait_time, last_updated").eq("ride_name", ride_name).gte("last_updated", (datetime.now() - timedelta(hours=24)).isoformat()).order("last_updated").execute()
+        if not res.data: return pd.DataFrame()
         df = pd.DataFrame(res.data)
-        
-        # Conversion Heure de Paris pour l'affichage du graphique
         paris_tz = pytz.timezone("Europe/Paris")
         df['last_updated'] = pd.to_datetime(df['last_updated']).dt.tz_convert(paris_tz)
-        
-        # On prépare le format pour l'axe X
-        df['Heure'] = df['last_updated'].dt.strftime('%H:%M')
-        df = df.rename(columns={"wait_time": "Minutes"})
-        
-        return df[['Heure', 'Minutes']]
-    except Exception as e:
-        print(f"Erreur historique : {e}")
-        return pd.DataFrame()
+        df['heure'] = df['last_updated'].dt.strftime('%H:%M')
+        return df.rename(columns={"wait_time": "attente"})
+    except: return pd.DataFrame()
+
+@st.cache_data(ttl=3600)
+def get_stats_history_30d(_supabase, ride_names):
+    """Moyennes quotidiennes pour le graphique de performance"""
+    try:
+        res = _supabase.table("ride_history").select("wait_time, last_updated").in_("ride_name", ride_names).gte("last_updated", (datetime.now() - timedelta(days=30)).isoformat()).execute()
+        if not res.data: return pd.DataFrame()
+        df = pd.DataFrame(res.data)
+        df['date'] = pd.to_datetime(df['last_updated']).dt.date
+        return df.groupby('date')['wait_time'].mean().reset_index()
+    except: return pd.DataFrame()
