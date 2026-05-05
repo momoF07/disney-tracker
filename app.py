@@ -330,18 +330,25 @@ if not df_live.empty:
             else:
                 sub, wait, bg, style, pill = "✅ Opérationnel", int(data['wait_time']), "bg-green", "card-green", "OUVERT"
 
+            # --- FILTRE MODE INCIDENTS : uniquement les pannes en cours ---
+            if sort_mode == "⚠️ Incidents":
+                if pill != "INCIDENT":
+                    continue
+
             render_ride_card(ride, sub, wait, bg, style, pill)
 
             if rehab_flag and rehab_info:
                 debut     = rehab_info.get('debut')
-                debut_str = debut.strftime('🛠️ En réhabilitation depuis le  %d/%m —') if debut else ""
-                st.caption(f"{debut_str} {rehab_info['msg']}")
+                debut_str = debut.strftime('%d/%m') if debut else "date inconnue"
+                st.caption(f"🛠️ En réhabilitation depuis le {debut_str} — {rehab_info['msg']}")
 
-            with st.expander("📜 Historique"):
-                h_p_clean = [p for p in all_pannes if p['ride'] == ride and (p['statut'] == "EN_COURS" or p['duree'] >= 2)]
-                p_triees  = sorted(h_p_clean, key=lambda x: x['debut'], reverse=True)
-                do_live   = (heure_actuelle > h_o) and (heure_actuelle < h_f) and not info.get('has_opened_today', False) and not data['is_open']
-                render_history_expander(ride, rehab_flag, h_p_clean, p_triees, do_live, h_o, h_f, data['is_open'])
+            # --- HISTORIQUE : masqué si en réhab ---
+            if not rehab_flag:
+                with st.expander("📜 Historique"):
+                    h_p_clean = [p for p in all_pannes if p['ride'] == ride and (p['statut'] == "EN_COURS" or p['duree'] >= 2)]
+                    p_triees  = sorted(h_p_clean, key=lambda x: x['debut'], reverse=True)
+                    do_live   = (heure_actuelle > h_o) and (heure_actuelle < h_f) and not info.get('has_opened_today', False) and not data['is_open']
+                    render_history_expander(ride, rehab_flag, h_p_clean, p_triees, do_live, h_o, h_f, data['is_open'])
 
 # --- SECTION FLUX & STATISTIQUES ---
 st.write("---")
