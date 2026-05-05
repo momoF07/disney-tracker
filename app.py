@@ -399,11 +399,11 @@ with col_stats:
         df_30j = df_30j.copy()
         now_utc = pd.Timestamp.now(tz='UTC')
 
-        df_30j['start_dt'] = pd.to_datetime(df_30j['start_time']).dt.tz_localize('UTC').dt.tz_convert('Europe/Paris')
+        df_30j['start_dt'] = pd.to_datetime(df_30j['start_time']).dt.tz_convert('Europe/Paris')
 
         df_30j['end_dt'] = df_30j['end_time'].apply(
-            lambda x: pd.to_datetime(x).tz_localize('UTC') if pd.notna(x) else now_utc
-        ).dt.tz_convert('Europe/Paris')
+            lambda x: pd.to_datetime(x).tz_convert('Europe/Paris') if pd.notna(x) else pd.Timestamp.now(tz='Europe/Paris')
+        )
 
         df_30j['duree_min'] = (df_30j['end_dt'] - df_30j['start_dt']).dt.total_seconds() / 60
         df_30j = df_30j[df_30j['duree_min'] >= 2]
