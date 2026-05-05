@@ -21,7 +21,7 @@ from ui.filters import render_quick_filters
 from maintenance import show_maintenance
 
 # --- VERSION ---
-webversion ="V2.5"
+webversion ="v2.5"
 
 # --- RÉFÉRENTIEL DES ATTRACTIONS ---
 # On fusionne tes deux listes de Disneyland Park et Disney Adventure World
