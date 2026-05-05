@@ -70,13 +70,18 @@ sort_mode = st.segmented_control(
 tabs = st.tabs(["🏰 Disneyland Park", "🎬 Adventure World"])
 
 def render_park(park_key):
-    # Logique de tri
-    all_rides = [r for land in cfg.PARKS_DATA[park_key].values() for r in land]
+    # Logique de tri améliorée
     if sort_mode == "⏳ Attente":
+        # Tri du plus grand temps d'attente au plus petit
         all_rides = sorted(all_rides, key=lambda x: live_data.get(x, {}).get('wait_time', 0), reverse=True)
+    
     elif sort_mode == "⚠️ Incidents":
-        all_rides = sorted(all_rides, key=lambda x: live_data.get(x, {}).get('is_open', True))
+        # Tri par statut d'ouverture : False (fermé/panne) passera devant True (ouvert)
+        # On ajoute le nom en deuxième critère pour garder un ordre alphabétique parmi les pannes
+        all_rides = sorted(all_rides, key=lambda x: (live_data.get(x, {}).get('is_open', True), x))
+    
     else:
+        # Tri alphabétique (Nom)
         all_rides = sorted(all_rides)
 
     for land, rides_in_land in cfg.PARKS_DATA[park_key].items():
