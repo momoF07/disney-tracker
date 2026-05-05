@@ -15,7 +15,31 @@ supabase = create_client(url, key)
 
 PARKS = ["dae968d5-630d-4719-8b06-3d107e944401", "ca888437-ebb4-4d50-aed2-d227f7096968"]
 
-# ... (garder get_theoretical_hours et is_ride_theoretically_open)
+def get_theoretical_hours(ride_name):
+    """Retourne (heure_ouverture, heure_fermeture) théoriques pour une attraction."""
+    from datetime import time
+
+    # Fermetures anticipées spécifiques
+    if ride_name in ANTICIPATED_CLOSINGS:
+        closing = ANTICIPATED_CLOSINGS[ride_name]
+    elif ride_name in RIDES_DAW:
+        closing = DAW_CLOSING
+    else:
+        closing = DLP_CLOSING
+
+    # Ouverture EMT anticipée
+    if ride_name in EMT_EARLY_OPEN:
+        opening = EMT_OPENING
+    else:
+        opening = PARK_OPENING
+
+    return opening, closing
+
+def is_ride_theoretically_open(current_time, opening, closing):
+    """Vérifie si une attraction devrait être ouverte à l'heure actuelle."""
+    if opening is None or closing is None:
+        return False
+    return opening <= current_time <= closing
 
 def run_worker():
     print("⏳ [WORKER] Actualisation des attractions...")
