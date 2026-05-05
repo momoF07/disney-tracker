@@ -535,7 +535,7 @@ with col_stats:
                         '<div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">'
                         '<span style="font-size:18px;">' + get_emoji(ride) + '</span>'
                         '<span style="font-family:Outfit,sans-serif; color:rgba(255,255,255,0.75);'
-                        'font-size:12px; font-weight:600;">' + ride + '</span>'
+                        'font-size:14px; font-weight:600;">' + ride + '</span>'
                         '</div>'
                         '<div style="margin-bottom:10px; margin-left:10px;">'  # ← badge sur ligne séparée
                         '<span style="font-size:9px; font-weight:700; padding:2px 9px; border-radius:20px;'
