@@ -149,6 +149,42 @@ def is_ride_theoretically_open(current_time, opening, closing):
         return False
     return opening <= current_time <= closing
 
+def get_weather_simple():
+    try:
+        res = requests.get(
+            "https://api.open-meteo.com/v1/forecast"
+            "?latitude=48.8675&longitude=2.7841"
+            "&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_gusts_10m"
+            "&timezone=Europe%2FParis",
+            timeout=5
+        )
+        data = res.json().get('current', {})
+        weather_map = {
+            0:  ("☀️",  "Ciel dégagé"),
+            1:  ("🌤️", "Plutôt beau"),
+            2:  ("⛅",  "Partiellement nuageux"),
+            3:  ("☁️",  "Couvert"),
+            45: ("🌫️", "Brouillard"),
+            51: ("🌦️", "Bruine"),
+            61: ("🌧️", "Pluie faible"),
+            63: ("🌧️", "Pluie modérée"),
+            80: ("🌦️", "Averses"),
+            95: ("⛈️",  "Orage"),
+        }
+        code        = data.get('weather_code', -1)
+        emoji, desc = weather_map.get(code, ("🌡️", "Météo stable"))
+        return {
+            "temp":       data.get('temperature_2m', '--'),
+            "feels_like": data.get('apparent_temperature', '--'),
+            "wind":       f"{round(data.get('wind_speed_10m', 0))} km/h",
+            "gusts":      f"{round(data.get('wind_gusts_10m', 0))} km/h",
+            "desc":       desc,
+            "emoji":      emoji,
+            "success":    True
+        }
+    except Exception as e:
+        print(f"⚠️ Météo : {e}")
+        return {"success": False}
 
 def run_worker():
     print("⏳ [WORKER] Actualisation des attractions...")
@@ -230,8 +266,7 @@ def run_worker():
         resp_101       = supabase.table("logs_101").select("*").gte("start_time", debut_journee.isoformat()).execute()
         schedules_data = supabase.table("ride_schedules").select("*").execute().data or []
 
-        from modules.weather import get_disney_weather
-        weather = get_disney_weather()
+        weather = get_weather_simple()
 
         for row in resp_101.data:
             all_pannes.append({
