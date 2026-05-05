@@ -440,7 +440,7 @@ with col_stats:
                     nb_p, total_p, moy_p = stats_block(df_p)
                     parc_cards += (
                         '<div style="flex:1; min-width:140px; background:' + color + '08;'
-                        'border:1px solid ' + color + '25; border-top:2px solid ' + color + '70;'
+                        'border:1px solid ' + color + '25; border-top:3px solid ' + color + '70;'
                         'border-radius:14px; padding:10px 12px;">'
                         '<div style="font-family:Outfit,sans-serif; font-size:10px; font-weight:700;'
                         'color:' + color + '; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">' + label + '</div>'
@@ -452,7 +452,7 @@ with col_stats:
                     )
 
                 st.markdown(
-                    '<div style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">'
+                    '<div style="display:flex; flex-direction:column; gap:6px; margin-top:12px;">'
                     + parc_cards +
                     '</div>',
                     unsafe_allow_html=True
@@ -505,6 +505,7 @@ with col_stats:
                         '<span style="font-size:18px;">' + get_emoji(ride) + '</span>'
                         '<span style="font-family:Outfit,sans-serif; color:rgba(255,255,255,0.75);'
                         'font-size:12px; font-weight:600;">' + ride + '</span>'
+                        '<div style="margin-bottom:10px; margin-left:26px;">'
                         '<span style="font-size:9px; font-weight:700; padding:2px 9px; border-radius:20px;'
                         'background:' + color + '20; color:' + color + '; border:1px solid ' + color + '40;'
                         'font-family:Outfit,sans-serif; text-transform:uppercase; letter-spacing:0.8px;">'
