@@ -25,8 +25,52 @@ def render_weather_card(weather):
         shows_html = f"""<div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">{get_box("🎨 MSC", msc)}{get_box("🎭 DSP", dsp)}</div>"""
 
     # Bloc principal : On enlève les indentations pour éviter que Streamlit ne croit à un bloc de code
-    html_final = f"""<div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 25px; backdrop-filter: blur(10px);"><div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;"><div style="display: flex; align-items: center; gap: 20px;"><span style="font-size: 50px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2));">{weather['emoji']}</span><div><b style="color: white; font-size: 20px; display: block;">{weather['desc']}</b><span style="color: rgba(148, 163, 184, 0.8); font-size: 12px; font-weight: 500;">📍 Marne-la-Vallée, France</span></div></div><div style="text-align: right; min-width: 150px;"><div style="margin-bottom: 8px;"><span style="color: white; font-size: 24px; font-weight: 800;">{weather['temp']}°C</span><span style="color: rgba(255,255,255,0.5); font-size: 14px; margin-left: 5px;">(Feels {ressenti}°)</span></div><div style="color: rgba(255,255,255,0.7); font-size: 12px; font-weight: 600; letter-spacing: 0.5px;">💨 {weather['wind']} <span style="opacity:0.4; margin: 0 5px;">|</span> 🚩 {weather['gusts']}</div></div></div>{alert_html}{shows_html}</div>"""
+    html_final = f"""
+<div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.1); margin-bottom: 25px;
+            backdrop-filter: blur(10px);">
 
+    <div style="display: flex; align-items: center; justify-content: space-between;
+                flex-wrap: wrap; gap: 15px;">
+
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <span style="font-size: 50px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2));">
+                {weather['emoji']}
+            </span>
+            <div>
+                <b style="color: white; font-size: 20px; display: block;">
+                    {weather['desc']}
+                </b>
+                <span style="color: rgba(148, 163, 184, 0.8); font-size: 12px; font-weight: 500;">
+                    📍 Marne-la-Vallée, France
+                </span>
+            </div>
+        </div>
+
+        <div style="text-align: right; min-width: 150px;">
+            <div style="margin-bottom: 8px;">
+                <span style="color: white; font-size: 24px; font-weight: 800;">
+                    {weather['temp']}°C
+                </span>
+                <span style="color: rgba(255,255,255,0.5); font-size: 14px; margin-left: 5px;">
+                    (Feels {ressenti}°)
+                </span>
+            </div>
+            <div style="color: rgba(255,255,255,0.7); font-size: 12px;
+                        font-weight: 600; letter-spacing: 0.5px;">
+                💨 {weather['wind']}
+                <span style="opacity:0.4; margin: 0 5px;">|</span>
+                🚩 {weather['gusts']}
+            </div>
+        </div>
+
+    </div>
+
+    {alert_html}
+    {shows_html}
+
+</div>
+"""
     st.markdown(html_final, unsafe_allow_html=True)
 
 def render_api_info(api_time, refresh_time):
