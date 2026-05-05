@@ -6,14 +6,12 @@ from datetime import datetime, timedelta, timezone
 
 @st.cache_resource
 def init_supabase():
-    """Initialise la connexion à Supabase[cite: 3]."""
     url = st.secrets["SUPABASE_URL"]
     key = st.secrets["SUPABASE_KEY"]
     return create_client(url, key)
 
 @st.cache_data(ttl=300)
 def get_live_wait_times(_supabase):
-    """Récupère les temps d'attente en direct[cite: 3]."""
     try:
         res = _supabase.table("disney_live").select("*").execute()
         return {item["ride_name"]: item for item in res.data}
@@ -21,7 +19,6 @@ def get_live_wait_times(_supabase):
 
 @st.cache_data(ttl=3600)
 def get_park_schedule(_supabase, date_str):
-    """Récupère le planning des parcs (DLP et DAW)[cite: 3]."""
     try:
         res = _supabase.table("park_schedule").select("*").eq("date", date_str).execute()
         return res.data
@@ -29,7 +26,6 @@ def get_park_schedule(_supabase, date_str):
 
 @st.cache_data(ttl=60)
 def get_upcoming_shows(_supabase):
-    """Récupère les spectacles prévus dans les 2 prochaines heures."""
     try:
         now = datetime.now(timezone.utc)
         future_limit = (now + timedelta(hours=2)).isoformat()
@@ -44,7 +40,6 @@ def get_upcoming_shows(_supabase):
     except: return []
 
 def get_recent_logs(_supabase, limit=8):
-    """Récupère les derniers incidents pour le flux d'activités[cite: 3]."""
     try:
         res = _supabase.table("logs_101") \
             .select("*") \
@@ -56,7 +51,6 @@ def get_recent_logs(_supabase, limit=8):
 
 @st.cache_data(ttl=600)
 def get_ride_history_24h(_supabase, ride_name):
-    """Récupère l'historique des dernières 24h pour une attraction[cite: 3]."""
     try:
         limit = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
         res = _supabase.table("ride_history") \
@@ -74,5 +68,4 @@ def get_ride_history_24h(_supabase, ride_name):
     except: return pd.DataFrame()
 
 def get_weather():
-    """Simule les données météo[cite: 3]."""
     return {"temp": 12, "status": "Ciel Étoilé", "icon": "✨"}

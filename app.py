@@ -4,14 +4,14 @@ import config as cfg
 import pytz
 from datetime import datetime, timezone, timedelta
 from ui_components import render_activity_item
-from data_manager import *  # Importe toutes les fonctions de data_manager
+from data_manager import *
 from streamlit_autorefresh import st_autorefresh
 
 # --- CONFIGURATION ---
-st.set_page_config(page_title="Disney Live Control Center", page_icon="🏰", layout="wide")
-st_autorefresh(interval=60000, key="datarefresh") # Refresh auto 1 min[cite: 5]
+st.set_page_config(page_title="Disney Live Board", page_icon="🏰", layout="wide")
+st_autorefresh(interval=60000, key="datarefresh")
 
-# Style CSS Premium
+# Style CSS
 st.markdown("""
     <style>
     .stApp { background: radial-gradient(circle at top right, #1e293b, #0f172a); }
@@ -28,9 +28,9 @@ paris_tz = pytz.timezone("Europe/Paris")
 now_p = datetime.now(paris_tz)
 today_str = now_p.date().isoformat()
 
-live_data = get_live_wait_times(supabase)[cite: 3]
-sched_data = get_park_schedule(supabase, today_str)[cite: 3]
-upcoming_shows = get_upcoming_shows(supabase)[cite: 5]
+live_data = get_live_wait_times(supabase)
+sched_data = get_park_schedule(supabase, today_str)
+upcoming_shows = get_upcoming_shows(supabase)
 weather = get_weather()
 
 # --- HEADER ---
@@ -40,7 +40,6 @@ col_info1, col_info2, col_info3 = st.columns([1, 1, 1.5])
 with col_info1:
     st.markdown("#### 🌤️ Météo & Parcs")
     st.write(f"🌡️ {weather['temp']}°C - {weather['status']}")
-    # Affichage horaires ligne par ligne[cite: 5]
     for p_id in ["DLP", "DAW"]:
         s = next((item for item in sched_data if item["park_id"] == p_id), None)
         if s:
@@ -59,17 +58,15 @@ with col_info3:
         st.write("Aucun show prévu prochainement.")
 
 st.divider()
-sort_mode = st.segmented_control("Trier par :", ["🔠 Nom", "⏳ Attente", "⚠️ Incidents"], default="🔠 Nom")[cite: 5]
+sort_mode = st.segmented_control("Trier par :", ["🔠 Nom", "⏳ Attente", "⚠️ Incidents"], default="🔠 Nom")
 
-# --- LOGIQUE DE RENDU ---
+# --- FONCTION DE RENDU ---
 def render_park(park_key):
-    # Initialisation sécurisée pour éviter UnboundLocalError[cite: 5]
     all_rides = [r for land in cfg.PARKS_DATA[park_key].values() for r in land]
     
     if sort_mode == "⏳ Attente":
         all_rides = sorted(all_rides, key=lambda x: live_data.get(x, {}).get('wait_time', 0), reverse=True)
     elif sort_mode == "⚠️ Incidents":
-        # Les pannes (is_open=False) remontent en haut[cite: 5]
         all_rides = sorted(all_rides, key=lambda x: (live_data.get(x, {}).get('is_open', True), x))
     else:
         all_rides = sorted(all_rides)
@@ -106,10 +103,10 @@ with tabs[1]: render_park("Disney Adventure World")
 # --- FLUX D'ACTIVITÉS ---
 st.divider()
 st.header("🚨 Flux d'activités récents")
-logs = get_recent_logs(supabase)[cite: 3]
+logs = get_recent_logs(supabase)
 if logs:
     for l in logs:
         t_log = pd.to_datetime(l['start_time']).astimezone(paris_tz).strftime("%H:%M")
         event = "⚠️ Panne" if l['end_time'] is None else "✅ Réouverture"
         color = "#e74c3c" if l['end_time'] is None else "#2ecc71"
-        render_activity_item(t_log, event, l['ride_name'], color)[cite: 5]
+        render_activity_item(t_log, event, l['ride_name'], color)
