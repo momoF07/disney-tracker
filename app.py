@@ -383,8 +383,88 @@ with col_flux:
         st.caption("Aucune activité majeure aujourd'hui.")
 
 with col_stats:
-    st.subheader("🔧 Statistiques")
-    st.badge("Prochaine mise à jour.", icon=":material/warning:", color="orange")
+    st.subheader("📊 Statistiques — 30 derniers jours")
+
+    # --- CHARGEMENT DES DONNÉES 30J ---
+    try:
+        resp_30j = supabase.table("logs_101").select("*").gte("start_time", date_30j).execute()
+        df_30j = pd.DataFrame(resp_30j.data)
+    except Exception as e:
+        st.error(f"Erreur stats : {e}")
+        df_30j = pd.DataFrame()
+
+    if df_30j.empty:
+        st.caption("Pas de données sur les 30 derniers jours.")
+    else:
+        # --- PRÉPARATION ---
+        df_30j = df_30j[df_30j['end_time'].notna()].copy()
+        df_30j['start_dt'] = pd.to_datetime(df_30j['start_time']).dt.tz_convert('Europe/Paris')
+        df_30j['end_dt']   = pd.to_datetime(df_30j['end_time']).dt.tz_convert('Europe/Paris')
+        df_30j['duree_min'] = (df_30j['end_dt'] - df_30j['start_dt']).dt.total_seconds() / 60
+        df_30j = df_30j[df_30j['duree_min'] >= 2]  # filtre bruit
+
+        # Mapping ride → parc & land
+        ride_to_park = {}
+        ride_to_land = {}
+        for park, lands in PARKS_DATA.items():
+            for land, attractions in lands.items():
+                for attr in attractions:
+                    ride_to_park[attr] = park
+                    ride_to_land[attr] = land
+
+        df_30j['parc'] = df_30j['ride_name'].map(ride_to_park).fillna("Inconnu")
+        df_30j['land'] = df_30j['ride_name'].map(ride_to_land).fillna("Inconnu")
+
+        def stats_block(df):
+            nb    = len(df)
+            total = int(df['duree_min'].sum())
+            moy   = int(df['duree_min'].mean()) if nb > 0 else 0
+            return nb, total, moy
+
+        def fmt(nb, total, moy):
+            return f"**{nb}** interruptions · **{total}** min au total · moy. **{moy}** min"
+
+        # --- NIVEAU 1 : GLOBAL ---
+        with st.expander("🌍 Global (DLP + DAW)", expanded=True):
+            nb, total, moy = stats_block(df_30j)
+            st.markdown(fmt(nb, total, moy))
+
+        # --- NIVEAU 2 : PAR PARC ---
+        with st.expander("🏰 Par parc"):
+            for parc_name in ["Disneyland Park", "Disney Adventure World"]:
+                df_p = df_30j[df_30j['parc'] == parc_name]
+                if df_p.empty: continue
+                nb, total, moy = stats_block(df_p)
+                label = "🏰 DLP" if "Disneyland" in parc_name else "🎬 DAW"
+                st.markdown(f"**{label}** — {fmt(nb, total, moy)}")
+
+        # --- NIVEAU 3 : PAR LAND ---
+        with st.expander("🗺️ Par land"):
+            all_lands = []
+            for lands in PARKS_DATA.values():
+                all_lands.extend(lands.keys())
+            for land in all_lands:
+                df_l = df_30j[df_30j['land'] == land]
+                if df_l.empty: continue
+                nb, total, moy = stats_block(df_l)
+                st.markdown(f"**{land.title()}** — {fmt(nb, total, moy)}")
+
+        # --- NIVEAU 4 : PAR ATTRACTION ---
+        with st.expander("🎢 Par attraction"):
+            df_by_ride = (
+                df_30j.groupby('ride_name')
+                .agg(nb=('duree_min', 'count'), total=('duree_min', 'sum'), moy=('duree_min', 'mean'))
+                .sort_values('nb', ascending=False)
+                .reset_index()
+            )
+            for _, row in df_by_ride.iterrows():
+                emoji = get_emoji(row['ride_name'])
+                st.markdown(
+                    f"{emoji} **{row['ride_name']}** — "
+                    f"**{int(row['nb'])}** interruptions · "
+                    f"**{int(row['total'])}** min · "
+                    f"moy. **{int(row['moy'])}** min"
+                )
 
 st.divider()
 footer_html = f"""
