@@ -130,28 +130,43 @@ def render_park_hours(schedules):
 
 def render_upcoming_shows(schedules):
     import datetime as dt
+    import re
+    from zoneinfo import ZoneInfo
+
     if not schedules: return
 
-    # Shows "secondaires" affichés plus petits
     SMALL_SHOWS = ["mickey's philharmagic", "animation academy"]
 
-    now_str = dt.datetime.now().strftime("%H:%M")
-    shows = [s for s in schedules if s.get('type') == 'SHOW' and s['opening_time'][:5] >= now_str]
-    shows = sorted(shows, key=lambda x: x['opening_time'])[:3]
+    now_paris = dt.datetime.now(ZoneInfo("Europe/Paris"))
+    now_str   = now_paris.strftime("%H:%M")
+
+    def to_paris_time(hhmm):
+        """Convertit une heure UTC HH:MM en heure Europe/Paris."""
+        naive = dt.datetime.combine(now_paris.date(), dt.time.fromisoformat(hhmm))
+        utc_dt = naive.replace(tzinfo=ZoneInfo("UTC"))
+        return utc_dt.astimezone(ZoneInfo("Europe/Paris")).strftime("%H:%M")
+
+    shows = []
+    for s in schedules:
+        if s.get('type') != 'SHOW':
+            continue
+        paris_time = to_paris_time(s['opening_time'][:5])
+        if paris_time >= now_str:
+            shows.append({**s, '_paris_time': paris_time})
+
+    shows = sorted(shows, key=lambda x: x['_paris_time'])[:3]
 
     show_items = ""
     if not shows:
         show_items = '<div style="color: #64748b; font-size: 12px; padding: 10px;">Plus de spectacles aujourd\'hui.</div>'
     else:
         for s in shows:
-            # Nettoyage du nom : supprime [Park] et (HH:MM)
-            import re
-            clean_name = re.sub(r'^\[.*?\]\s*', '', s['ride_name'])  # supprime [Disneyland Park]
-            clean_name = re.sub(r'\s*\(\d{2}:\d{2}\)$', '', clean_name)  # supprime (12:30)
+            clean_name = re.sub(r'^\[.*?\]\s*', '', s['ride_name'])
+            clean_name = re.sub(r'\s*\(\d{2}:\d{2}\)$', '', clean_name)
 
-            is_small = clean_name.lower() in SMALL_SHOWS
-            font_size = "8px" if is_small else "13px"
-            opacity   = "0.6"  if is_small else "1"
+            is_small  = clean_name.lower() in SMALL_SHOWS
+            font_size = "8.5px" if is_small else "13px"
+            opacity   = "0.5"  if is_small else "1"
 
             show_items += f"""<div style="display: flex; justify-content: space-between; align-items: center;
                             padding: 10px; background: rgba(255,255,255,0.02);
@@ -161,7 +176,7 @@ def render_upcoming_shows(schedules):
                     </span>
                     <span style="color: #00f2fe; font-size: {font_size}; font-weight: 800;
                                  background: rgba(0, 242, 254, 0.1); padding: 2px 8px; border-radius: 6px;">
-                        {s['opening_time'][:5]}
+                        {s['_paris_time']}
                     </span>
                 </div>"""
 
