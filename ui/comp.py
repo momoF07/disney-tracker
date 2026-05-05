@@ -8,14 +8,14 @@ def render_weather_card(weather):
     from modules.weather import info_weather_code, info_msc, info_dsp
     ressenti = weather.get('feels_like')
     
-    alert_77 = info_weather_code(ressenti)
+    alert = info_weather_code(ressenti, code=weather.get('code'))
     msc = info_msc(ressenti)
     dsp = info_dsp(ressenti)
 
     # Construction sécurisée du HTML
     alert_html = ""
-    if alert_77:
-        alert_html = f"""<div style="margin-top: 15px; padding: 12px; background: {alert_77['color']}; border-radius: 12px; text-align: center; color: white; font-size: 13px; font-weight: 600;">⚠️ {alert_77['code']} : {alert_77['sub']}</div>"""
+    if alert:
+        alert_html = f"""<div style="margin-top: 15px; padding: 12px; background: {alert['color']}; border-radius: 12px; text-align: center; color: white; font-size: 13px; font-weight: 600;">⚠️ {alert_77['code']} : {alert_77['sub']}</div>"""
 
     shows_html = ""
     if msc or dsp:
