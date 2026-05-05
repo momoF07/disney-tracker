@@ -237,7 +237,19 @@ if not df_live.empty:
                 for r in selected_options
             )
             if not has_incidents:
-                st.info("✅ Rien à signaler pour le moment sur la sélection.")
+                st.markdown(
+                    '<div style="display:flex; align-items:center; gap:14px; padding:16px 20px;'
+                    'background:rgba(52,211,153,0.06); border:1px solid rgba(52,211,153,0.2);'
+                    'border-left:3px solid #34d399; border-radius:16px; margin:8px 0;">'
+                    '<span style="font-size:28px; line-height:1;">✅</span>'
+                    '<div>'
+                    '<div style="font-family:Outfit,sans-serif; font-size:13px; font-weight:700;'
+                    'color:#34d399; margin-bottom:2px;">Rien à signaler</div>'
+                    '<div style="font-size:11px; color:rgba(255,255,255,0.35); font-weight:400;">'
+                    'Aucun incident en cours ou passé sur votre sélection.</div>'
+                    '</div></div>',
+                    unsafe_allow_html=True
+                )
                 selected_options = []
             else:
                 selected_options = sorted(
@@ -249,7 +261,19 @@ if not df_live.empty:
         elif sort_mode == "🛠️ Rehab":
             rides_en_rehab = [r for r in selected_options if is_in_rehab(r)]
             if not rides_en_rehab:
-                st.info("🛠️ Pas de réhabilitations en ce moment sur la sélection.")
+                st.markdown(
+                    '<div style="display:flex; align-items:center; gap:14px; padding:16px 20px;'
+                    'background:rgba(100,116,139,0.06); border:1px solid rgba(100,116,139,0.2);'
+                    'border-left:3px solid #64748b; border-radius:16px; margin:8px 0;">'
+                    '<span style="font-size:28px; line-height:1;">🛠️</span>'
+                    '<div>'
+                    '<div style="font-family:Outfit,sans-serif; font-size:13px; font-weight:700;'
+                    'color:#94a3b8; margin-bottom:2px;">Aucune réhabilitation</div>'
+                    '<div style="font-size:11px; color:rgba(255,255,255,0.35); font-weight:400;">'
+                    'Pas de travaux en cours sur votre sélection.</div>'
+                    '</div></div>',
+                    unsafe_allow_html=True
+                )
                 selected_options = []
             else:
                 selected_options = sorted(
