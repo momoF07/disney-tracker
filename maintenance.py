@@ -137,8 +137,8 @@ def show_maintenance():
                 this.vy = Math.sin(angle) * speed;
                 this.life    = 1;
                 this.decay   = Math.random() * 0.012 + 0.007;
-                this.size    = Math.random() * 2.5 + 1;
-                this.gravity = 0.045;
+                this.size    = Math.random() * 3.5 + 1.5;
+                this.gravity = 0.035; 
             }
             update() {
                 this.x  += this.vx;
@@ -152,9 +152,14 @@ def show_maintenance():
                 ctx.globalAlpha = Math.max(0, this.life);
                 ctx.fillStyle   = this.color;
                 ctx.shadowColor = this.color;
-                ctx.shadowBlur  = 8;
+                ctx.shadowBlur  = 20;          // ← était 8, maintenant 20
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                // Halo secondaire
+                ctx.shadowBlur  = 40;
+                ctx.globalAlpha = Math.max(0, this.life * 0.3);
+                ctx.arc(this.x, this.y, this.size * 2, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.restore();
             }
@@ -179,7 +184,7 @@ def show_maintenance():
                 this.delay     = delay !== undefined ? delay : Math.random() * 200 + 60;
             }
             explode() {
-                const n = Math.floor(Math.random() * 70) + 50;
+                const n = Math.floor(Math.random() * 100) + 80;
                 for (let i = 0; i < n; i++)
                     this.particles.push(new Particle(this.x, this.y, this.color));
                 this.exploded = true;
