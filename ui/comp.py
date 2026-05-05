@@ -119,14 +119,12 @@ def render_upcoming_shows(schedules):
         show_items = '<div style="color: #64748b; font-size: 12px; padding: 10px;">Pas de shows prévus prochainement.</div>'
     else:
         for s in shows:
-            show_items += f"""
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(255,255,255,0.02); border-radius: 12px; margin-bottom: 8px;">
+            show_items += f"""<div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(255,255,255,0.02); border-radius: 12px; margin-bottom: 8px;">
                 <span style="color: white; font-size: 13px; font-weight: 600;">✨ {s['ride_name']}</span>
                 <span style="color: #a78bfa; font-size: 13px; font-weight: 800; background: rgba(167, 139, 250, 0.1); padding: 2px 8px; border-radius: 6px;">{s['opening_time']}</span>
             </div>"""
 
-    st.markdown(f"""
-    <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; backdrop-filter: blur(10px);">
+    st.markdown(f"""<div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; backdrop-filter: blur(10px);">
         <div style="color: white; font-size: 14px; font-weight: 700; margin-bottom: 15px;">🎭 PROCHAINS SPECTACLES</div>
         {show_items}
     </div>
