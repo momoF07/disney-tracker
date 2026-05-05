@@ -344,7 +344,7 @@ with col_flux:
     if not df_pannes_brutes.empty:
         flux = df_pannes_brutes.copy()
         flux['dt'] = pd.to_datetime(flux['start_time'])
-        flux = flux.sort_values('dt', ascending=False).drop_duplicates(subset=['ride_name']).head(5)
+        flux = flux.sort_values('dt', ascending=False).drop_duplicates(subset=['ride_name']).head(90)
         
         with st.container(height=400):
             for _, p in flux.iterrows():
