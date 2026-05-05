@@ -173,11 +173,8 @@ def render_upcoming_shows(schedules):
                 '_park_label': park['label'],
             })
 
-    # Tri : parc → heure
     all_shows = sorted(all_shows, key=lambda x: (x['_park_index'], x['_paris_time']))
 
-    # Groupement par parc (3 max par parc)
-    from itertools import groupby
     grouped = {}
     for show in all_shows:
         key = show['_park_label']
@@ -191,17 +188,19 @@ def render_upcoming_shows(schedules):
             return '<div style="color: #64748b; font-size: 12px; padding: 10px;">Plus de spectacles aujourd\'hui.</div>'
         rows = ""
         for s in shows:
-            rows += f"""<div style="display: flex; justify-content: space-between; align-items: center;
-                            padding: 10px; background: rgba(255,255,255,0.02);
-                            border-radius: 12px; margin-bottom: 8px;">
-                    <span style="color: white; font-size: 13px; font-weight: 600;">
-                        🎭 {s['_clean_name']}
-                    </span>
-                    <span style="color: {color}; font-size: 13px; font-weight: 800;
-                                 background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 6px;">
-                        {s['_paris_time']}
-                    </span>
-                </div>"""
+            rows += (
+                '<div style="display: flex; justify-content: space-between; align-items: center;'
+                'padding: 10px; background: rgba(255,255,255,0.02);'
+                'border-radius: 12px; margin-bottom: 8px;">'
+                '<span style="color: white; font-size: 13px; font-weight: 600;">'
+                '🎭 ' + s['_clean_name'] +
+                '</span>'
+                '<span style="color: ' + color + '; font-size: 13px; font-weight: 800;'
+                'background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 6px;">'
+                + s['_paris_time'] +
+                '</span>'
+                '</div>'
+            )
         return rows
 
     sections_html = ""
@@ -210,19 +209,24 @@ def render_upcoming_shows(schedules):
         rows   = render_show_rows(shows, park['color'])
         divider = '<div style="border-top: 1px solid rgba(255,255,255,0.08); margin: 15px 0;"></div>' if i > 0 else ""
 
-        sections_html += f"""{divider}
-            <div style="font-size: 11px; font-weight: 800; letter-spacing: 1px;
-                        color: {park['color']}; margin-bottom: 10px;">
-                {park['label'].upper()}
-            </div>
-            {rows}"""
+        sections_html += (
+            divider +
+            '<div style="font-size: 11px; font-weight: 800; letter-spacing: 1px;'
+            'color: ' + park['color'] + '; margin-bottom: 10px;">'
+            + park['label'].upper() +
+            '</div>'
+            + rows
+        )
 
-    st.markdown(f"""<div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 24px;
-                    border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;
-                    backdrop-filter: blur(10px);">
-            <div style="color: white; font-size: 14px; font-weight: 700; margin-bottom: 15px;">
-                ✨ PROCHAINES REPRÉSENTATIONS
-            </div>
-            {sections_html}
-        </div>
-    """, unsafe_allow_html=True)
+    html = (
+        '<div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 24px;'
+        'border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;'
+        'backdrop-filter: blur(10px);">'
+        '<div style="color: white; font-size: 14px; font-weight: 700; margin-bottom: 15px;">'
+        '✨ PROCHAINES REPRÉSENTATIONS'
+        '</div>'
+        + sections_html +
+        '</div>'
+    )
+
+    st.markdown(html, unsafe_allow_html=True)
