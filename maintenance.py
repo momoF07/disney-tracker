@@ -212,8 +212,15 @@ def show_maintenance():
     </body>
     </html>
     """
+    st.markdown("""
+    <style>
+        iframe { position: fixed; top: 0; left: 0; width: 100vw !important;
+                 height: 100vh !important; border: none; z-index: 0; opacity: 0.55;
+                 pointer-events: none; }
+    </style>
+    """, unsafe_allow_html=True)
 
-    st.iframe(fireworks_html, height=0)
+    st.iframe(fireworks_html, height=1)
 
     col1, col2, col3 = st.columns([1, 1, 1])
     with col2:
