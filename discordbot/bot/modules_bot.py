@@ -1,8 +1,4 @@
-# bot/modules_bot.py
-# Pont entre le bot et les modules existants du projet
-# Copie ou importe les constantes nécessaires
-
-from datetime import time
+# discordbot/bot/modules_bot.py
 from modules.rehabilitations import REHAB_LIST
 from modules.emojis import PARKS_DATA, RIDES_DLP, RIDES_DAW
 from modules.special_hours import (

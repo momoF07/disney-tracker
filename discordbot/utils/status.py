@@ -1,21 +1,21 @@
-# bot/utils/status.py
+# discordbot/utils/status.py
 from datetime import datetime
 import pytz
 
 paris_tz = pytz.timezone("Europe/Paris")
 
 STATUS_MAP = {
-    "OUVERT":   {"emoji": "🟢", "label": "Opérationnel",     "color": 0x10b981},
-    "INCIDENT": {"emoji": "🟠", "label": "Incident",          "color": 0xf59e0b},
-    "RETARDÉ":  {"emoji": "🟣", "label": "Ouverture retardée","color": 0xa78bfa},
-    "TRAVAUX":  {"emoji": "⚫", "label": "Travaux",           "color": 0x64748b},
-    "FERMÉ":    {"emoji": "🔴", "label": "Fermé",             "color": 0xef4444},
-    "ATTENTE":  {"emoji": "🔵", "label": "En attente",        "color": 0x3b82f6},
-    "INCONNU":  {"emoji": "⚪", "label": "Inconnu",           "color": 0x475569},
+    "OUVERT":   {"emoji": "🟢", "label": "Opérationnel",      "color": 0x10b981},
+    "INCIDENT": {"emoji": "🟠", "label": "Incident",           "color": 0xf59e0b},
+    "RETARDÉ":  {"emoji": "🟣", "label": "Ouverture retardée", "color": 0xa78bfa},
+    "TRAVAUX":  {"emoji": "⚫", "label": "Travaux",            "color": 0x64748b},
+    "FERMÉ":    {"emoji": "🔴", "label": "Fermé",              "color": 0xef4444},
+    "ATTENTE":  {"emoji": "🔵", "label": "En attente",         "color": 0x3b82f6},
+    "INCONNU":  {"emoji": "⚪", "label": "Inconnu",            "color": 0x475569},
 }
 
 PARK_EMOJIS = {
-    "Disneyland Park":       "🏰",
+    "Disneyland Park":        "🏰",
     "Disney Adventure World": "🎬",
 }
 
@@ -25,14 +25,12 @@ def get_status(ride_data, status_map, all_pannes, heure_actuelle,
                rides_daw, rehab_list):
     from datetime import time
 
-    name      = ride_data["ride_name"]
-    is_open   = ride_data["is_open"]
-    wait_time = ride_data.get("wait_time", 0)
-    info      = status_map.get(name, {})
+    name    = ride_data["ride_name"]
+    is_open = ride_data["is_open"]
+    info    = status_map.get(name, {})
 
-    # Rehab
-    today = datetime.now(paris_tz).date()
-    rehab = rehab_list.get(name)
+    today    = datetime.now(paris_tz).date()
+    rehab    = rehab_list.get(name)
     in_rehab = False
     if rehab:
         debut = rehab.get("debut")
@@ -46,8 +44,8 @@ def get_status(ride_data, status_map, all_pannes, heure_actuelle,
     )
 
     is_daw = any(a.lower() in name.lower() for a in rides_daw)
-    h_f = anticipated_closings.get(name, daw_closing if is_daw else dlp_closing)
-    h_o = emt_opening if name in emt_early_open else park_opening
+    h_f    = anticipated_closings.get(name, daw_closing if is_daw else dlp_closing)
+    h_o    = emt_opening if name in emt_early_open else park_opening
 
     panne_act = next((p for p in all_pannes if p["ride"] == name and p["statut"] == "EN_COURS"), None)
 
@@ -63,4 +61,4 @@ def get_status(ride_data, status_map, all_pannes, heure_actuelle,
         debut_str = panne_act["debut"].strftime("%H:%M") if panne_act else "?"
         return "INCIDENT", f"Panne depuis {debut_str}"
     else:
-        return "OUVERT", f"{int(wait_time)} min"
+        return "OUVERT", f"{int(ride_data.get('wait_time', 0))} min"

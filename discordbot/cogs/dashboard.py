@@ -1,11 +1,11 @@
-# bot/cogs/dashboard.py
+# discordbot/cogs/dashboard.py
 import discord
 from discord.ext import commands, tasks
 from datetime import datetime, timedelta
 import pytz
 import pandas as pd
-from supabase_client import get_supabase
-from config import CHANNEL_DASHBOARD_ID, MESSAGE_DASHBOARD_ID, POLL_INTERVAL
+from bot.supabase_client import get_supabase
+from bot_config import CHANNEL_DASHBOARD_ID, MESSAGE_DASHBOARD_ID, POLL_INTERVAL
 from utils.embeds import build_dashboard_embed
 from modules_bot import (
     PARKS_DATA, RIDES_DAW, ANTICIPATED_CLOSINGS,
@@ -37,14 +37,10 @@ class Dashboard(commands.Cog):
             heure_reset    = now_paris.replace(hour=2, minute=30, second=0, microsecond=0)
             debut_journee  = heure_reset if now_paris >= heure_reset else heure_reset - timedelta(days=1)
 
-            resp_live      = self.supabase.table("disney_live").select("*").execute()
-            resp_status    = self.supabase.table("daily_status").select("*").execute()
-            resp_101       = self.supabase.table("logs_101").select("*").gte("start_time", debut_journee.isoformat()).execute()
-            resp_schedules = self.supabase.table("ride_schedules").select("*").execute()
-
-            df_live    = pd.DataFrame(resp_live.data)
-            status_map = {item["ride_name"]: item for item in resp_status.data} if resp_status.data else {}
-            schedules  = resp_schedules.data or []
+            df_live    = pd.DataFrame(self.supabase.table("disney_live").select("*").execute().data)
+            status_map = {i["ride_name"]: i for i in self.supabase.table("daily_status").select("*").execute().data}
+            resp_101   = self.supabase.table("logs_101").select("*").gte("start_time", debut_journee.isoformat()).execute()
+            schedules  = self.supabase.table("ride_schedules").select("*").execute().data or []
             weather    = get_disney_weather()
 
             all_pannes = []
@@ -52,9 +48,7 @@ class Dashboard(commands.Cog):
                 d_p = pd.to_datetime(row["start_time"]).astimezone(paris_tz)
                 f_p = pd.to_datetime(row["end_time"]).astimezone(paris_tz) if row.get("end_time") else None
                 all_pannes.append({
-                    "ride":   row["ride_name"],
-                    "debut":  d_p,
-                    "fin":    f_p,
+                    "ride":   row["ride_name"], "debut": d_p, "fin": f_p,
                     "statut": "EN_COURS" if f_p is None else "TERMINEE",
                     "duree":  int((f_p - d_p).total_seconds() / 60) if f_p else 0
                 })
@@ -67,7 +61,6 @@ class Dashboard(commands.Cog):
                 RIDES_DAW, REHAB_LIST
             )
 
-            # Edit le message existant ou en crée un nouveau
             try:
                 msg = await channel.fetch_message(MESSAGE_DASHBOARD_ID)
                 await msg.edit(embed=embed)

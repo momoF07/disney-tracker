@@ -1,22 +1,21 @@
-# bot/cogs/commands.py
+# discordbot/cogs/commands.py
 import discord
 from discord import app_commands
 from discord.ext import commands
 from datetime import datetime, timedelta
 import pytz
 import pandas as pd
-from supabase_client import get_supabase
+from bot.supabase_client import get_supabase
 from utils.status import get_status, STATUS_MAP
 from utils.embeds import build_ride_embed
 from modules_bot import (
-    PARKS_DATA, RIDES_DAW, RIDES_DLP, ANTICIPATED_CLOSINGS,
+    PARKS_DATA, RIDES_DAW, ANTICIPATED_CLOSINGS,
     DLP_CLOSING, DAW_CLOSING, EMT_OPENING, PARK_OPENING,
     EMT_EARLY_OPEN, REHAB_LIST
 )
 from modules.weather import get_disney_weather
 
 paris_tz = pytz.timezone("Europe/Paris")
-ALL_RIDES = sorted([attr for lands in PARKS_DATA.values() for land in lands.values() for attr in land])
 
 class Commands(commands.Cog):
     def __init__(self, bot):
@@ -38,15 +37,13 @@ class Commands(commands.Cog):
             d_p = pd.to_datetime(row["start_time"]).astimezone(paris_tz)
             f_p = pd.to_datetime(row["end_time"]).astimezone(paris_tz) if row.get("end_time") else None
             all_pannes.append({
-                "ride":   row["ride_name"],
-                "debut":  d_p, "fin": f_p,
+                "ride":   row["ride_name"], "debut": d_p, "fin": f_p,
                 "statut": "EN_COURS" if f_p is None else "TERMINEE",
                 "duree":  int((f_p - d_p).total_seconds() / 60) if f_p else 0
             })
 
         return df_live, status_map, all_pannes, heure_actuelle
 
-    # --- /attente ---
     @app_commands.command(name="attente", description="Temps d'attente d'une attraction")
     @app_commands.describe(attraction="Nom de l'attraction")
     async def attente(self, interaction: discord.Interaction, attraction: str):
@@ -58,8 +55,8 @@ class Commands(commands.Cog):
             await interaction.followup.send(f"❌ Attraction `{attraction}` introuvable.", ephemeral=True)
             return
 
-        ride_data = matches.iloc[0].to_dict()
-        name      = ride_data["ride_name"]
+        ride_data      = matches.iloc[0].to_dict()
+        name           = ride_data["ride_name"]
         status, detail = get_status(
             ride_data, status_map, all_pannes, heure_actuelle,
             ANTICIPATED_CLOSINGS, DLP_CLOSING, DAW_CLOSING,
@@ -67,9 +64,8 @@ class Commands(commands.Cog):
             RIDES_DAW, REHAB_LIST
         )
 
-        # Stats 30j
-        date_30j  = (datetime.now(paris_tz) - timedelta(days=30)).isoformat()
-        resp_30j  = self.supabase.table("logs_101").select("*").eq("ride_name", name).gte("start_time", date_30j).execute()
+        date_30j   = (datetime.now(paris_tz) - timedelta(days=30)).isoformat()
+        resp_30j   = self.supabase.table("logs_101").select("*").eq("ride_name", name).gte("start_time", date_30j).execute()
         pannes_30j = []
         for row in resp_30j.data:
             if row.get("end_time"):
@@ -82,15 +78,14 @@ class Commands(commands.Cog):
         embed = build_ride_embed(name, status, detail, ride_data.get("wait_time", 0), pannes_30j)
         await interaction.followup.send(embed=embed)
 
-    # --- /101 ---
-    @app_commands.command(name="101", description="Attractions actuellement en panne")
+    @app_commands.command(name="101", description="Attractions actuellement en panne ou en retard")
     async def incidents(self, interaction: discord.Interaction):
         await interaction.response.defer()
         df_live, status_map, all_pannes, heure_actuelle = self._fetch_base()
 
         incidents = []
         for _, row in df_live.iterrows():
-            ride_data = row.to_dict()
+            ride_data      = row.to_dict()
             status, detail = get_status(
                 ride_data, status_map, all_pannes, heure_actuelle,
                 ANTICIPATED_CLOSINGS, DLP_CLOSING, DAW_CLOSING,
@@ -107,17 +102,13 @@ class Commands(commands.Cog):
                 color=0x10b981
             )
         else:
-            embed = discord.Embed(
-                title=f"⚠️ {len(incidents)} incident(s) en cours",
-                color=0xf59e0b
-            )
+            embed = discord.Embed(title=f"⚠️ {len(incidents)} incident(s) en cours", color=0xf59e0b)
             for name, status, detail in incidents:
                 s = STATUS_MAP[status]
                 embed.add_field(name=f"{s['emoji']} {name}", value=detail, inline=False)
 
         await interaction.followup.send(embed=embed)
 
-    # --- /horaires ---
     @app_commands.command(name="horaires", description="Horaires des parcs aujourd'hui")
     async def horaires(self, interaction: discord.Interaction):
         await interaction.response.defer()
@@ -127,7 +118,6 @@ class Commands(commands.Cog):
         emts  = {s["ride_name"].replace("EMT ", ""): s["opening_time"] for s in schedules if s.get("type") == "EMT"}
 
         embed = discord.Embed(title="🕒 Horaires des parcs", color=0x6d28d9)
-
         if not parks:
             embed.description = "Aucun horaire disponible pour aujourd'hui."
         else:
@@ -146,23 +136,16 @@ class Commands(commands.Cog):
 
         await interaction.followup.send(embed=embed)
 
-    # --- /meteo ---
     @app_commands.command(name="meteo", description="Météo actuelle à Marne-la-Vallée")
     async def meteo(self, interaction: discord.Interaction):
         await interaction.response.defer()
         weather = get_disney_weather()
-
-        embed = discord.Embed(
-            title=f"{weather['emoji']} Météo — Marne-la-Vallée",
-            color=0x7dd3fc
-        )
+        embed   = discord.Embed(title=f"{weather['emoji']} Météo — Marne-la-Vallée", color=0x7dd3fc)
         embed.add_field(name="🌡️ Température", value=f"`{weather['temp']}°C` (Ressenti `{weather['feels_like']}°`)", inline=True)
-        embed.add_field(name="💨 Vent",        value=f"`{weather['wind']}`", inline=True)
-        embed.add_field(name="🚩 Rafales",     value=f"`{weather['gusts']}`", inline=True)
-        embed.add_field(name="📍 Lieu",        value="Marne-la-Vallée, France", inline=False)
+        embed.add_field(name="💨 Vent",         value=f"`{weather['wind']}`",  inline=True)
+        embed.add_field(name="🚩 Rafales",      value=f"`{weather['gusts']}`", inline=True)
         await interaction.followup.send(embed=embed)
 
-    # --- /stats ---
     @app_commands.command(name="stats", description="Stats d'interruptions sur 30 jours")
     @app_commands.describe(attraction="Nom de l'attraction (optionnel)")
     async def stats(self, interaction: discord.Interaction, attraction: str = None):
@@ -195,32 +178,30 @@ class Commands(commands.Cog):
 
         title = f"📊 Stats — {attraction}" if attraction else "📊 Stats globales — 30 jours"
         embed = discord.Embed(title=title, color=0xc4b5fd)
-        embed.add_field(name="🔴 Interruptions", value=f"`{nb}`",       inline=True)
+        embed.add_field(name="🔴 Interruptions", value=f"`{nb}`",        inline=True)
         embed.add_field(name="⏱️ Total",          value=f"`{total} min`", inline=True)
         embed.add_field(name="📈 Moyenne",         value=f"`{moy} min`",  inline=True)
 
         if not attraction:
-            top = df.groupby("ride_name")["duree"].count().sort_values(ascending=False).head(5)
-            top_str = "\n".join([f"**{name}** — {count} interruption(s)" for name, count in top.items()])
-            embed.add_field(name="🏆 Top 5 attractions", value=top_str, inline=False)
+            top     = df.groupby("ride_name")["duree"].count().sort_values(ascending=False).head(5)
+            top_str = "\n".join([f"**{n}** — {c} interruption(s)" for n, c in top.items()])
+            embed.add_field(name="🏆 Top 5", value=top_str, inline=False)
 
         await interaction.followup.send(embed=embed)
 
-    # --- /rehab ---
     @app_commands.command(name="rehab", description="Attractions en réhabilitation")
     async def rehab(self, interaction: discord.Interaction):
         await interaction.response.defer()
         today = datetime.now(paris_tz).date()
-
         embed = discord.Embed(title="🛠️ Réhabilitations en cours", color=0x64748b)
         found = False
 
         for name, info in REHAB_LIST.items():
-            debut = info.get("debut")
-            fin   = info.get("fin")
+            debut    = info.get("debut")
+            fin      = info.get("fin")
             in_rehab = True if (not debut or not fin) else (debut <= today <= fin)
             if in_rehab:
-                found = True
+                found     = True
                 debut_str = debut.strftime("%d/%m/%Y") if debut else "—"
                 fin_str   = fin.strftime("%d/%m/%Y")   if fin   else "Indéfini"
                 embed.add_field(

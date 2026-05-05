@@ -1,4 +1,4 @@
-# bot/supabase_client.py
+# discordbot/bot/supabase_client.py
 from supabase import create_client
 import os
 

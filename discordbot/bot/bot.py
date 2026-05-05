@@ -1,4 +1,4 @@
-# bot/bot.py
+# discordbot/bot/bot.py
 import sys
 import os
 
