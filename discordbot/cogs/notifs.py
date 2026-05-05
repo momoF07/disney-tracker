@@ -4,7 +4,7 @@ from discord.ext import commands, tasks
 from datetime import datetime, timedelta
 import pytz
 import pandas as pd
-from bot.supabase_client import get_supabase
+from supabase_client import get_supabase
 from bot_config import CHANNEL_NOTIFS_ID, POLL_INTERVAL
 from utils.status import get_status
 from utils.embeds import build_notif_embed

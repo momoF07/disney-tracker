@@ -5,7 +5,7 @@ from discord.ext import commands
 from datetime import datetime, timedelta
 import pytz
 import pandas as pd
-from bot.supabase_client import get_supabase
+from supabase_client import get_supabase
 from utils.status import get_status, STATUS_MAP
 from utils.embeds import build_ride_embed
 from modules_bot import (
