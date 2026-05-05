@@ -209,6 +209,7 @@ def render_park_hours(schedules):
     )
 
     # --- RADIO DISNEY VILLAGE ---
+    # --- RADIO DISNEY VILLAGE ---
     radio_html = """<!DOCTYPE html>
 <html>
 <head>
@@ -216,9 +217,7 @@ def render_park_hours(schedules):
   @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&display=swap');
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 22px;
+    background: #090d1a;
     font-family: Outfit, sans-serif;
     padding: 16px 20px;
     overflow: hidden;
@@ -335,7 +334,13 @@ def render_park_hours(schedules):
 </body>
 </html>"""
 
+    st.markdown(
+        '<div style="border-radius:22px; overflow:hidden; margin-bottom:16px;'
+        'border:1px solid rgba(255,255,255,0.07); box-shadow:0 20px 40px rgba(0,0,0,0.3);">',
+        unsafe_allow_html=True
+    )
     st.iframe(radio_html, height=110)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 
 def render_upcoming_shows(schedules):
