@@ -1,0 +1,6 @@
+# bot/requirements.txt
+discord.py>=2.3.0
+supabase
+pandas
+pytz
+requests
