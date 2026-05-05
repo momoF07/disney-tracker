@@ -431,26 +431,32 @@ with col_stats:
                     + '</div><div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">',
                     unsafe_allow_html=True
                 )
+                parc_cards = ""
                 for parc_name, label, color in [
-                    ("Disneyland Park", "🏰 DLP", "#ffb3d1"),
-                    ("Disney Adventure World", "🎬 DAW", "#fb923c")
+                    ("Disneyland Park", "🏰 Disneyland Park", "#ffb3d1"),
+                    ("Disney Adventure World", "🎬 Disney Adventure World", "#fb923c")
                 ]:
                     df_p = df_30j[df_30j['parc'] == parc_name]
                     nb_p, total_p, moy_p = stats_block(df_p)
-                    st.markdown(
-                        '<div style="flex:1; min-width:120px; background:' + color + '08;'
+                    parc_cards += (
+                        '<div style="flex:1; min-width:140px; background:' + color + '08;'
                         'border:1px solid ' + color + '25; border-top:2px solid ' + color + '70;'
                         'border-radius:14px; padding:10px 12px;">'
                         '<div style="font-family:Outfit,sans-serif; font-size:10px; font-weight:700;'
                         'color:' + color + '; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">' + label + '</div>'
                         '<div style="display:flex; gap:6px; flex-wrap:wrap;">'
                         + stat_pill("101", nb_p, color)
-                        + stat_pill("min", total_p, "#94a3b8")
-                        + stat_pill("moy", moy_p, "#94a3b8")
-                        + '</div></div>',
-                        unsafe_allow_html=True
+                        + stat_pill("min total", total_p, "#94a3b8")
+                        + stat_pill("moy. min", moy_p, "#94a3b8")
+                        + '</div></div>'
                     )
-                st.markdown('</div>', unsafe_allow_html=True)
+
+                st.markdown(
+                    '<div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; width:100%;">'
+                    + parc_cards +
+                    '</div>',
+                    unsafe_allow_html=True
+                )
 
             # --- PAR LAND ---
             with st.expander("🗺️ Par land"):
