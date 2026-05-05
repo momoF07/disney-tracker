@@ -79,3 +79,54 @@ def render_ride_card(ride, sub, wait, bg, card_style, pill, show_wait=True):
         {wait_section}
     </div>
     """, unsafe_allow_html=True)
+
+def render_park_hours(schedules):
+    """Affiche les horaires d'ouverture des deux parcs"""
+    # Filtrer les horaires de type PARK
+    parks = [s for s in schedules if s.get('type') == 'PARK']
+    
+    html_boxes = ""
+    for p in parks:
+        name = "Disneyland Park" if "Disneyland" in p['ride_name'] else "Adventure World"
+        color = "#4facfe" if "Disneyland" in p['ride_name'] else "#fb923c"
+        
+        html_boxes += f"""
+        <div style="flex: 1; min-width: 140px; padding: 15px; background: rgba(255,255,255,0.03); 
+                    border-radius: 18px; border-left: 4px solid {color};">
+            <div style="font-size: 10px; color: #94a3b8; font-weight: 800; letter-spacing: 1px;">{name.upper()}</div>
+            <div style="font-size: 18px; color: white; font-weight: 700; margin-top: 5px;">{p['opening_time']} — {p['closing_time']}</div>
+        </div>"""
+
+    st.markdown(f"""
+    <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; backdrop-filter: blur(10px);">
+        <div style="color: white; font-size: 14px; font-weight: 700; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+            🕒 HORAIRES DES PARCS
+        </div>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">{html_boxes}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+def render_upcoming_shows(schedules):
+    """Affiche les spectacles dans les 2 prochaines heures"""
+    now = datetime.now().strftime("%H:%M")
+    # Simulation de filtrage 2h (simplifié pour l'exemple)
+    shows = [s for s in schedules if s.get('type') == 'SHOW' and s['opening_time'] >= now]
+    shows = sorted(shows, key=lambda x: x['opening_time'])[:3] # Top 3 prochains
+
+    show_items = ""
+    if not shows:
+        show_items = '<div style="color: #64748b; font-size: 12px; padding: 10px;">Pas de shows prévus prochainement.</div>'
+    else:
+        for s in shows:
+            show_items += f"""
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(255,255,255,0.02); border-radius: 12px; margin-bottom: 8px;">
+                <span style="color: white; font-size: 13px; font-weight: 600;">✨ {s['ride_name']}</span>
+                <span style="color: #a78bfa; font-size: 13px; font-weight: 800; background: rgba(167, 139, 250, 0.1); padding: 2px 8px; border-radius: 6px;">{s['opening_time']}</span>
+            </div>"""
+
+    st.markdown(f"""
+    <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; backdrop-filter: blur(10px);">
+        <div style="color: white; font-size: 14px; font-weight: 700; margin-bottom: 15px;">🎭 PROCHAINS SPECTACLES</div>
+        {show_items}
+    </div>
+    """, unsafe_allow_html=True)

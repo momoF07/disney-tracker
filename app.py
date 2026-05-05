@@ -126,6 +126,13 @@ if not df_live.empty and not df_pannes_brutes.empty:
 render_weather_card(get_disney_weather())
 #render_weather_card(get_maintenance_weather())
 
+# --- BLOC HORAIRES ---
+col_h1, col_h2 = st.columns(2)
+with col_h1:
+    render_park_hours(schedules_data)
+with col_h2:
+    render_upcoming_shows(schedules_data)
+
 # --- HEADER INFO ---
 render_api_info(derniere_maj, st.session_state.last_refresh)
 
