@@ -20,7 +20,7 @@ def render_weather_card(weather):
             'display:flex; align-items:center; gap:10px;">'
             '<span style="font-size:18px;">⚠️</span>'
             '<div>'
-            '<div style="color:white; font-size:12px; font-weight:700; font-family:Syne,sans-serif; letter-spacing:0.5px;">'
+            '<div style="color:white; font-size:12px; font-weight:700; font-family:Outfit,sans-serif; letter-spacing:0.5px;">'
             + alert['code'] + '</div>'
             '<div style="color:rgba(255,255,255,0.75); font-size:11px; margin-top:1px;">' + alert['sub'] + '</div>'
             '</div>'
@@ -36,7 +36,7 @@ def render_weather_card(weather):
                 'background:rgba(255,255,255,0.03); border-radius:14px;'
                 'border:1px solid rgba(255,255,255,0.07);">'
                 '<div style="display:flex; align-items:center; gap:6px; margin-bottom:5px;">'
-                '<span style="font-size:11px; font-weight:800; font-family:Syne,sans-serif;'
+                '<span style="font-size:11px; font-weight:800; font-family:Outfit,sans-serif;'
                 'color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:1px;">' + title + '</span>'
                 '<span style="font-size:10px; font-weight:700; padding:1px 7px; border-radius:8px;'
                 'background:' + data['color'] + '22; color:' + data['color'] + '; border:1px solid ' + data['color'] + '44;">'
@@ -65,7 +65,7 @@ def render_weather_card(weather):
         + weather['emoji'] +
         '</span>'
         '<div>'
-        '<div style="font-family:Syne,sans-serif; color:white; font-size:18px; font-weight:700; line-height:1.1;">'
+        '<div style="font-family:Outfit,sans-serif; color:white; font-size:18px; font-weight:700; line-height:1.1;">'
         + weather['desc'] +
         '</div>'
         '<div style="color:#334155; font-size:11px; font-weight:500; margin-top:3px; letter-spacing:0.3px;">'
@@ -77,10 +77,10 @@ def render_weather_card(weather):
         # Droite : température
         '<div style="text-align:right;">'
         '<div style="display:flex; align-items:baseline; gap:6px; justify-content:flex-end;">'
-        '<span style="font-family:Syne,sans-serif; color:white; font-size:36px; font-weight:800; line-height:1;">'
+        '<span style="font-family:Outfit,sans-serif; color:white; font-size:36px; font-weight:800; line-height:1;">'
         + str(weather['temp']) +
         '</span>'
-        '<span style="font-family:Syne,sans-serif; color:rgba(255,255,255,0.4); font-size:18px; font-weight:700;">°C</span>'
+        '<span style="font-family:Outfit,sans-serif; color:rgba(255,255,255,0.4); font-size:18px; font-weight:700;">°C</span>'
         '</div>'
         '<div style="color:rgba(255,255,255,0.35); font-size:11px; font-weight:500; margin-top:2px;">'
         'Ressenti ' + str(ressenti) + '°'
@@ -188,9 +188,9 @@ def render_park_hours(schedules):
             'background:rgba(255,255,255,0.02); border-radius:18px;'
             'border:1px solid rgba(255,255,255,0.06);'
             'border-top:2px solid ' + color + '66;">'
-            '<div style="font-family:Syne,sans-serif; font-size:9px; color:' + color + '; font-weight:700;'
+            '<div style="font-family:Outfit,sans-serif; font-size:9px; color:' + color + '; font-weight:700;'
             'text-transform:uppercase; letter-spacing:1.5px; margin-bottom:6px; opacity:0.8;">' + name + '</div>'
-            '<div style="font-family:Syne,sans-serif; font-size:22px; color:white; font-weight:700; line-height:1;">'
+            '<div style="font-family:Outfit,sans-serif; font-size:22px; color:white; font-weight:700; line-height:1;">'
             + opening + ' <span style="color:rgba(255,255,255,0.25); font-size:16px;">→</span> ' + closing +
             '</div>'
             + emt_html +
@@ -201,7 +201,7 @@ def render_park_hours(schedules):
         '<div style="background:rgba(255,255,255,0.03); padding:18px 20px; border-radius:22px;'
         'border:1px solid rgba(255,255,255,0.07); margin-bottom:16px; backdrop-filter:blur(20px);'
         'box-shadow:0 20px 40px rgba(0,0,0,0.3);">'
-        '<div style="font-family:Syne,sans-serif; color:rgba(255,255,255,0.4); font-size:9.5px;'
+        '<div style="font-family:Outfit,sans-serif; color:rgba(255,255,255,0.4); font-size:9.5px;'
         'font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-bottom:14px;">🕒 Horaires des parcs</div>'
         '<div style="display:flex; gap:12px; flex-wrap:wrap;">' + boxes + '</div>'
         '</div>',
@@ -257,7 +257,7 @@ def render_upcoming_shows(schedules):
                 'margin-bottom:6px; border:1px solid rgba(255,255,255,0.04);">'
                 '<span style="color:rgba(255,255,255,0.75); font-size:12.5px; font-weight:500;">'
                 '🎭 ' + s['_clean_name'] + '</span>'
-                '<span style="font-family:Syne,sans-serif; color:' + color + '; font-size:12px; font-weight:800;'
+                '<span style="font-family:Outfit,sans-serif; color:' + color + '; font-size:12px; font-weight:800;'
                 'background:' + color + '15; border:1px solid ' + color + '30;'
                 'padding:2px 10px; border-radius:8px; letter-spacing:0.5px;">'
                 + s['_paris_time'] + '</span>'
@@ -271,7 +271,7 @@ def render_upcoming_shows(schedules):
         divider = '<div style="height:1px; background:rgba(255,255,255,0.05); margin:12px 0;"></div>' if i > 0 else ""
         sections += (
             divider +
-            '<div style="font-family:Syne,sans-serif; font-size:9px; font-weight:700;'
+            '<div style="font-family:Outfit,sans-serif; font-size:9px; font-weight:700;'
             'text-transform:uppercase; letter-spacing:1.5px; color:' + park['color'] + '; opacity:0.8;'
             'margin-bottom:9px;">' + park['label'] + '</div>'
             + make_rows(shows, park['color'])
@@ -281,7 +281,7 @@ def render_upcoming_shows(schedules):
         '<div style="background:rgba(255,255,255,0.03); padding:18px 20px; border-radius:22px;'
         'border:1px solid rgba(255,255,255,0.07); margin-bottom:16px; backdrop-filter:blur(20px);'
         'box-shadow:0 20px 40px rgba(0,0,0,0.3);">'
-        '<div style="font-family:Syne,sans-serif; color:rgba(255,255,255,0.4); font-size:9.5px;'
+        '<div style="font-family:Outfit,sans-serif; color:rgba(255,255,255,0.4); font-size:9.5px;'
         'font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-bottom:14px;">✨ Prochaines représentations</div>'
         + sections +
         '</div>',

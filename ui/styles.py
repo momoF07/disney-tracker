@@ -1,9 +1,10 @@
 import streamlit as st
 
+
 def apply_custom_style():
     st.markdown("""
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Mulish:wght@300;400;500;600&display=swap');
 
         /* === BASE === */
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -13,7 +14,7 @@ def apply_custom_style():
                 radial-gradient(ellipse 80% 50% at 20% -10%, rgba(120,80,255,0.15) 0%, transparent 60%),
                 radial-gradient(ellipse 60% 40% at 80% 110%, rgba(255,100,150,0.1) 0%, transparent 55%),
                 radial-gradient(ellipse 100% 80% at 50% 50%, #090d1a 0%, #060910 100%);
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Mulish', sans-serif;
         }
 
         /* Grain texture overlay */
@@ -38,7 +39,8 @@ def apply_custom_style():
 
         /* === TITRE === */
         h1 {
-            font-family: 'Syne', sans-serif !important;
+            font-family: 'Outfit
+        ', sans-serif !important;
             font-weight: 800 !important;
             font-size: 2.2rem !important;
             letter-spacing: -2px !important;
@@ -58,7 +60,8 @@ def apply_custom_style():
         }
 
         h2 {
-            font-family: 'Syne', sans-serif !important;
+            font-family: 'Outfit
+        ', sans-serif !important;
             font-weight: 700 !important;
             font-size: 1rem !important;
             color: rgba(255,255,255,0.7) !important;
@@ -80,7 +83,8 @@ def apply_custom_style():
         }
 
         .sort-label, .order-label {
-            font-family: 'Syne', sans-serif;
+            font-family: 'Outfit
+        ', sans-serif;
             color: #475569;
             font-size: 0.65rem;
             font-weight: 700;
@@ -103,7 +107,7 @@ def apply_custom_style():
             border: none !important;
             background: transparent !important;
             color: #475569 !important;
-            font-family: 'DM Sans', sans-serif !important;
+            font-family: 'Mulish', sans-serif !important;
             font-weight: 600 !important;
             font-size: 12px !important;
             transition: all 0.2s ease !important;
@@ -128,7 +132,7 @@ def apply_custom_style():
             color: #e2e8f0 !important;
             font-size: 12px !important;
             font-weight: 500 !important;
-            font-family: 'DM Sans', sans-serif !important;
+            font-family: 'Mulish', sans-serif !important;
         }
 
         /* === CARTES ATTRACTIONS === */
@@ -177,7 +181,7 @@ def apply_custom_style():
         .ride-titles { display: flex; flex-direction: column; }
 
         .ride-main-name {
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Mulish', sans-serif;
             color: rgba(255,255,255,0.92);
             font-size: 13.5px;
             font-weight: 600;
@@ -186,7 +190,7 @@ def apply_custom_style():
         }
 
         .ride-sub-status {
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Mulish', sans-serif;
             color: rgba(255,255,255,0.38);
             font-size: 10.5px;
             margin: 2px 0 0 0;
@@ -194,7 +198,8 @@ def apply_custom_style():
         }
 
         .state-pill {
-            font-family: 'Syne', sans-serif;
+            font-family: 'Outfit
+        ', sans-serif;
             background: rgba(0,0,0,0.4);
             color: rgba(255,255,255,0.65);
             font-size: 7.5px;
@@ -233,7 +238,8 @@ def apply_custom_style():
         }
 
         .wait-val {
-            font-family: 'Syne', sans-serif;
+            font-family: 'Outfit
+        ', sans-serif;
             font-size: 20px;
             font-weight: 800;
             line-height: 1;
@@ -267,7 +273,8 @@ def apply_custom_style():
         .action-buttons-container div[data-testid="stColumn"] button {
             height: 50px !important;
             border-radius: 15px !important;
-            font-family: 'Syne', sans-serif !important;
+            font-family: 'Outfit
+        ', sans-serif !important;
             font-size: 13px !important;
             font-weight: 700 !important;
             transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1) !important;
@@ -286,7 +293,8 @@ def apply_custom_style():
             color: #64748b !important;
             border-radius: 11px !important;
             border: 1px solid rgba(255,255,255,0.05) !important;
-            font-family: 'Syne', sans-serif !important;
+            font-family: 'Outfit
+        ', sans-serif !important;
             font-size: 9.5px !important;
             height: 34px !important;
             text-transform: uppercase !important;
@@ -311,7 +319,8 @@ def apply_custom_style():
         }
 
         .park-name, .class-name {
-            font-family: 'Syne', sans-serif;
+            font-family: 'Outfit
+        ', sans-serif;
             color: #334155;
             font-size: 8.5px;
             font-weight: 700;
@@ -332,7 +341,7 @@ def apply_custom_style():
             color: rgba(255,255,255,0.35) !important;
             font-size: 11px !important;
             font-weight: 500 !important;
-            font-family: 'DM Sans', sans-serif !important;
+            font-family: 'Mulish', sans-serif !important;
         }
 
         div[data-testid="stExpander"] summary:hover {
@@ -343,7 +352,7 @@ def apply_custom_style():
         div[data-testid="stCaptionContainer"] p {
             color: #475569 !important;
             font-size: 10.5px !important;
-            font-family: 'DM Sans', sans-serif !important;
+            font-family: 'Mulish', sans-serif !important;
         }
 
         div[data-testid="stInfo"] {
