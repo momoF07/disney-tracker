@@ -209,34 +209,57 @@ def render_park_hours(schedules):
     )
 
     # --- RADIO DISNEY VILLAGE ---
-    # --- RADIO DISNEY VILLAGE ---
     st.markdown(
         '<div style="background:rgba(255,255,255,0.03); padding:16px 20px; border-radius:22px;'
         'border:1px solid rgba(255,255,255,0.07); margin-bottom:16px; backdrop-filter:blur(20px);'
-        'box-shadow:0 20px 40px rgba(0,0,0,0.3);">'
+        'box-shadow:0 20px 40px rgba(0,0,0,0.3); position:relative; overflow:hidden;">'
 
-        '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">'
-        '<div style="display:flex; align-items:center; gap:8px;">'
-        '<span style="font-size:14px;">🎵</span>'
-        '<span style="font-family:Outfit,sans-serif; color:rgba(255,255,255,0.4); font-size:9.5px;'
-        'font-weight:700; text-transform:uppercase; letter-spacing:2px;">Radio Disney Village</span>'
+        '<style>@keyframes rpulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }'
+        '@keyframes eq1 { 0%,100%{height:6px;} 50%{height:16px;} }'
+        '@keyframes eq2 { 0%,100%{height:12px;} 50%{height:4px;} }'
+        '@keyframes eq3 { 0%,100%{height:8px;} 50%{height:18px;} }'
+        '@keyframes eq4 { 0%,100%{height:14px;} 50%{height:6px;} }'
+        '</style>'
+
+        # iframe caché en arrière-plan
+        '<div style="position:absolute; top:0; left:0; width:100%; height:100%;'
+        'opacity:0; pointer-events:none; z-index:0;">'
+        '<iframe src="https://static.infomaniak.ch/infomaniak/radio/html/webradio_player.html"'
+        ' width="100%" height="100%" frameborder="0" scrolling="no"></iframe>'
         '</div>'
-        '<div style="display:flex; align-items:center; gap:5px;">'
+
+        # UI custom par-dessus
+        '<div style="position:relative; z-index:1; display:flex; align-items:center; gap:14px;">'
+
+        # Equalizer animé
+        '<div style="display:flex; align-items:flex-end; gap:3px; height:20px; flex-shrink:0;">'
+        '<div style="width:3px; background:linear-gradient(#c4b5fd,#7dd3fc); border-radius:2px;'
+        'animation:eq1 0.8s ease-in-out infinite;"></div>'
+        '<div style="width:3px; background:linear-gradient(#c4b5fd,#7dd3fc); border-radius:2px;'
+        'animation:eq2 0.6s ease-in-out infinite;"></div>'
+        '<div style="width:3px; background:linear-gradient(#c4b5fd,#7dd3fc); border-radius:2px;'
+        'animation:eq3 1s ease-in-out infinite;"></div>'
+        '<div style="width:3px; background:linear-gradient(#c4b5fd,#7dd3fc); border-radius:2px;'
+        'animation:eq4 0.7s ease-in-out infinite;"></div>'
+        '</div>'
+
+        # Titre + sous-titre
+        '<div style="flex:1;">'
+        '<div style="font-family:Outfit,sans-serif; color:white; font-size:12px; font-weight:700;'
+        'line-height:1.2;">Radio Disney Village</div>'
+        '<div style="font-family:Outfit,sans-serif; color:rgba(255,255,255,0.3); font-size:9px;'
+        'font-weight:500; margin-top:2px;">🎵 Diffusion continue — Disney Village, Marne-la-Vallée</div>'
+        '</div>'
+
+        # Badge En direct
+        '<div style="display:flex; align-items:center; gap:5px; flex-shrink:0;">'
         '<span style="width:5px; height:5px; background:#34d399; border-radius:50%;'
         'box-shadow:0 0 8px #34d399; display:inline-block; animation:rpulse 2s infinite;"></span>'
         '<span style="font-family:Outfit,sans-serif; font-size:8.5px; color:#34d399;'
         'font-weight:700; text-transform:uppercase; letter-spacing:1px;">En direct</span>'
         '</div>'
+
         '</div>'
-
-        '<style>@keyframes rpulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }</style>'
-
-        '<div style="border-radius:16px; overflow:hidden; border:1px solid rgba(255,255,255,0.05);">'
-        '<iframe src="https://static.infomaniak.ch/infomaniak/radio/html/webradio_player.html"'
-        ' width="100%" height="52" frameborder="0" scrolling="no"'
-        ' style="display:block; border-radius:16px;"></iframe>'
-        '</div>'
-
         '</div>',
         unsafe_allow_html=True
     )
