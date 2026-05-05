@@ -24,8 +24,7 @@ def render_weather_card(weather):
         
         shows_html = f"""<div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">{get_box("🎨 MSC", msc)}{get_box("🎭 DSP", dsp)}</div>"""
 
-    html_final = f"""
-<div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 24px;
+    html_final = f"""<div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 24px;
             border: 1px solid rgba(255,255,255,0.1); margin-bottom: 25px;
             backdrop-filter: blur(10px);">
     <div style="display: flex; align-items: center; justify-content: space-between;
@@ -49,7 +48,7 @@ def render_weather_card(weather):
                     {weather['temp']}°C
                 </span>
                 <span style="color: rgba(255,255,255,0.5); font-size: 14px; margin-left: 5px;">
-                    (Feels {ressenti}°)
+                    (Ressenti {ressenti}°)
                 </span>
             </div>
             <div style="color: rgba(255,255,255,0.7); font-size: 12px;
@@ -62,8 +61,7 @@ def render_weather_card(weather):
     </div>
     {alert_html}
     {shows_html}
-</div>
-"""
+</div>"""
     st.markdown(html_final, unsafe_allow_html=True)
 
 def render_api_info(api_time, refresh_time):
