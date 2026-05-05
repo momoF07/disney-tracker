@@ -14,7 +14,7 @@ from ui.comp import render_weather_card, render_ride_card, render_api_info, rend
 from ui.popup import render_shortcuts_popover, render_history_expander
 from modules.rehabilitations import REHAB_LIST
 from modules.weather import get_disney_weather, get_maintenance_weather
-from modules.emojis import get_emoji, get_rides_by_zone, RIDES_DLP, RIDES_DAW
+from modules.emojis import get_emoji, get_rides_by_zone, RIDES_DLP, RIDES_DAW, PARKS_DATA
 from modules.special_hours import ANTICIPATED_CLOSINGS, FANTASYLAND_EARLY_CLOSE, EMT_EARLY_OPEN, SPECIAL_OPENING_HOURS
 from config import PARK_OPENING, DLP_CLOSING, DAW_CLOSING, EMT_OPENING
 from ui.filters import render_quick_filters
