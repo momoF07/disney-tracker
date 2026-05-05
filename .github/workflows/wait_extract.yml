@@ -25,8 +25,11 @@ jobs:
       - name: 🚀 Run Worker
         run: python worker.py
         env:
-          SUPABASE_URL:              ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY:              ${{ secrets.SUPABASE_KEY }}
-          DISCORD_WEBHOOK_NOTIFS:    ${{ secrets.DISCORD_WEBHOOK_NOTIFS }}
-          DISCORD_WEBHOOK_DASHBOARD: ${{ secrets.DISCORD_WEBHOOK_DASHBOARD }}
-          #DISCORD_MESSAGE_ID:        ${{ secrets.DISCORD_MESSAGE_ID }}
+          env:
+          SUPABASE_URL:           ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY:           ${{ secrets.SUPABASE_KEY }}
+          DISCORD_WEBHOOK_NOTIFS: ${{ secrets.DISCORD_WEBHOOK_NOTIFS }}
+          DISCORD_WEBHOOK_DLP:    ${{ secrets.DISCORD_WEBHOOK_DLP }}
+          DISCORD_WEBHOOK_DAW:    ${{ secrets.DISCORD_WEBHOOK_DAW }}
+          DISCORD_MESSAGE_ID_DLP: ${{ secrets.DISCORD_MESSAGE_ID_DLP }}
+          DISCORD_MESSAGE_ID_DAW: ${{ secrets.DISCORD_MESSAGE_ID_DAW }}
