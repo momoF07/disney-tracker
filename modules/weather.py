@@ -73,7 +73,7 @@ def get_maintenance_weather():
         "success": False
     }
 
-def info_weather_code(feels_like, code=None):
+def info_weather_code(feels_like, code):
     # --- ORAGE (prioritaire sur la chaleur) ---
     if code in [95, 96, 99, 999]:
         return {
