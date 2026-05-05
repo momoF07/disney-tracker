@@ -135,7 +135,7 @@ def render_upcoming_shows(schedules):
 
     if not schedules: return
 
-    HIDDEN_SHOWS = ["philharmagic", "reserved viewing", "animation academy"]
+    HIDDEN_SHOWS = ["mickey's philharmagic", "reserved viewing area", "animation academy"]
 
     PARKS = [
         {"label": "Disneyland Park", "prefix": "Disneyland Park", "color": "#ffb3d1"},
