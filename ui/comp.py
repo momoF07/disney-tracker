@@ -216,24 +216,26 @@ def render_park_hours(schedules):
         '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">'
         '<div style="font-family:Outfit,sans-serif; color:rgba(255,255,255,0.4); font-size:9.5px;'
         'font-weight:700; text-transform:uppercase; letter-spacing:2px;">🎵 Radio Disney Village</div>'
-        '<div id="radio-status" style="display:flex; align-items:center; gap:6px;">'
-        '<span id="radio-dot" style="width:6px; height:6px; background:#334155; border-radius:50%; display:inline-block;"></span>'
-        '<span id="radio-label" style="font-family:Outfit,sans-serif; font-size:9px; color:#334155;'
-        'font-weight:600; text-transform:uppercase; letter-spacing:1px;">En veille</span>'
+        '<div style="display:flex; align-items:center; gap:6px;">'
+        '<span id="radio-dot" style="width:6px; height:6px; background:#34d399; border-radius:50%;'
+        'display:inline-block; box-shadow:0 0 8px #34d399; animation:pulse 2s infinite;"></span>'
+        '<span style="font-family:Outfit,sans-serif; font-size:9px; color:#34d399;'
+        'font-weight:600; text-transform:uppercase; letter-spacing:1px;">En direct</span>'
         '</div>'
         '</div>'
 
-        '<div style="display:flex; align-items:center; gap:10px;">'
+        '<style>@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }</style>'
 
-        # Bouton Play/Pause
-        '<button id="btn-play" onclick="togglePlay()" style="'
+        '<div style="display:flex; align-items:center; gap:12px;">'
+
+        # Bouton mute
+        '<button id="btn-mute" onclick="toggleMute()" style="'
         'background:linear-gradient(135deg,#c4b5fd,#7dd3fc); border:none; border-radius:50%;'
         'width:40px; height:40px; cursor:pointer; display:flex; align-items:center; justify-content:center;'
-        'font-size:16px; flex-shrink:0; box-shadow:0 4px 15px rgba(196,181,253,0.3);">▶</button>'
+        'font-size:18px; flex-shrink:0; box-shadow:0 4px 15px rgba(196,181,253,0.3);">🔇</button>'
 
-        # Barre de volume
+        # Slider volume
         '<div style="flex:1; display:flex; align-items:center; gap:8px;">'
-        '<span style="font-size:14px; cursor:pointer;" onclick="toggleMute()" id="icon-mute">🔇</span>'
         '<input id="vol-slider" type="range" min="0" max="100" value="0" oninput="setVolume(this.value)"'
         ' style="flex:1; height:4px; border-radius:4px; accent-color:#c4b5fd; cursor:pointer;">'
         '<span style="font-family:Outfit,sans-serif; font-size:10px; color:#475569; min-width:28px;" id="vol-label">0%</span>'
@@ -241,41 +243,17 @@ def render_park_hours(schedules):
 
         '</div>'
 
-        '<audio id="radio-audio" src="http://streaming.infomaniak.com/disneyvillage_high" preload="none"></audio>'
+        '<audio id="radio-audio" src="http://streaming.infomaniak.com/disneyvillage_high" preload="auto" autoplay></audio>'
 
         '<script>'
         'var audio = document.getElementById("radio-audio");'
-        'var playing = false;'
-        'audio.volume = 0;'  # mute par défaut
-
-        'function togglePlay() {'
-        '  var btn = document.getElementById("btn-play");'
-        '  var dot = document.getElementById("radio-dot");'
-        '  var lbl = document.getElementById("radio-label");'
-        '  if (!playing) {'
-        '    audio.play();'
-        '    playing = true;'
-        '    btn.innerHTML = "⏸";'
-        '    dot.style.background = "#34d399";'
-        '    dot.style.boxShadow = "0 0 8px #34d399";'
-        '    lbl.style.color = "#34d399";'
-        '    lbl.innerHTML = "En direct";'
-        '  } else {'
-        '    audio.pause();'
-        '    audio.load();'
-        '    playing = false;'
-        '    btn.innerHTML = "▶";'
-        '    dot.style.background = "#334155";'
-        '    dot.style.boxShadow = "none";'
-        '    lbl.style.color = "#334155";'
-        '    lbl.innerHTML = "En veille";'
-        '  }'
-        '}'
+        'audio.volume = 0;'
 
         'function setVolume(v) {'
         '  audio.volume = v / 100;'
+        '  var btn = document.getElementById("btn-mute");'
         '  document.getElementById("vol-label").innerHTML = v + "%";'
-        '  document.getElementById("icon-mute").innerHTML = v == 0 ? "🔇" : v < 50 ? "🔉" : "🔊";'
+        '  btn.innerHTML = v == 0 ? "🔇" : v < 50 ? "🔉" : "🔊";'
         '}'
 
         'function toggleMute() {'
