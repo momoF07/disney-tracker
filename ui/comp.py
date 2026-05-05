@@ -101,7 +101,7 @@ def render_park_hours(schedules):
 
         emt_html = ""
         if emt_time:
-            emt_html = f'<div style="font-size: 10px; color: #a78bfa; font-weight: 600; margin-top: 2px; opacity: 0.8;">✨ EMT : {emt_time[:5]}</div>'
+            emt_html = f'<div style="font-size: 10px; color: #a78bfa; font-weight: 600; margin-top: 2px; opacity: 0.8;">✨ EMT : {emt_time[:5]} - {opening}</div>'
 
         html_boxes += f"""
             <div style="flex: 1; min-width: 140px; padding: 15px; background: rgba(255,255,255,0.03);
