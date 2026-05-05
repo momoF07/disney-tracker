@@ -1,0 +1,54 @@
+name: 🧪 Trigger Test Data
+on:
+  workflow_dispatch:
+    inputs:
+      ride_name:
+        description: 'Nom de l attraction de test'
+        required: true
+        default: 'Test1'
+        type: choice
+        options:
+        - Test1
+        - Test2
+      status:
+        description: 'État de l attraction'
+        required: true
+        default: 'open'
+        type: choice
+        options:
+        - open
+        - closed
+      wait_time:
+        description: 'Temps d attente (en minutes)'
+        required: true
+        default: '15'
+      minutes_ago:
+        description: 'Post-dater le log (ex: 30 pour simuler un log il y a 30min)'
+        required: true
+        default: '0'
+
+jobs:
+  inject-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install supabase requests pytz
+
+      - name: Run Test Script
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          python test_manager.py \
+          "${{ github.event.inputs.ride_name }}" \
+          "${{ github.event.inputs.status }}" \
+          "${{ github.event.inputs.wait_time }}" \
+          "${{ github.event.inputs.minutes_ago }}"

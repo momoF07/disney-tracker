@@ -1,203 +1,222 @@
-# emojis.py
+import streamlit as st
+import streamlit.components.v1 as components
+from datetime import time
+from modules.emojis import get_rides_by_zone, RIDES_DLP, RIDES_DAW
+from modules.special_hours import ANTICIPATED_CLOSINGS, FANTASYLAND_EARLY_CLOSE
+from config import DLP_CLOSING, DAW_CLOSING
 
-# Structure organisée par Parc > Land > Attraction: Emoji
-PARKS_DATA = {
-    "Disneyland Park": {
-        "MAINSTREET": {
-            "Disneyland Railroad Main Street Station": "🚉",
-            "Main Street Vehicles": "🚔",
-        },
-        "FRONTIERLAND": {
-            "Big Thunder Mountain": "⛰️",
-            "Phantom Manor": "👻",
-            "Thunder Mesa Riverboat Landing": "🚢",
-            "Rustler Roundup Shootin' Gallery": "🎯",
-            "Disneyland Railroad Frontierland Depot": "🚂",
-            "Frontierland Playground": "🌵",
-        },
-        "ADVENTURELAND": {
-            "Pirates of the Caribbean": "⚔️",
-            "Indiana Jones™ and the Temple of Peril": "🤠",
-            "La Cabane des Robinson": "🌳",
-            "Adventure Isle": "🏝️",
-            "Pirate Galleon": "🏴‍☠️",
-            "Pirates' Beach": "🏖️",
-            "Le Passage Enchanté d'Aladdin": "🧞",
-        },
-        "FANTASYLAND": {
-            "Peter Pan's Flight": "🧚",
-            "it's a small world": "🌍",
-            "Dumbo the Flying Elephant": "🐘",
-            "Mad Hatter's Tea Cups": "☕",
-            "Le Carrousel de Lancelot": "🎠",
-            "Blanche-Neige et les Sept Nains®": "🍎",
-            "Les Voyages de Pinocchio": "🤥",
-            "Alice's Curious Labyrinth": "🃏",
-            "Casey Jr. – le Petit Train du Cirque": "🚂",
-            "Le Pays des Contes de Fées, presented by Vittel": "📖",
-            "La Tanière du Dragon": "🐉",
-        },
-        "DISCOVERYLAND": {
-            "Star Wars Hyperspace Mountain": "🚀",
-            "Star Tours: The Adventures Continue*": "🌌",
-            "Buzz Lightyear Laser Blast": "🔫",
-            "Orbitron®": "🛰️",
-            "Autopia, presented by Avis": "🚗",
-            "Les Mystères du Nautilus": "🌀",
-        }
-    },
-    "Disney Adventure World": {
-        "AVENGERS CAMPUS": {
-            "Avengers Assemble: Flight Force": "🛡️",
-            "Spider-Man W.E.B. Adventure": "🕷️",
-        },
-        "WORLD OF PIXAR": {
-            "Ratatouille : L’Aventure Totalement Toquée de Rémy​": "🐭",
-            "RC Racer": "🏎️",
-            "Slinky® Dog Zigzag Spin": "🐶",
-            "Toy Soldiers Parachute Drop": "🪂",
-            "Cars ROAD TRIP": "🌵",
-        },
-        "PRODUCTION 3": {
-            "Les Tapis Volants - Flying Carpets Over Agrabah®": "🧞",
-            "Crush's Coaster": "🐢",
-            "The Twilight Zone Tower of Terror": "🏨",
-            "Cars Quatre Roues Rallye": "🏁",
-        },
-        "WORLD OF FROZEN": {
-            "Entry to World of Frozen": "❄️",
-            "Frozen Ever After": "⛄",
-        },
-        "ADVENTURE WAY": {
-            "Raiponce Tangled Spin": "🍳",
-        }
+def render_quick_filters(options, all_pannes, heure_actuelle):
+    """Affiche les boutons de raccourcis avec séparateurs de parcs"""
+    
+    # Injection du style pour les séparateurs textuels
+    st.markdown("""
+        <style>
+            .park-divider {
+                display: flex;
+                align-items: center;
+                text-align: center;
+                margin: 25px 0 15px 0;
+                color: #64748b;
+            }
+            .park-divider::before, .park-divider::after {
+                content: '';
+                flex: 1;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            .park-divider:not(:empty)::before { margin-right: .75em; }
+            .park-divider:not(:empty)::after { margin-left: .75em; }
+            
+            .park-name {
+                font-size: 10px;
+                font-weight: 800;
+                text-transform: uppercase;
+                letter-spacing: 2px;
+                color: #94a3b8;
+            }
+            .class-name {
+                font-size: 14px;
+                font-weight: 800;
+                text-transform: uppercase;
+                letter-spacing: 2px;
+                color: #94a3b8;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # --- SÉPARATEUR : ACCÈS RAPIDE ---
+    st.markdown('<div class="park-divider"><span class="class-name">Accès Rapide</span></div>', unsafe_allow_html=True)
+
+    st.write("")
+    st.write("")
+
+    # --- LIGNE 1 : FILTRES GLOBAUX & ÉTATS ---
+    c1, c2, c3, c4, c5 = st.columns(5)
+    with c1:
+        if st.button("🏰 DLP", key="btn_dlp", use_container_width=True):
+            st.query_params["fav"] = [r for r in options if r in RIDES_DLP]
+            st.rerun()
+    with c2:
+        if st.button("🎬 DAW", key="btn_daw", use_container_width=True):
+            st.query_params["fav"] = [r for r in options if r in RIDES_DAW]
+            st.rerun()
+    with c3:
+        if st.button("⚠️ 101", key="btn_101", use_container_width=True):
+            st.query_params["fav"] = [p['ride'] for p in all_pannes if p['statut'] == "EN_COURS"]
+            st.rerun()
+    with c4:
+        if st.button("⏪ 102", key="btn_102", use_container_width=True):
+            rides_with_incidents = list(set([p['ride'] for p in all_pannes]))
+            st.query_params["fav"] = rides_with_incidents
+            st.rerun()
+    with c5:
+        if st.button("🏁 FERMÉ", key="btn_ferme", use_container_width=True):
+            closed_rides = []
+            for r in options:
+                is_daw_check = any(a.lower() in r.lower() for a in RIDES_DAW)
+                if r in ANTICIPATED_CLOSINGS: h_f_check = ANTICIPATED_CLOSINGS[r]
+                elif r in FANTASYLAND_EARLY_CLOSE: h_f_check = time(DLP_CLOSING.hour - 1, DLP_CLOSING.minute)
+                else: h_f_check = DAW_CLOSING if is_daw_check else DLP_CLOSING
+                if heure_actuelle >= h_f_check: closed_rides.append(r)
+            st.query_params["fav"] = closed_rides
+            st.rerun()
+
+    # --- SÉPARATEUR : DISNEYLAND PARK ---
+    st.markdown('<div class="park-divider"><span class="park-name">Disneyland Park</span></div>', unsafe_allow_html=True)
+
+    c7, c8, c9, c10, c11 = st.columns(5)
+    with c7:
+        if st.button("🇺🇸 MS", key="btn_ms", use_container_width=True):
+            st.query_params["fav"] = get_rides_by_zone("*MS", options, all_pannes)
+            st.rerun()
+    with c8:
+        if st.button("🤠 FRONTIER", key="btn_frontier", use_container_width=True):
+            st.query_params["fav"] = get_rides_by_zone("*FRONTIER", options, all_pannes)
+            st.rerun()
+    with c9:
+        if st.button("🏴‍☠️ ADVENTURE", key="btn_adventure", use_container_width=True):
+            st.query_params["fav"] = get_rides_by_zone("*ADVENTURE", options, all_pannes)
+            st.rerun()
+    with c10:
+        if st.button("🧚 FANTASY", key="btn_fantasy", use_container_width=True):
+            st.query_params["fav"] = get_rides_by_zone("*FANTASY", options, all_pannes)
+            st.rerun()
+    with c11:
+        if st.button("🚀 DISCO", key="btn_disco", use_container_width=True):
+            st.query_params["fav"] = get_rides_by_zone("*DISCO", options, all_pannes)
+            st.rerun()
+
+    # --- SÉPARATEUR : ADVENTURE WORLD ---
+    st.markdown('<div class="park-divider"><span class="park-name">Disney Adventure World</span></div>', unsafe_allow_html=True)
+
+    c12, c13, c14, c15, c16 = st.columns(5)
+    with c12:
+        if st.button("💥 CAMPUS", key="btn_campus", use_container_width=True):
+            st.query_params["fav"] = get_rides_by_zone("*CAMPUS", options, all_pannes)
+            st.rerun()
+    with c13:
+        if st.button("🧸 PIXAR", key="btn_pixar", use_container_width=True):
+            st.query_params["fav"] = get_rides_by_zone("*PIXAR", options, all_pannes)
+            st.rerun()
+    with c14:
+        if st.button("🎥 COURTYARD", key="btn_courtyard", use_container_width=True):
+            st.query_params["fav"] = get_rides_by_zone("*COURTYARD", options, all_pannes)
+            st.rerun()
+    with c15:
+        if st.button("❄️ FROZEN", key="btn_frozen", use_container_width=True):
+            st.query_params["fav"] = get_rides_by_zone("*FROZEN", options, all_pannes)
+            st.rerun()
+    with c16:
+        if st.button("🌳 WAY", key="btn_way", use_container_width=True):
+            st.query_params["fav"] = get_rides_by_zone("*WAY", options, all_pannes)
+            st.rerun()
+
+# --- SÉPARATEUR : Global ---
+    st.markdown('<div class="park-divider"><span class="park-name">Global</span></div>', unsafe_allow_html=True)
+
+    # --- BOUTON DE NETTOYAGE ---
+    if st.button("🌐 TOUT SÉLECTIONNER", key="btn_tout", use_container_width=True):
+            st.query_params["fav"] = options
+            st.rerun()
+    if st.button("🧹 VIDER LA SÉLECTION", key="btn_vider", use_container_width=True):
+        st.query_params["fav"] = []
+        st.rerun()
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# --- SÉPARATEUR : --- ---
+    st.markdown('<div class="park-divider"></div>', unsafe_allow_html=True)
+
+
+    components.html("""
+<script>
+    function styleFilterButtons() {
+        const colorMap = {
+            // --- Disneyland Park global ---
+            'DLP':       { border: '#a78bfa', glow: '#a78bfa' }, // Violet château
+
+            // --- DAW global ---
+            'DAW':       { border: '#fb923c', glow: '#fb923c' }, // Orange DAW général
+
+            // --- Status ---
+            '101':       { border: '#f87171', glow: '#f87171' },
+            '102':       { border: '#f87171', glow: '#f87171' },
+            'FERMÉ':     { border: '#f87171', glow: '#f87171' },
+
+            // --- Disneyland Park : lands ---
+            'MS':        { border: '#fcd34d', glow: '#fcd34d' }, // Jaune/crème Main Street USA années 1900
+            'FRONTIER':  { border: '#c17f3a', glow: '#c17f3a' }, // Ocre terre Far West / Big Thunder
+            'ADVENTURE': { border: '#4ade80', glow: '#4ade80' }, // Vert jungle tropicale
+            'FANTASY':   { border: '#e879f9', glow: '#e879f9' }, // Rose/mauve château Sleeping Beauty
+            'DISCO':     { border: '#fbbf24', glow: '#fbbf24' }, // Or bronze Jules Verne / rétro-futuriste
+
+            // --- Disney Adventure World : zones ---
+            'CAMPUS':    { border: '#f87171', glow: '#f87171' }, // Rouge Marvel Avengers
+            'PIXAR':     { border: '#38bdf8', glow: '#38bdf8' }, // Bleu ciel Pixar / Nemo / Finding
+            'COURTYARD': { border: '#d4ac0d', glow: '#d4ac0d' }, // Or Art Déco World Premiere Plaza
+            'FROZEN':    { border: '#bae6fd', glow: '#bae6fd' }, // Bleu glacé Arendelle
+            'WAY':       { border: '#86efac', glow: '#86efac' }, // Vert art nouveau Adventure Way
+        };
+
+        const doc = window.parent.document;
+        doc.querySelectorAll('button').forEach(btn => {
+            if (btn._styledV2) return;
+            const text = btn.innerText.trim().toUpperCase();
+            for (const [key, colors] of Object.entries(colorMap)) {
+                if (text.includes(key)) {
+                    btn._styledV2 = true;
+
+                    // État normal : border subtil + teinte de fond légère
+                    btn.style.setProperty('border', `1px solid ${colors.border}50`, 'important');
+                    btn.style.setProperty('color', colors.border, 'important');
+                    btn.style.setProperty('background', `${colors.border}0d`, 'important');
+                    btn.style.setProperty('transition', 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)', 'important');
+
+                    btn.addEventListener('mouseenter', () => {
+                        btn.style.setProperty('border', `1px solid ${colors.border}cc`, 'important');
+                        btn.style.setProperty('color', '#ffffff', 'important');
+                        btn.style.setProperty('background', `${colors.border}25`, 'important');
+                        btn.style.setProperty('box-shadow', 
+                            `0 0 16px ${colors.border}40, 0 0 4px ${colors.border}30, inset 0 1px 0 ${colors.border}30`, 
+                            'important');
+                        btn.style.setProperty('transform', 'translateY(-2px) scale(1.02)', 'important');
+                    });
+                    btn.addEventListener('mouseleave', () => {
+                        btn.style.setProperty('border', `1px solid ${colors.border}50`, 'important');
+                        btn.style.setProperty('color', colors.border, 'important');
+                        btn.style.setProperty('background', `${colors.border}0d`, 'important');
+                        btn.style.setProperty('box-shadow', 'none', 'important');
+                        btn.style.setProperty('transform', 'translateY(0) scale(1)', 'important');
+                    });
+                    break;
+                }
+            }
+        });
     }
-}
 
-# --- FONCTIONS UTILITAIRES ---
+    setTimeout(styleFilterButtons, 500);
+    setTimeout(styleFilterButtons, 1500);
 
-RIDES_DLP = [attr for land in PARKS_DATA["Disneyland Park"].values() for attr in land.keys()]
-RIDES_DAW = [attr for land in PARKS_DATA["Disney Adventure World"].values() for attr in land.keys()]
-
-def get_emoji(name):
-    """Parcourt la structure pour trouver l'émoji correspondant au nom"""
-    if "Test" in name:
-        return "🤖"
-    for park, lands in PARKS_DATA.items():
-        for land, attractions in lands.items():
-            for attr_name, emoji in attractions.items():
-                if attr_name.lower() in name.lower():
-                    return emoji
-    return "🎡"
-
-def get_rides_by_zone(zone_code, all_rides_list, all_pannes=[]):
-    """
-    Filtre les attractions selon les raccourcis parcs, les LANDS ou l'état des pannes.
-    """
-    zone_code = zone_code.upper().replace("*", "").strip()
-    
-    # --- 1. LOGIQUE SPÉCIFIQUE (TEST / 101 / 102) ---
-    
-    # *TEST : Uniquement les attractions de test
-    if zone_code == "TEST":
-        return [r for r in all_rides_list if "test" in r.lower()]
-
-    # *101 : Attractions ACTUELLEMENT en panne
-    if zone_code == "101":
-        en_panne_now = [p['ride'] for p in all_pannes if p['statut'] == "EN_COURS"]
-        return [r for r in all_rides_list if r in en_panne_now]
-
-    # *102 : Attractions qui ONT EU au moins une panne aujourd'hui
-    if zone_code == "102":
-        ont_eu_panne = list(set([p['ride'] for p in all_pannes]))
-        return [r for r in all_rides_list if r in ont_eu_panne]
-
-    # --- 2. LOGIQUE GLOBALE & ALIAS ---
-    if zone_code == "ALL":
-        return all_rides_list
-        
-    ALIAS_MAP = {
-        "MS": "MAINSTREET", 
-        "MAINSTREET": "MAINSTREET",
-        
-        "FRONTIER": "FRONTIERLAND", 
-        "FRONTIERLAND": "FRONTIERLAND",
-        
-        "ADVENTURE": "ADVENTURELAND", 
-        "ADVENTURELAND": "ADVENTURELAND",
-        
-        "FANTASY": "FANTASYLAND", 
-        "FANTASYLAND": "FANTASYLAND",
-        
-        "DISCO": "DISCOVERYLAND", 
-        "DISCOVERYLAND": "DISCOVERYLAND",
-        
-        "AVENGERS": "AVENGERS CAMPUS", 
-        "CAMPUS": "AVENGERS CAMPUS",
-        "AVENGERS-CAMPUS": "AVENGERS CAMPUS",
-        
-        "PIXAR": "WORLD OF PIXAR", 
-        "WORLD-OF-PIXAR": "WORLD OF PIXAR",
-        "PROD4": "WORLD OF PIXAR", 
-        "PRODUCTION4": "WORLD OF PIXAR",
-        
-        "PROD3": "PRODUCTION 3", 
-        "PRODUCTION3": "PRODUCTION 3",
-        "COURTYARD": "PRODUCTION 3",
-        
-        "WOF": "WORLD OF FROZEN", 
-        "FROZEN": "WORLD OF FROZEN", 
-        "WORLD-OF-FROZEN": "WORLD OF FROZEN",
-        
-        "WAY": "ADVENTURE WAY", 
-        "ADVENTURE-WAY": "ADVENTURE WAY"
-    }
-
-    targets = []
-    # --- GESTION PARCS ---
-    if zone_code == "DLP":
-        for land in PARKS_DATA["Disneyland Park"].values():
-            targets.extend(land.keys())
-    elif zone_code in ["DAW", "WDS", "STUDIOS"]:
-        for land in PARKS_DATA["Disney Adventure World"].values():
-            targets.extend(land.keys())
-
-    # --- GESTION LANDS ---
-    else:
-        target_land_name = ALIAS_MAP.get(zone_code, zone_code)
-        for park, lands in PARKS_DATA.items():
-            for land_name, attractions in lands.items():
-                if target_land_name in land_name.upper():
-                    targets.extend(attractions.keys())
-
-    # Filtrage final
-    matched = []
-    for ride in all_rides_list:
-        if any(target.lower() in ride.lower() for target in targets):
-            matched.append(ride)
-    
-    return matched
-
-# Liste plate de toutes les attractions pour les sélecteurs de stats
-ALL_RIDES_LIST = RIDES_DLP + RIDES_DAW
-
-# Mapping pour les titres propres dans l'UI
-LAND_DISPLAY_NAMES = {
-    "DLP": "Disneyland Park (Complet)",
-    "DAW": "Disney Adventure World (Complet)",
-    "FANTASY": "Fantasyland",
-    "DISCO": "Discoveryland",
-    "FRONTIER": "Frontierland",
-    "ADVENTURE": "Adventureland",
-    "MS": "Main Street",
-    "AVENGERS": "Avengers Campus",
-    "PIXAR": "World of Pixar",
-    "PROD3": "Production Courtyard",
-    "WOF": "World of Frozen"
-}
-
-STYLES = {
-    "green": "green",
-    "orange": "orange",
-    "red": "red"
-}
+    const observer = new MutationObserver(() => styleFilterButtons());
+    observer.observe(window.parent.document.body, { childList: true, subtree: true });
+</script>
+""", height=0)
