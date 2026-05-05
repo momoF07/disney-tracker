@@ -76,17 +76,68 @@ def send_dashboard(all_pannes, schedules, weather):
     if not WEBHOOK_DASHBOARD: return
     global MESSAGE_ID
 
-    now    = datetime.now(paris_tz).strftime("%H:%M:%S")
-    fields = []
+    from modules.emojis import PARKS_DATA
+    from modules.special_hours import ANTICIPATED_CLOSINGS, EMT_EARLY_OPEN
+    from config import PARK_OPENING, DLP_CLOSING, DAW_CLOSING, EMT_OPENING
+    from modules.rehabilitations import REHAB_LIST
+
+    now_paris    = datetime.now(paris_tz)
+    now          = now_paris.strftime("%H:%M:%S")
+    heure_act    = now_paris.time()
+    today        = now_paris.date()
+    fields       = []
+
+    # Récupère l'état live depuis Supabase
+    try:
+        live_db    = supabase.table("disney_live").select("*").execute()
+        status_db  = supabase.table("daily_status").select("*").execute()
+        live_map   = {item['ride_name']: item for item in live_db.data}
+        status_map = {item['ride_name']: item for item in status_db.data}
+    except:
+        live_map   = {}
+        status_map = {}
+
+    # Pannes en cours
+    pannes_en_cours = {p["ride"] for p in all_pannes if p["statut"] == "EN_COURS"}
+
+    def get_ride_status(name):
+        data = live_map.get(name)
+        if not data:
+            return "⚪", "--"
+        is_open   = data.get('is_open', False)
+        wait      = data.get('wait_time', 0)
+        info      = status_map.get(name, {})
+        is_daw    = name in [a for land in PARKS_DATA["Disney Adventure World"].values() for a in land]
+
+        # Rehab
+        rehab = REHAB_LIST.get(name)
+        in_rehab = False
+        if rehab:
+            debut = rehab.get('debut')
+            fin   = rehab.get('fin')
+            in_rehab = True if (not debut or not fin) else (debut <= today <= fin)
+
+        rehab_flag = in_rehab or (
+            not info.get('opened_yesterday', True)
+            and not info.get('has_opened_today', False)
+            and not is_open
+        )
+
+        h_f = ANTICIPATED_CLOSINGS.get(name, DAW_CLOSING if is_daw else DLP_CLOSING)
+        h_o = EMT_OPENING if name in EMT_EARLY_OPEN else PARK_OPENING
+
+        if rehab_flag:              return "⚫", "REHAB"
+        elif heure_act >= h_f:      return "🔴", "FERMÉ"
+        elif heure_act < h_o and not is_open: return "🔵", "ATTENTE"
+        elif not is_open and not info.get('has_opened_today', False): return "🟣", "RETARDÉ"
+        elif not is_open:           return "🟠", f"101 {[p['debut'] for p in all_pannes if p['ride']==name and p['statut']=='EN_COURS'][0] if name in pannes_en_cours else ''}"
+        else:                       return "🟢", f"{int(wait)}min"
 
     # Météo
     if weather and weather.get("success"):
         fields.append({
             "name":   f"{weather['emoji']} Météo",
-            "value":  (
-                f"**{weather['desc']}** — `{weather['temp']}°C` (Ressenti `{weather['feels_like']}°`)\n"
-                f"💨 {weather['wind']} · 🚩 {weather['gusts']}"
-            ),
+            "value":  f"**{weather['desc']}** — `{weather['temp']}°C` (Ressenti `{weather['feels_like']}°`) · 💨 {weather['wind']} · 🚩 {weather['gusts']}",
             "inline": False
         })
 
@@ -100,26 +151,48 @@ def send_dashboard(all_pannes, schedules, weather):
             hours_txt += f"{emoji} **{name}** : `{p['opening_time'][:5]}` → `{p['closing_time'][:5]}`\n"
         fields.append({"name": "🕒 Horaires", "value": hours_txt.strip(), "inline": False})
 
-    # Incidents en cours
-    incidents = [(p["ride"], p["debut"]) for p in all_pannes if p["statut"] == "EN_COURS"]
-    if incidents:
-        inc_txt = "\n".join([f"🟠 **{r}** — depuis {h}" for r, h in incidents])
-        fields.append({"name": f"⚠️ {len(incidents)} incident(s) en cours", "value": inc_txt, "inline": False})
-    else:
-        fields.append({"name": "✅ État général", "value": "Aucun incident en cours", "inline": False})
+    # Attractions par parc
+    for park_name, lands in PARKS_DATA.items():
+        park_emoji = "🏰" if "Disneyland" in park_name else "🎬"
+        lines = []
+        for land, attractions in lands.items():
+            lines.append(f"**{land.title()}**")
+            for attr_name in attractions:
+                emoji_s, detail = get_ride_status(attr_name)
+                lines.append(f"{emoji_s} {attr_name} — `{detail}`")
+
+        # Découpe en chunks de 1024 chars max
+        chunk = ""
+        chunk_num = 0
+        for line in lines:
+            if len(chunk) + len(line) + 1 > 1020:
+                fields.append({
+                    "name":   f"{park_emoji} {park_name}" + (f" (suite {chunk_num})" if chunk_num > 0 else ""),
+                    "value":  chunk.strip(),
+                    "inline": False
+                })
+                chunk     = line + "\n"
+                chunk_num += 1
+            else:
+                chunk += line + "\n"
+        if chunk.strip():
+            fields.append({
+                "name":   f"{park_emoji} {park_name}" + (f" (suite {chunk_num})" if chunk_num > 0 else ""),
+                "value":  chunk.strip(),
+                "inline": False
+            })
 
     embed = {
         "title":       "🏰 Disney Live Board",
         "description": f"Dernière mise à jour : **{now}**",
         "color":       0x6d28d9,
-        "fields":      fields,
-        "footer":      {"text": "Mis à jour toutes les 10 minutes"}
+        "fields":      fields[:25],  # Discord limite à 25 fields
+        "footer":      {"text": "Mis à jour toutes les 5 minutes"}
     }
 
     try:
         if MESSAGE_ID:
-            url = f"{WEBHOOK_DASHBOARD}/messages/{MESSAGE_ID}"
-            res = req.patch(url, json={"embeds": [embed]})
+            res = req.patch(f"{WEBHOOK_DASHBOARD}/messages/{MESSAGE_ID}", json={"embeds": [embed]})
             if res.status_code == 404:
                 MESSAGE_ID = None
 
