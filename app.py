@@ -12,6 +12,7 @@ from streamlit_autorefresh import st_autorefresh
 from ui.styles import apply_custom_style
 from ui.comp import render_weather_card, render_ride_card, render_api_info, render_park_hours, render_upcoming_shows
 from ui.popup import render_shortcuts_popover, render_history_expander
+from modules.rehabilitations import REHAB_LIST
 from modules.weather import get_disney_weather, get_maintenance_weather
 from modules.emojis import get_emoji, get_rides_by_zone, RIDES_DLP, RIDES_DAW
 from modules.special_hours import ANTICIPATED_CLOSINGS, FANTASYLAND_EARLY_CLOSE, EMT_EARLY_OPEN, SPECIAL_OPENING_HOURS
@@ -247,19 +248,21 @@ if not df_live.empty:
                 )
 
         elif sort_mode == "🛠️ Rehab":
-            has_rehab = any(
-                not status_map.get(r, {}).get('opened_yesterday', True)
-                for r in selected_options
-            )
-            if not has_rehab:
+            from modules.rehabilitations import REHAB_LIST
+            today = datetime.now(paris_tz).date()
+            
+            # Une attraction est en rehab si elle est dans REHAB_LIST et qu'on est dans la période
+            def is_in_rehab(ride):
+                r = REHAB_LIST.get(ride)
+                return r and r['debut'] <= today <= r['fin']
+            
+            rides_en_rehab = [r for r in selected_options if is_in_rehab(r)]
+            
+            if not rides_en_rehab:
                 st.info("🛠️ Pas de réhabilitations en ce moment sur la sélection.")
                 selected_options = []
             else:
-                selected_options = sorted(
-                    selected_options,
-                    key=lambda r: (not status_map.get(r, {}).get('opened_yesterday', True), r),
-                    reverse=True
-                )
+                selected_options = sorted(rides_en_rehab, key=lambda r: REHAB_LIST[r]['debut'])
 
         else: # Mode Nom
             selected_options = sorted(selected_options, reverse=is_desc)
@@ -294,37 +297,47 @@ if not df_live.empty:
                 h_o = SPECIAL_OPENING_HOURS[ride]
             
             # --- 2. DÉTERMINATION DU STATUT (LOGIQUE PRIORISÉE) ---
-            rehab_flag = not info.get('opened_yesterday', True) and not info.get('has_opened_today', False) and not data['is_open']
-            
+            from modules.rehabilitations import REHAB_LIST
+            today = datetime.now(paris_tz).date()
+
+            rehab_info = REHAB_LIST.get(ride)
+            in_rehab   = bool(rehab_info and rehab_info['debut'] <= today <= rehab_info['fin'])
+            rehab_flag = in_rehab or (
+                not info.get('opened_yesterday', True)
+                and not info.get('has_opened_today', False)
+                and not data['is_open']
+            )
+
             # PRIORITÉ 1 : Travaux
-            if rehab_flag: 
+            if rehab_flag:
                 sub, wait, bg, style, pill = "🛠️ Travaux détectés", "REHAB", "bg-grey", "card-grey", "TRAVAUX"
-            
-            # PRIORITÉ 2 : Fermeture (On retire le "and not data['is_open']" pour plus de fiabilité)
-            # Si l'heure actuelle dépasse h_f, c'est FERMÉ (même si l'API n'est pas encore à jour)
-            elif heure_actuelle >= h_f: 
+
+            # PRIORITÉ 2 : Fermeture
+            elif heure_actuelle >= h_f:
                 sub, wait, bg, style, pill = f"🏁 Fermé à {h_f.strftime('%H:%M')}", "F I N", "bg-bordeaux", "card-bordeaux", "FERMÉ"
-            
+
             # PRIORITÉ 3 : Avant l'ouverture
-            elif heure_actuelle < h_o and not data['is_open']: 
+            elif heure_actuelle < h_o and not data['is_open']:
                 sub, wait, bg, style, pill = "🕒 En attente", "- - -", "bg-blue", "card-blue", "ATTENTE"
 
             # PRIORITÉ 4 : Ouverture retardée
-            # Si l'heure d'ouverture est passée, qu'elle est fermée et qu'elle n'a JAMAIS ouvert du jour
             elif not data['is_open'] and not info.get('has_opened_today', False):
                 sub, wait, bg, style, pill = "⏳ Ouverture retardée", "- - -", "bg-purple", "card-purple", "RETARDÉ"
-            
-            # PRIORITÉ 5 : Incident (Seulement si on est dans les horaires d'ouverture)
-            elif not data['is_open']: 
+
+            # PRIORITÉ 5 : Incident
+            elif not data['is_open']:
                 sub, wait, bg, style, pill = f"⚠️ Panne depuis {panne_act['debut'].strftime('%H:%M')}" if panne_act else "⚠️ Interruption", "- - -", "bg-orange", "card-orange", "INCIDENT"
-            
+
             # PAR DÉFAUT : Ouvert
-            else: 
+            else:
                 sub, wait, bg, style, pill = "✅ Opérationnel", int(data['wait_time']), "bg-green", "card-green", "OUVERT"
 
             # --- 3. AFFICHAGE ---
             render_ride_card(ride, sub, wait, bg, style, pill)
-            
+
+            if rehab_flag and rehab_info:
+                st.caption(f"🛠️ En réhabilitation depuis le {rehab_info['debut'].strftime('%d/%m')} — {rehab_info['msg']}")
+
             with st.expander("📜 Historique"):
                 h_p_clean = [p for p in all_pannes if p['ride'] == ride and (p['statut'] == "EN_COURS" or p['duree'] >= 2)]
                 p_triees = sorted(h_p_clean, key=lambda x: x['debut'], reverse=True)
