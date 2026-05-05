@@ -137,7 +137,7 @@ def render_upcoming_shows(schedules):
     if not schedules: return
 
     SMALL_SHOWS  = []
-    HIDDEN_SHOWS = ["mickey's philharmagic", "reserved viewing", "animation academy"]
+    HIDDEN_SHOWS = ["reserved viewing", "animation academy"]
 
     now_paris = dt.datetime.now(ZoneInfo("Europe/Paris"))
     now_str   = now_paris.strftime("%H:%M")
