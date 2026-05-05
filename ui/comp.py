@@ -209,7 +209,6 @@ def render_park_hours(schedules):
     )
 
     # --- RADIO DISNEY VILLAGE ---
-    # --- RADIO DISNEY VILLAGE ---
     radio_html = """<!DOCTYPE html>
 <html>
 <head>
@@ -218,14 +217,25 @@ def render_park_hours(schedules):
   * { margin:0; padding:0; box-sizing:border-box; }
 
   body {
-    background: transparent;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 22px;
     font-family: Outfit, sans-serif;
+    padding: 14px 20px;
+    overflow: hidden;
+  }
+
+  .label {
+    font-size: 8.5px; color: rgba(255,255,255,0.25);
+    font-weight: 700; text-transform: uppercase;
+    letter-spacing: 2px; margin-bottom: 10px;
+    display: block;
+  }
+
+  .player {
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 0 4px;
-    height: 100vh;
-    overflow: hidden;
   }
 
   @keyframes rpulse { 0%,100%{opacity:1; transform:scale(1);} 50%{opacity:0.4; transform:scale(0.8);} }
@@ -234,111 +244,77 @@ def render_park_hours(schedules):
   @keyframes eq3 { 0%,100%{height:6px;} 50%{height:16px;} }
   @keyframes eq4 { 0%,100%{height:13px;} 50%{height:4px;} }
 
-  .eq {
-    display: flex;
-    align-items: flex-end;
-    gap: 3px;
-    height: 18px;
-    flex-shrink: 0;
-  }
-  .eq span {
-    width: 3px;
-    border-radius: 3px;
-    background: linear-gradient(to top, #a78bfa, #7dd3fc);
-    transition: height 0.3s ease;
-  }
-  .eq span:nth-child(1) { animation: eq1 0.85s ease-in-out infinite; }
-  .eq span:nth-child(2) { animation: eq2 0.65s ease-in-out infinite; }
-  .eq span:nth-child(3) { animation: eq3 1.05s ease-in-out infinite; }
-  .eq span:nth-child(4) { animation: eq4 0.75s ease-in-out infinite; }
-  .eq.stopped span { animation: none !important; height: 3px !important; opacity: 0.25; }
+  .eq { display:flex; align-items:flex-end; gap:3px; height:18px; flex-shrink:0; }
+  .eq span { width:3px; border-radius:3px; background:linear-gradient(to top,#a78bfa,#7dd3fc); }
+  .eq span:nth-child(1) { animation:eq1 0.85s ease-in-out infinite; }
+  .eq span:nth-child(2) { animation:eq2 0.65s ease-in-out infinite; }
+  .eq span:nth-child(3) { animation:eq3 1.05s ease-in-out infinite; }
+  .eq span:nth-child(4) { animation:eq4 0.75s ease-in-out infinite; }
+  .eq.stopped span { animation:none !important; height:3px !important; opacity:0.2; }
 
-  .info { flex: 1; min-width: 0; }
-  .info .name {
-    font-size: 12px; font-weight: 700;
-    color: rgba(255,255,255,0.8);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .info .sub {
-    font-size: 9px; color: rgba(255,255,255,0.25);
-    font-weight: 500; margin-top: 2px;
-    white-space: nowrap;
-  }
+  .info { flex:1; min-width:0; }
+  .info .name { font-size:12px; font-weight:700; color:rgba(255,255,255,0.8); }
+  .info .sub  { font-size:9px; color:rgba(255,255,255,0.22); font-weight:500; margin-top:2px; }
 
   #btn-mute {
-    width: 34px; height: 34px;
-    border-radius: 50%; border: none;
-    background: linear-gradient(135deg, #a78bfa, #7dd3fc);
-    box-shadow: 0 0 16px rgba(167,139,250,0.4);
-    font-size: 15px; cursor: pointer; flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    width:34px; height:34px; border-radius:50%; border:none;
+    background:linear-gradient(135deg,#a78bfa,#7dd3fc);
+    box-shadow:0 0 16px rgba(167,139,250,0.4);
+    font-size:15px; cursor:pointer; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    transition:transform 0.15s ease, box-shadow 0.15s ease;
   }
-  #btn-mute:hover {
-    transform: scale(1.12);
-    box-shadow: 0 0 24px rgba(167,139,250,0.6);
-  }
-  #btn-mute:active { transform: scale(0.93); }
+  #btn-mute:hover { transform:scale(1.12); box-shadow:0 0 24px rgba(167,139,250,0.6); }
+  #btn-mute:active { transform:scale(0.93); }
 
-  .vol-wrap {
-    display: flex; align-items: center; gap: 6px; flex-shrink: 0;
-  }
-  input[type=range] {
-    width: 72px; height: 3px; border-radius: 3px;
-    accent-color: #a78bfa; cursor: pointer;
-  }
-  .vol-pct {
-    font-size: 9px; color: #475569;
-    min-width: 26px; text-align: right;
-    font-weight: 600;
-  }
+  .vol-wrap { display:flex; align-items:center; gap:6px; flex-shrink:0; }
+  input[type=range] { width:72px; height:3px; border-radius:3px; accent-color:#a78bfa; cursor:pointer; }
+  .vol-pct { font-size:9px; color:#475569; min-width:26px; text-align:right; font-weight:600; }
 
-  .live {
-    display: flex; align-items: center; gap: 4px; flex-shrink: 0;
-  }
+  .live { display:flex; align-items:center; gap:4px; flex-shrink:0; }
   .live-dot {
-    width: 5px; height: 5px; border-radius: 50%;
-    background: #34d399; box-shadow: 0 0 8px #34d399;
-    animation: rpulse 2s ease-in-out infinite;
+    width:5px; height:5px; border-radius:50%;
+    background:#34d399; box-shadow:0 0 8px #34d399;
+    animation:rpulse 2s ease-in-out infinite;
   }
-  .live-txt {
-    font-size: 8px; color: #34d399; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 1.2px;
-  }
+  .live-txt { font-size:8px; color:#34d399; font-weight:700; text-transform:uppercase; letter-spacing:1.2px; }
 </style>
 </head>
 <body>
+  <span class="label">🎵 Radio Disney Village</span>
 
-  <div class="eq" id="eq">
-    <span></span><span></span><span></span><span></span>
-  </div>
+  <div class="player">
+    <div class="eq" id="eq">
+      <span></span><span></span><span></span><span></span>
+    </div>
 
-  <div class="info">
-    <div class="name">Radio Disney Village</div>
-    <div class="sub">🎵 Diffusion continue — Disney Village, Marne-la-Vallée</div>
-  </div>
+    <div class="info">
+      <div class="name">Radio Disney Village</div>
+      <div class="sub">Diffusion continue — Disney Village, Marne-la-Vallée</div>
+    </div>
 
-  <button id="btn-mute" onclick="toggleMute()" title="Mute / Unmute">🔇</button>
+    <button id="btn-mute" onclick="toggleMute()">🔇</button>
 
-  <div class="vol-wrap">
-    <input id="vol" type="range" min="0" max="100" value="0">
-    <span class="vol-pct" id="pct">0%</span>
-  </div>
+    <div class="vol-wrap">
+      <input id="vol" type="range" min="0" max="100" value="0">
+      <span class="vol-pct" id="pct">0%</span>
+    </div>
 
-  <div class="live">
-    <div class="live-dot"></div>
-    <span class="live-txt">En direct</span>
+    <div class="live">
+      <div class="live-dot"></div>
+      <span class="live-txt">En direct</span>
+    </div>
   </div>
 
   <audio id="audio" src="https://webradio.ice.infomaniak.ch/webradio-128.mp3" preload="none"></audio>
 
   <script>
-    var audio   = document.getElementById('audio');
-    var slider  = document.getElementById('vol');
-    var btn     = document.getElementById('btn-mute');
-    var pct     = document.getElementById('pct');
-    var eq      = document.getElementById('eq');
-    var going   = false;
+    var audio  = document.getElementById('audio');
+    var slider = document.getElementById('vol');
+    var btn    = document.getElementById('btn-mute');
+    var pct    = document.getElementById('pct');
+    var eq     = document.getElementById('eq');
+    var going  = false;
 
     audio.volume = 0;
 
@@ -353,17 +329,13 @@ def render_park_hours(schedules):
       audio.volume = v / 100;
       pct.textContent = v + '%';
       btn.textContent = v == 0 ? '🔇' : v < 50 ? '🔉' : '🔊';
-      if (v == 0) { eq.classList.add('stopped'); }
-      else        { eq.classList.remove('stopped'); }
+      eq.classList.toggle('stopped', v == 0);
     }
 
     function toggleMute() {
       boot();
-      if (audio.volume > 0) {
-        slider.value = 0; applyVol(0);
-      } else {
-        slider.value = 70; applyVol(70);
-      }
+      if (audio.volume > 0) { slider.value = 0; applyVol(0); }
+      else                  { slider.value = 70; applyVol(70); }
     }
 
     slider.addEventListener('input', function() {
@@ -374,16 +346,7 @@ def render_park_hours(schedules):
 </body>
 </html>"""
 
-    st.markdown(
-        '<div style="background:rgba(255,255,255,0.03); padding:14px 20px; border-radius:22px;'
-        'border:1px solid rgba(255,255,255,0.07); margin-bottom:16px; backdrop-filter:blur(20px);'
-        'box-shadow:0 20px 40px rgba(0,0,0,0.3);">'
-        '<div style="font-family:Outfit,sans-serif; color:rgba(255,255,255,0.25); font-size:8.5px;'
-        'font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-bottom:10px;">🎵 Radio</div>',
-        unsafe_allow_html=True
-    )
-    st.iframe(radio_html, height=50)
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.iframe(radio_html, height=100)
 
 
 def render_upcoming_shows(schedules):
