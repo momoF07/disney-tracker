@@ -262,7 +262,7 @@ def send_park_embed(park_name, lands, webhook_url, all_pannes, schedules, weathe
                 (p['debut'] for p in all_pannes if p['ride'] == attr_name and p['statut'] == 'EN_COURS'),
                 '?'
             )
-            label = f"101 depuis {debut_p}"
+            label = f"Interruption depuis {debut_p}"
         else:
             label = status
         return emoji, label
@@ -288,7 +288,7 @@ def send_park_embed(park_name, lands, webhook_url, all_pannes, schedules, weathe
         "description": f"Dernière mise à jour : **{now}**",
         "color":       0xffb3d1 if is_dlp else 0xfb923c,
         "fields":      fields[:25],
-        "footer":      {"text": "Mis à jour toutes les 10 minutes"}
+        "footer":      {"text": "Mis à jour toutes les 5 minutes"}
     }
 
     try:
