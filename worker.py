@@ -23,8 +23,6 @@ PARKS = ["dae968d5-630d-4719-8b06-3d107e944401", "ca888437-ebb4-4d50-aed2-d227f7
 WEBHOOK_NOTIFS = os.environ.get("DISCORD_WEBHOOK_NOTIFS")
 WEBHOOK_DLP    = os.environ.get("DISCORD_WEBHOOK_DLP")
 WEBHOOK_DAW    = os.environ.get("DISCORD_WEBHOOK_DAW")
-MESSAGE_ID_DLP = os.environ.get("DISCORD_MESSAGE_ID_DLP")
-MESSAGE_ID_DAW = os.environ.get("DISCORD_MESSAGE_ID_DAW")
 
 STATUS_COLORS = {
     "OUVERT":    0x10b981,
@@ -58,6 +56,31 @@ NOTIF_TRANSITIONS = {
     ("INCIDENT", "FERMETURE"),
     ("OUVERT",   "TRAVAUX"),
 }
+
+
+# ============================================================
+# UTILITAIRES
+# ============================================================
+def parse_dt(iso_str):
+    """Parse robuste d'une date ISO Supabase, compatible Python 3.10."""
+    return datetime.strptime(iso_str[:19], "%Y-%m-%dT%H:%M:%S").replace(tzinfo=pytz.utc).astimezone(paris_tz)
+
+
+def get_message_id(key):
+    """Lit un ID de message Discord depuis Supabase."""
+    try:
+        res = supabase.table("bot_config").select("value").eq("key", key).execute()
+        return res.data[0]['value'] if res.data else None
+    except:
+        return None
+
+
+def set_message_id(key, value):
+    """Sauvegarde un ID de message Discord dans Supabase."""
+    try:
+        supabase.table("bot_config").upsert({"key": key, "value": value}).execute()
+    except Exception as e:
+        print(f"⚠️ Sauvegarde ID Discord : {e}")
 
 
 # ============================================================
@@ -123,7 +146,6 @@ def compute_status(name, is_open, info, heure_act, today):
         and not is_open
     )
 
-    # Priorités identiques à app.py
     if rehab_flag:
         return "TRAVAUX", h_o, h_f
     elif heure_act >= h_f:
@@ -183,10 +205,9 @@ def get_weather_simple():
 # DASHBOARD DISCORD
 # ============================================================
 def send_park_embed(park_name, lands, webhook_url, all_pannes, schedules, weather, live_map, status_map, heure_act, today):
-    global MESSAGE_ID_DLP, MESSAGE_ID_DAW
-
     is_dlp     = "Disneyland" in park_name
     park_emoji = "🏰" if is_dlp else "🎬"
+    id_key     = "discord_message_id_dlp" if is_dlp else "discord_message_id_daw"
     now        = datetime.now(paris_tz).strftime("%H:%M:%S")
     fields     = []
 
@@ -271,22 +292,23 @@ def send_park_embed(park_name, lands, webhook_url, all_pannes, schedules, weathe
     }
 
     try:
-        mid = MESSAGE_ID_DLP if is_dlp else MESSAGE_ID_DAW
+        mid = get_message_id(id_key)
+
         if mid:
             res = req.patch(f"{webhook_url}/messages/{mid}", json={"embeds": [embed]})
             if res.status_code == 404:
+                # Message supprimé sur Discord, on en recrée un
                 mid = None
 
         if not mid:
             res = req.post(f"{webhook_url}?wait=true", json={"embeds": [embed]})
             if res.status_code == 200:
                 new_id = res.json().get("id")
-                if is_dlp:
-                    MESSAGE_ID_DLP = new_id
-                    print(f"📌 DLP Dashboard créé : ID {new_id} — ajoute DISCORD_MESSAGE_ID_DLP={new_id}")
-                else:
-                    MESSAGE_ID_DAW = new_id
-                    print(f"📌 DAW Dashboard créé : ID {new_id} — ajoute DISCORD_MESSAGE_ID_DAW={new_id}")
+                set_message_id(id_key, new_id)
+                print(f"📌 Dashboard {'DLP' if is_dlp else 'DAW'} créé : ID {new_id}")
+            else:
+                print(f"⚠️ Dashboard {park_name} : HTTP {res.status_code} — {res.text}")
+
     except Exception as e:
         print(f"⚠️ Dashboard {park_name} : {e}")
 
@@ -301,7 +323,8 @@ def send_dashboard(all_pannes, schedules, weather):
         status_db  = supabase.table("daily_status").select("*").execute()
         live_map   = {item['ride_name']: item for item in live_db.data}
         status_map = {item['ride_name']: item for item in status_db.data}
-    except:
+    except Exception as e:
+        print(f"⚠️ Chargement dashboard : {e}")
         live_map   = {}
         status_map = {}
 
@@ -334,15 +357,11 @@ def run_worker():
     status_db  = supabase.table("daily_status").select("*").execute()
     status_map = {item['ride_name']: item for item in status_db.data}
 
-    # ----------------------------------------------------------------
-    # Lecture de disney_live pour prev_open ET last_status (FIX)
-    # ----------------------------------------------------------------
+    # Lecture de disney_live pour prev_open ET last_status
     try:
         live_db       = supabase.table("disney_live").select("ride_name,is_open,last_status").execute()
-        prev_open     = {item['ride_name']: item['is_open']           for item in live_db.data}
-        prev_statuses = {item['ride_name']: item.get('last_status')   for item in live_db.data}
+        prev_statuses = {item['ride_name']: item.get('last_status') for item in live_db.data}
     except:
-        prev_open     = {}
         prev_statuses = {}
 
     all_pannes = []
@@ -371,7 +390,7 @@ def run_worker():
                     "wait_time":   wait,
                     "is_open":     is_open,
                     "last_status": new_status,
-                    "updated_at":  datetime.now().isoformat()
+                    "updated_at":  datetime.now(pytz.utc).isoformat()
                 }).execute()
 
                 # --- 2. PREMIÈRE OUVERTURE DU JOUR ---
@@ -383,28 +402,28 @@ def run_worker():
                     status_map[name] = {**info, "has_opened_today": True}
 
                 # --- 3. LOGS INCIDENTS (101) ---
-                active_panne         = supabase.table("logs_101")\
+                active_panne = supabase.table("logs_101")\
                     .select("*")\
                     .eq("ride_name", name)\
                     .is_("end_time", "null")\
                     .execute().data
+
                 theoriquement_ouvert = (h_o <= current_time < h_f)
 
                 if not is_open and theoriquement_ouvert and not active_panne:
                     supabase.table("logs_101").insert({
                         "ride_name":  name,
-                        "start_time": datetime.now().isoformat()
+                        "start_time": datetime.now(pytz.utc).isoformat()
                     }).execute()
 
                 elif is_open and active_panne:
                     supabase.table("logs_101").update({
-                        "end_time": datetime.now().isoformat()
+                        "end_time": datetime.now(pytz.utc).isoformat()
                     }).eq("id", active_panne[0]['id']).execute()
 
                 # --- 4. NOTIFICATIONS DISCORD ---
-                # Seulement si le statut a vraiment changé
                 if old_status and old_status != new_status:
-                    heure_str = current_time.strftime('%H:%M')
+                    heure_str  = current_time.strftime('%H:%M')
 
                     # Cas spécial : INCIDENT → OUVERT = Réouverture
                     notif_new = new_status
@@ -442,7 +461,7 @@ def run_worker():
         for row in resp_101.data:
             all_pannes.append({
                 "ride":   row["ride_name"],
-                "debut":  datetime.fromisoformat(row["start_time"]).astimezone(paris_tz).strftime("%H:%M"),
+                "debut":  parse_dt(row["start_time"]).strftime("%H:%M"),  # FIX parse_dt
                 "statut": "EN_COURS" if not row.get("end_time") else "TERMINEE"
             })
 
