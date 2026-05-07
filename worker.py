@@ -147,7 +147,7 @@ def compute_status(name, is_open, info, heure_act, today):
     )
 
     if rehab_flag:
-        return "TRAVAUX", h_o, h_f
+        return "RÉHABILITATION", h_o, h_f
     elif heure_act >= h_f:
         return "FERMETURE", h_o, h_f
     elif heure_act < h_o and not is_open:
@@ -155,7 +155,7 @@ def compute_status(name, is_open, info, heure_act, today):
     elif not is_open and not info.get('has_opened_today', False):
         return "RETARDÉ", h_o, h_f
     elif not is_open:
-        return "INCIDENT", h_o, h_f
+        return "INTERRUPTION", h_o, h_f
     else:
         return "OUVERT", h_o, h_f
 
