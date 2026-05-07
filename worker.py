@@ -257,7 +257,7 @@ def send_park_embed(park_name, lands, webhook_url, all_pannes, schedules, weathe
         emoji = STATUS_EMOJI.get(status, "⚪")
         if status == "OUVERT":
             label = f"{int(wait)} min"
-        elif status == "INCIDENT":
+        elif status == "INTERRUPTION":
             debut_p = next(
                 (p['debut'] for p in all_pannes if p['ride'] == attr_name and p['statut'] == 'EN_COURS'),
                 '?'
