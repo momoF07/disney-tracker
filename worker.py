@@ -37,9 +37,9 @@ STATUS_COLORS = {
 
 STATUS_EMOJI = {
     "OUVERT":    "🟢",
-    "INCIDENT":  "🟠",
+    "INTERRUPTION":  "🟠",
     "RETARDÉ":   "🟣",
-    "TRAVAUX":   "⚫",
+    "RÉHABILITATION":   "⚫",
     "FERMÉ":     "🔴",
     "ATTENTE":   "🔵",
     "FERMETURE": "🏁",
@@ -47,14 +47,14 @@ STATUS_EMOJI = {
 }
 
 NOTIF_TRANSITIONS = {
-    ("OUVERT",   "INCIDENT"),
-    ("INCIDENT", "RÉOUVERT"),
+    ("OUVERT",   "INTERRUPTION"),
+    ("INTERRUPTION", "RÉOUVERT"),
     ("ATTENTE",  "RETARDÉ"),
     ("RETARDÉ",  "OUVERT"),
     ("ATTENTE",  "OUVERT"),
     ("OUVERT",   "FERMETURE"),
-    ("INCIDENT", "FERMETURE"),
-    ("OUVERT",   "TRAVAUX"),
+    ("INTERRUPTION", "FERMETURE"),
+    ("OUVERT",   "RÉHABILITATION"),
 }
 
 
