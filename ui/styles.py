@@ -150,10 +150,10 @@ def apply_custom_style():
             border-radius: 16px;
             padding: 10px 14px;
             display: flex;
-            align-items: center;
+            align-items: stretch;
             justify-content: space-between;
             flex-grow: 1;
-            min-height: 58px;
+            min-height: 62px;
             height: auto;
             border: 1px solid rgba(255,255,255,0.07) !important;
             transition: all 0.2s ease;
@@ -197,9 +197,14 @@ def apply_custom_style():
             font-weight: 600;
             margin: 0;
             line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
             white-space: normal;
             word-break: break-word;
         }
+
 
         .ride-sub-status {
             font-family: 'Mulish', sans-serif;
@@ -241,8 +246,9 @@ def apply_custom_style():
             border: 1px solid rgba(255,255,255,0.08);
             position: relative;
             overflow: hidden;
+            height: auto;
             align-self: stretch;
-            min-height: 58px;
+            min-height: 62px;
         }
 
         .ride-right-wait::before {
