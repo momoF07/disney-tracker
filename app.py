@@ -351,7 +351,7 @@ if not df_live.empty:
             # --- HISTORIQUE : masqué si en réhab ---
             if not rehab_flag:
                 with st.expander("📜 Historique"):
-                    h_p_clean = [p for p in all_pannes if p['ride'] == ride and (p['statut'] == "EN_COURS" or p['duree'] >= 2)]
+                    h_p_clean = [p for p in all_pannes if p['ride'] == ride and (p['statut'] == "EN_COURS" or p['duree'] >= 5)]
                     p_triees  = sorted(h_p_clean, key=lambda x: x['debut'], reverse=True)
                     do_live   = (heure_actuelle > h_o) and (heure_actuelle < h_f) and not info.get('has_opened_today', False) and not data['is_open']
                     render_history_expander(ride, rehab_flag, h_p_clean, p_triees, do_live, h_o, h_f, data['is_open'])
@@ -424,7 +424,7 @@ with col_stats:
             lambda x: pd.to_datetime(x).tz_convert('Europe/Paris') if pd.notna(x) else pd.Timestamp.now(tz='Europe/Paris')
         )
         df_30j['duree_min'] = (df_30j['end_dt'] - df_30j['start_dt']).dt.total_seconds() / 60
-        df_30j = df_30j[df_30j['duree_min'] >= 2]
+        df_30j = df_30j[df_30j['duree_min'] >= 5]
         df_30j = df_30j[~df_30j['ride_name'].isin(STATS_EXCLUDED)]
         df_30j = df_30j[~df_30j.apply(is_during_rehab, axis=1)]
 
