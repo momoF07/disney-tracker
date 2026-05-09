@@ -150,7 +150,9 @@ def apply_custom_style():
             border-radius: 16px;
             padding: 10px 14px;
             display: flex;
-            align-items: stretch;
+            align-items: flex-start;
+            padding-top: 12px;
+            padding-bottom: 12px;
             justify-content: space-between;
             flex-grow: 1;
             min-height: 62px;
