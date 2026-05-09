@@ -156,7 +156,7 @@ def apply_custom_style():
             justify-content: space-between;
             flex-grow: 1;
             min-height: 62px;
-            height: auto;
+            height: 75px;
             border: 1px solid rgba(255,255,255,0.07) !important;
             transition: all 0.2s ease;
             position: relative;
@@ -195,12 +195,12 @@ def apply_custom_style():
         .ride-main-name {
             font-family: 'Mulish', sans-serif;
             color: rgba(255,255,255,0.92);
-            font-size: 11.5px;
+            font-size: 11px;
             font-weight: 600;
             margin: 0;
             line-height: 1.3;
             display: -webkit-box;
-            -webkit-line-clamp: 2;
+            -webkit-line-clamp: 3;
             -webkit-box-orient: vertical;
             overflow: hidden;
             white-space: normal;
@@ -248,7 +248,7 @@ def apply_custom_style():
             border: 1px solid rgba(255,255,255,0.08);
             position: relative;
             overflow: hidden;
-            height: auto;
+            height: 75px;
             align-self: stretch;
             min-height: 62px;
         }
