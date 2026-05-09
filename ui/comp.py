@@ -139,20 +139,21 @@ def render_ride_card(ride, sub, wait, bg, card_style, pill, show_wait=True):
 
     st.markdown(
         '<div class="ride-row">'
-        '<div class="ride-left-card ' + card_style + '" style="' + flex_style + '">'
+        '<div class="ride-left-card ' + card_style + '">'
         '<div class="ride-info-meta">'
-        '<span style="font-size:22px; line-height:1;">' + get_emoji(ride) + '</span>'
+        '<span style="font-size:20px; line-height:1; flex-shrink:0;">' + get_emoji(ride) + '</span>'
         '<div class="ride-titles">'
         '<p class="ride-main-name">' + ride + '</p>'
         '<p class="ride-sub-status">' + sub + '</p>'
         '</div>'
         '</div>'
-        '<div class="state-pill">' + pill + '</div>'
+        '<div class="state-pill" style="align-self:flex-start; margin-top:2px; flex-shrink:0;">' + pill + '</div>'
         '</div>'
         + wait_section +
         '</div>',
         unsafe_allow_html=True
     )
+
 
 
 def render_park_hours(schedules):
