@@ -19,6 +19,16 @@ paris_tz = pytz.timezone('Europe/Paris')
 
 PARKS = ["dae968d5-630d-4719-8b06-3d107e944401", "ca888437-ebb4-4d50-aed2-d227f7096968"]
 
+RIDES_EXCLUDED = {
+    "La Galerie de la Belle au Bois Dormant",
+    "Liberty Arcade",
+    "Sleeping Beauty Castle",
+    "Discovery Arcade",
+    "Horse-Drawn Streetcars",
+    "Entry to World of Frozen",
+}
+
+
 # --- DISCORD WEBHOOKS ---
 WEBHOOK_NOTIFS = os.environ.get("DISCORD_WEBHOOK_NOTIFS")
 WEBHOOK_DLP    = os.environ.get("DISCORD_WEBHOOK_DLP")
@@ -395,6 +405,10 @@ def run_worker():
             for item in live_data:
                 if item.get('entityType') != "ATTRACTION":
                     continue
+                if item.get('name') in RIDES_EXCLUDED:
+                    continue
+
+
 
                 name    = item.get('name')
                 is_open = (item.get('status') == "OPERATING")
