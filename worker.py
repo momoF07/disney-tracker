@@ -25,36 +25,37 @@ WEBHOOK_DLP    = os.environ.get("DISCORD_WEBHOOK_DLP")
 WEBHOOK_DAW    = os.environ.get("DISCORD_WEBHOOK_DAW")
 
 STATUS_COLORS = {
-    "OUVERT":    0x10b981,
-    "INTERRUPTION":  0xf59e0b,
-    "RETARDÉ":   0xa78bfa,
-    "TRAVAUX":   0x64748b,
-    "FERMÉ":     0x991b1b,
-    "ATTENTE":   0x3b82f6,
-    "FERMETURE": 0x991b1b,
-    "RÉOUVERT":  0x10b981,
+    "OUVERT":          0x10b981,
+    "INTERRUPTION":    0xf59e0b,
+    "RETARDÉ":         0xa78bfa,
+    "RÉHABILITATION":  0x64748b,
+    "FERMÉ":           0x991b1b,
+    "ATTENTE":         0x3b82f6,
+    "FERMETURE":       0x991b1b,
+    "RÉOUVERT":        0x10b981,
 }
 
 STATUS_EMOJI = {
-    "OUVERT":    "🟢",
-    "INTERRUPTION":  "🟠",
-    "RETARDÉ":   "🟣",
-    "RÉHABILITATION":   "⚫",
-    "FERMÉ":     "🔴",
-    "ATTENTE":   "🔵",
-    "FERMETURE": "🏁",
-    "RÉOUVERT":  "✅",
+    "OUVERT":          "🟢",
+    "INTERRUPTION":    "🟠",
+    "RETARDÉ":         "🟣",
+    "RÉHABILITATION":  "⚫",
+    "FERMÉ":           "🔴",
+    "ATTENTE":         "🔵",
+    "FERMETURE":       "🏁",
+    "RÉOUVERT":        "✅",
 }
 
 NOTIF_TRANSITIONS = {
-    ("OUVERT",   "INTERRUPTION"),
-    ("INTERRUPTION", "RÉOUVERT"),
-    ("ATTENTE",  "RETARDÉ"),
-    ("RETARDÉ",  "OUVERT"),
-    ("ATTENTE",  "OUVERT"),
-    ("OUVERT",   "FERMETURE"),
-    ("INTERRUPTION", "FERMETURE"),
-    ("OUVERT",   "RÉHABILITATION"),
+    ("OUVERT",        "INTERRUPTION"),
+    ("INTERRUPTION",  "RÉOUVERT"),
+    ("INTERRUPTION",  "OUVERT"),
+    ("ATTENTE",       "RETARDÉ"),
+    ("RETARDÉ",       "OUVERT"),
+    ("ATTENTE",       "OUVERT"),
+    ("OUVERT",        "FERMETURE"),
+    ("INTERRUPTION",  "FERMETURE"),
+    ("OUVERT",        "RÉHABILITATION"),
 }
 
 
@@ -62,12 +63,10 @@ NOTIF_TRANSITIONS = {
 # UTILITAIRES
 # ============================================================
 def parse_dt(iso_str):
-    """Parse robuste d'une date ISO Supabase, compatible Python 3.10."""
     return datetime.strptime(iso_str[:19], "%Y-%m-%dT%H:%M:%S").replace(tzinfo=pytz.utc).astimezone(paris_tz)
 
 
 def get_message_id(key):
-    """Lit un ID de message Discord depuis Supabase."""
     try:
         res = supabase.table("bot_config").select("value").eq("key", key).execute()
         return res.data[0]['value'] if res.data else None
@@ -76,7 +75,6 @@ def get_message_id(key):
 
 
 def set_message_id(key, value):
-    """Sauvegarde un ID de message Discord dans Supabase."""
     try:
         supabase.table("bot_config").upsert({"key": key, "value": value}).execute()
     except Exception as e:
@@ -113,13 +111,42 @@ def send_notif(ride_name, old_status, new_status, detail=""):
         print(f"⚠️ Notif Discord : {e}")
 
 
+def send_recap_journee(all_pannes):
+    if not WEBHOOK_NOTIFS: return
+
+    now = datetime.now(paris_tz)
+    if not (now.hour == 23 and now.minute < 10):
+        return
+
+    terminées = [p for p in all_pannes if p["statut"] == "TERMINEE" and p.get("duree", 0) >= 2]
+    if not terminées: return
+
+    total_min = sum(p.get("duree", 0) for p in terminées)
+    lines     = []
+    for p in sorted(terminées, key=lambda x: x["debut"]):
+        duree = p.get("duree", 0)
+        lines.append(f"🟠 **{p['ride']}** — {p['debut']} · `{duree} min`")
+
+    embed = {
+        "title":       "📋 Récap des interruptions du jour",
+        "description": f"**{len(terminées)}** interruption(s) · **{total_min}** min au total",
+        "color":       0x6d28d9,
+        "fields":      [{"name": "Détail", "value": "\n".join(lines[:20]), "inline": False}],
+        "footer":      {"text": f"Journée du {now.strftime('%d/%m/%Y')}"}
+    }
+    try:
+        req.post(WEBHOOK_NOTIFS, json={"embeds": [embed]})
+        print("✅ Récap journée envoyé.")
+    except Exception as e:
+        print(f"⚠️ Récap journée : {e}")
+
+
 # ============================================================
-# CALCUL DU STATUT — même logique que app.py
+# CALCUL DU STATUT
 # ============================================================
 def compute_status(name, is_open, info, heure_act, today):
     is_daw = name in RIDES_DAW
 
-    # Heure de fermeture
     if name in ANTICIPATED_CLOSINGS:
         h_f = ANTICIPATED_CLOSINGS[name]
     elif name in FANTASYLAND_EARLY_CLOSE:
@@ -127,12 +154,10 @@ def compute_status(name, is_open, info, heure_act, today):
     else:
         h_f = DAW_CLOSING if is_daw else DLP_CLOSING
 
-    # Heure d'ouverture
     h_o = EMT_OPENING if name in EMT_EARLY_OPEN else PARK_OPENING
     if name in SPECIAL_OPENING_HOURS:
         h_o = SPECIAL_OPENING_HOURS[name]
 
-    # Rehab (liste statique + logique daily_status)
     rehab    = REHAB_LIST.get(name)
     in_rehab = False
     if rehab:
@@ -239,7 +264,6 @@ def send_park_embed(park_name, lands, webhook_url, all_pannes, schedules, weathe
     # Statut par attraction
     def get_ride_display(attr_name):
         data = live_map.get(attr_name)
-        # Fallback fuzzy si guillemets Unicode dans le nom
         if not data:
             clean = attr_name.lower().strip('"\u201c\u201d\u2018\u2019')
             for k, v in live_map.items():
@@ -293,11 +317,9 @@ def send_park_embed(park_name, lands, webhook_url, all_pannes, schedules, weathe
 
     try:
         mid = get_message_id(id_key)
-
         if mid:
             res = req.patch(f"{webhook_url}/messages/{mid}", json={"embeds": [embed]})
             if res.status_code == 404:
-                # Message supprimé sur Discord, on en recrée un
                 mid = None
 
         if not mid:
@@ -308,7 +330,6 @@ def send_park_embed(park_name, lands, webhook_url, all_pannes, schedules, weathe
                 print(f"📌 Dashboard {'DLP' if is_dlp else 'DAW'} créé : ID {new_id}")
             else:
                 print(f"⚠️ Dashboard {park_name} : HTTP {res.status_code} — {res.text}")
-
     except Exception as e:
         print(f"⚠️ Dashboard {park_name} : {e}")
 
@@ -357,7 +378,7 @@ def run_worker():
     status_db  = supabase.table("daily_status").select("*").execute()
     status_map = {item['ride_name']: item for item in status_db.data}
 
-    # Lecture de disney_live pour prev_open ET last_status
+    # Lecture prev_statuses depuis disney_live
     try:
         live_db       = supabase.table("disney_live").select("ride_name,is_open,last_status").execute()
         prev_statuses = {item['ride_name']: item.get('last_status') for item in live_db.data}
@@ -380,11 +401,10 @@ def run_worker():
                 wait    = item.get('queue', {}).get('STANDBY', {}).get('waitTime', 0)
                 info    = status_map.get(name, {})
 
-                # Calcul du nouveau statut
                 new_status, h_o, h_f = compute_status(name, is_open, info, current_time, today)
-                old_status            = prev_statuses.get(name)
+                old_status           = prev_statuses.get(name)
 
-                # --- 1. UPDATE TABLE LIVE (last_status inclus) ---
+                # 1. UPDATE TABLE LIVE
                 supabase.table("disney_live").upsert({
                     "ride_name":   name,
                     "wait_time":   wait,
@@ -393,7 +413,7 @@ def run_worker():
                     "updated_at":  datetime.now(pytz.utc).isoformat()
                 }).execute()
 
-                # --- 2. PREMIÈRE OUVERTURE DU JOUR ---
+                # 2. PREMIÈRE OUVERTURE DU JOUR
                 if is_open and not info.get('has_opened_today', False):
                     supabase.table("daily_status").upsert({
                         "ride_name":        name,
@@ -401,13 +421,9 @@ def run_worker():
                     }).execute()
                     status_map[name] = {**info, "has_opened_today": True}
 
-                # --- 3. LOGS INCIDENTS (101) ---
-                active_panne = supabase.table("logs_101")\
-                    .select("*")\
-                    .eq("ride_name", name)\
-                    .is_("end_time", "null")\
-                    .execute().data
-
+                # 3. LOGS INCIDENTS (101)
+                active_panne         = supabase.table("logs_101")\
+                    .select("*").eq("ride_name", name).is_("end_time", "null").execute().data
                 theoriquement_ouvert = (h_o <= current_time < h_f)
 
                 if not is_open and theoriquement_ouvert and not active_panne:
@@ -417,30 +433,36 @@ def run_worker():
                     }).execute()
 
                 elif is_open and active_panne:
+                    debut_panne = parse_dt(active_panne[0]['start_time'])
+                    duree_min   = int((datetime.now(pytz.utc).astimezone(paris_tz) - debut_panne).total_seconds() / 60)
+
                     supabase.table("logs_101").update({
                         "end_time": datetime.now(pytz.utc).isoformat()
                     }).eq("id", active_panne[0]['id']).execute()
 
-                # --- 4. NOTIFICATIONS DISCORD ---
-                if old_status and old_status != new_status:
-                    heure_str  = current_time.strftime('%H:%M')
+                    # Notif réouverture avec durée
+                    if old_status == "INTERRUPTION":
+                        send_notif(
+                            name, "INTERRUPTION", "RÉOUVERT",
+                            f"Réouverture à {current_time.strftime('%H:%M')} après **{duree_min} min** d'interruption"
+                        )
+                        # On passe old_status à RÉOUVERT pour éviter double notif
+                        old_status = "RÉOUVERT"
 
-                    # Cas spécial : INTERRUPTION → OUVERT = Réouverture
+                # 4. NOTIFICATIONS DISCORD (autres transitions)
+                if old_status and old_status != new_status and old_status != "RÉOUVERT":
+                    heure_str = current_time.strftime('%H:%M')
                     notif_new = new_status
-                    if old_status == "INTERRUPTION" and new_status == "OUVERT":
-                        notif_new = "RÉOUVERT"
 
                     if notif_new == "INTERRUPTION":
                         detail = f"Interruption détectée à {heure_str}"
-                    elif notif_new == "RÉOUVERT":
-                        detail = f"Réouverture à {heure_str}"
                     elif notif_new == "RETARDÉ":
                         detail = f"Ouverture prévue à {h_o.strftime('%H:%M')}, pas encore ouverte"
                     elif notif_new == "OUVERT" and old_status in ("ATTENTE", "RETARDÉ"):
                         detail = f"Première ouverture à {heure_str}"
                     elif notif_new == "FERMETURE":
                         detail = f"Fermeture pour la nuit à {h_f.strftime('%H:%M')}"
-                    elif notif_new == "TRAVAUX":
+                    elif notif_new == "RÉHABILITATION":
                         detail = "Réhabilitation détectée"
                     else:
                         detail = f"{old_status} → {notif_new}"
@@ -459,13 +481,18 @@ def run_worker():
         weather        = get_weather_simple()
 
         for row in resp_101.data:
+            d_p   = parse_dt(row["start_time"])
+            f_p   = parse_dt(row["end_time"]) if row.get("end_time") else None
+            duree = int((f_p - d_p).total_seconds() / 60) if f_p else 0
             all_pannes.append({
                 "ride":   row["ride_name"],
-                "debut":  parse_dt(row["start_time"]).strftime("%H:%M"),  # FIX parse_dt
-                "statut": "EN_COURS" if not row.get("end_time") else "TERMINEE"
+                "debut":  d_p.strftime("%H:%M"),
+                "statut": "EN_COURS" if not row.get("end_time") else "TERMINEE",
+                "duree":  duree
             })
 
         send_dashboard(all_pannes, schedules_data, weather)
+        send_recap_journee(all_pannes)
         print("✅ [WORKER] Dashboard Discord mis à jour.")
     except Exception as e:
         print(f"⚠️ Dashboard Discord : {e}")
