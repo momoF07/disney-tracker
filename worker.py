@@ -128,7 +128,7 @@ def send_recap_journee(all_pannes):
     if not (now.hour == 23 and now.minute < 10):
         return
 
-    terminées = [p for p in all_pannes if p["statut"] == "TERMINEE" and p.get("duree", 0) >= 2]
+    terminées = [p for p in all_pannes if p["statut"] == "TERMINEE" and p.get("duree", 0) >= 5]
     if not terminées: return
 
     total_min = sum(p.get("duree", 0) for p in terminées)
