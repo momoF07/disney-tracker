@@ -25,6 +25,12 @@ webversion = "v5 Premium"
 
 # --- RÉFÉRENTIEL DES ATTRACTIONS ---
 ALL_RIDES_LIST = sorted(list(set(RIDES_DLP + RIDES_DAW)))
+STATS_EXCLUDED = {
+    "Main Street Vehicles",
+    "Disneyland Railroad Main Street Station",
+    "Disneyland Railroad Frontierland Depot",
+}
+
 
 # 1. Initialisation de la variable de session
 if "bypass_maintenance" not in st.session_state:
@@ -419,6 +425,7 @@ with col_stats:
         )
         df_30j['duree_min'] = (df_30j['end_dt'] - df_30j['start_dt']).dt.total_seconds() / 60
         df_30j = df_30j[df_30j['duree_min'] >= 2]
+        df_30j = df_30j[~df_30j['ride_name'].isin(STATS_EXCLUDED)]
         df_30j = df_30j[~df_30j.apply(is_during_rehab, axis=1)]
 
         if df_30j.empty:
