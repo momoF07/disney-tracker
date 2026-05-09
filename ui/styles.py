@@ -17,7 +17,6 @@ def apply_custom_style():
             font-family: 'Mulish', sans-serif;
         }
 
-        /* Grain texture overlay */
         .stApp::before {
             content: '';
             position: fixed;
@@ -32,17 +31,16 @@ def apply_custom_style():
         .block-container {
             padding-top: 1.5rem !important;
             padding-bottom: 3rem !important;
-            padding-left: 2.5rem !important;
-            padding-right: 2.5rem !important;
+            padding-left: 2rem !important;
+            padding-right: 2rem !important;
             max-width: 100% !important;
         }
 
         /* === TITRE === */
         h1 {
-            font-family: 'Outfit
-        ', sans-serif !important;
+            font-family: 'Outfit', sans-serif !important;
             font-weight: 800 !important;
-            font-size: 2.2rem !important;
+            font-size: 2rem !important;
             letter-spacing: -2px !important;
             text-align: center;
             padding-bottom: 0.75rem;
@@ -60,8 +58,7 @@ def apply_custom_style():
         }
 
         h2 {
-            font-family: 'Outfit
-        ', sans-serif !important;
+            font-family: 'Outfit', sans-serif !important;
             font-weight: 700 !important;
             font-size: 1rem !important;
             color: rgba(255,255,255,0.7) !important;
@@ -72,19 +69,18 @@ def apply_custom_style():
         .sort-container, .selection-container {
             background: rgba(255,255,255,0.025) !important;
             backdrop-filter: blur(20px) saturate(180%);
-            padding: 18px 20px;
+            padding: 16px 18px;
             border-radius: 20px;
             border: 1px solid rgba(255,255,255,0.07);
             box-shadow:
                 0 0 0 1px rgba(255,255,255,0.03) inset,
                 0 20px 40px rgba(0,0,0,0.4),
                 0 1px 0 rgba(255,255,255,0.06) inset;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
         }
 
         .sort-label, .order-label {
-            font-family: 'Outfit
-        ', sans-serif;
+            font-family: 'Outfit', sans-serif;
             color: #475569;
             font-size: 0.65rem;
             font-weight: 700;
@@ -109,7 +105,7 @@ def apply_custom_style():
             color: #475569 !important;
             font-family: 'Mulish', sans-serif !important;
             font-weight: 600 !important;
-            font-size: 12px !important;
+            font-size: 11px !important;
             transition: all 0.2s ease !important;
         }
 
@@ -125,12 +121,12 @@ def apply_custom_style():
             background: linear-gradient(135deg, rgba(196,181,253,0.15), rgba(125,211,252,0.1)) !important;
             border: 1px solid rgba(196,181,253,0.3) !important;
             border-radius: 10px !important;
-            padding: 1px 10px !important;
+            padding: 1px 8px !important;
         }
 
         span[data-baseweb="tag"] span {
             color: #e2e8f0 !important;
-            font-size: 12px !important;
+            font-size: 11px !important;
             font-weight: 500 !important;
             font-family: 'Mulish', sans-serif !important;
         }
@@ -139,25 +135,26 @@ def apply_custom_style():
         .ride-row {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
+            align-items: stretch;
+            margin-bottom: 7px;
             width: 100%;
-            gap: 8px;
+            gap: 7px;
             transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
         }
 
-        .ride-row:hover { transform: translateY(-2px) scale(1.003); }
+        .ride-row:hover { transform: translateY(-2px) scale(1.002); }
 
         .ride-left-card {
             background: rgba(255,255,255,0.025) !important;
             backdrop-filter: blur(20px);
-            border-radius: 18px;
-            padding: 11px 16px;
+            border-radius: 16px;
+            padding: 10px 14px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             flex-grow: 1;
-            height: 68px;
+            min-height: 58px;
+            height: auto;
             border: 1px solid rgba(255,255,255,0.07) !important;
             transition: all 0.2s ease;
             position: relative;
@@ -177,46 +174,64 @@ def apply_custom_style():
             background: rgba(255,255,255,0.04) !important;
         }
 
-        .ride-info-meta { display: flex; align-items: center; gap: 13px; z-index: 1; }
-        .ride-titles { display: flex; flex-direction: column; }
+        .ride-info-meta {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            z-index: 1;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .ride-titles {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            flex: 1;
+        }
 
         .ride-main-name {
             font-family: 'Mulish', sans-serif;
             color: rgba(255,255,255,0.92);
-            font-size: 13.5px;
+            font-size: 11.5px;
             font-weight: 600;
             margin: 0;
-            line-height: 1.2;
+            line-height: 1.3;
+            white-space: normal;
+            word-break: break-word;
         }
 
         .ride-sub-status {
             font-family: 'Mulish', sans-serif;
             color: rgba(255,255,255,0.38);
-            font-size: 10.5px;
+            font-size: 10px;
             margin: 2px 0 0 0;
             font-weight: 400;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .state-pill {
-            font-family: 'Outfit
-        ', sans-serif;
+            font-family: 'Outfit', sans-serif;
             background: rgba(0,0,0,0.4);
             color: rgba(255,255,255,0.65);
-            font-size: 7.5px;
+            font-size: 7px;
             font-weight: 700;
-            padding: 3px 9px;
+            padding: 2px 8px;
             border-radius: 20px;
             text-transform: uppercase;
             border: 1px solid rgba(255,255,255,0.08);
-            letter-spacing: 1.5px;
+            letter-spacing: 1.2px;
             white-space: nowrap;
             z-index: 1;
+            flex-shrink: 0;
         }
 
         .ride-right-wait {
-            min-width: 72px;
-            height: 68px;
-            border-radius: 18px;
+            min-width: 62px;
+            width: 62px;
+            border-radius: 16px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -226,6 +241,8 @@ def apply_custom_style():
             border: 1px solid rgba(255,255,255,0.08);
             position: relative;
             overflow: hidden;
+            align-self: stretch;
+            min-height: 58px;
         }
 
         .ride-right-wait::before {
@@ -238,15 +255,15 @@ def apply_custom_style():
         }
 
         .wait-val {
-            font-family: 'Outfit
-        ', sans-serif;
-            font-size: 20px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 18px;
             font-weight: 800;
             line-height: 1;
             z-index: 1;
         }
+
         .wait-unit {
-            font-size: 8px;
+            font-size: 7px;
             font-weight: 600;
             opacity: 0.6;
             text-transform: uppercase;
@@ -277,7 +294,7 @@ def apply_custom_style():
             border: 1px solid rgba(255,255,255,0.05) !important;
             font-family: 'Outfit', sans-serif !important;
             font-size: 9px !important;
-            height: 30px !important;
+            height: 28px !important;
             text-transform: uppercase !important;
             letter-spacing: 0.8px !important;
             font-weight: 700 !important;
@@ -295,12 +312,17 @@ def apply_custom_style():
             border: 1px solid rgba(255,255,255,0.08) !important;
         }
 
+        div[data-testid="stButton"] button:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4) !important;
+        }
+
         /* === DIVIDERS PARCS === */
         .park-divider {
             display: flex;
             align-items: center;
             gap: 10px;
-            margin: 16px 0 10px 0;
+            margin: 14px 0 8px 0;
         }
 
         .park-divider::before, .park-divider::after {
@@ -311,10 +333,9 @@ def apply_custom_style():
         }
 
         .park-name, .class-name {
-            font-family: 'Outfit
-        ', sans-serif;
+            font-family: 'Outfit', sans-serif;
             color: #334155;
-            font-size: 8.5px;
+            font-size: 8px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 2px;
@@ -331,7 +352,7 @@ def apply_custom_style():
 
         div[data-testid="stExpander"] summary {
             color: rgba(255,255,255,0.35) !important;
-            font-size: 11px !important;
+            font-size: 10px !important;
             font-weight: 500 !important;
             font-family: 'Mulish', sans-serif !important;
         }
@@ -343,7 +364,7 @@ def apply_custom_style():
         /* === INFO / CAPTION === */
         div[data-testid="stCaptionContainer"] p {
             color: #475569 !important;
-            font-size: 10.5px !important;
+            font-size: 10px !important;
             font-family: 'Mulish', sans-serif !important;
         }
 
@@ -373,14 +394,20 @@ def apply_custom_style():
             backdrop-filter: blur(20px) !important;
         }
 
-        /* === RESPONSIVE === */
+        /* === RESPONSIVE MOBILE === */
         @media (max-width: 768px) {
-            .block-container { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
-            .ride-left-card, .ride-right-wait { height: 60px; }
-            .ride-main-name { font-size: 12px; }
+            .block-container {
+                padding-left: 0.6rem !important;
+                padding-right: 0.6rem !important;
+            }
+            .ride-main-name { font-size: 11px; }
+            .ride-sub-status { font-size: 9.5px; }
             .wait-val { font-size: 16px; }
-            .ride-row { gap: 6px; }
-            h1 { font-size: 1.6rem !important; }
+            .ride-row { gap: 5px; }
+            .ride-left-card { padding: 9px 11px; border-radius: 14px; }
+            .ride-right-wait { min-width: 56px; width: 56px; border-radius: 14px; }
+            h1 { font-size: 1.5rem !important; }
+            .state-pill { font-size: 6.5px; padding: 2px 6px; }
         }
     </style>
     """, unsafe_allow_html=True)
