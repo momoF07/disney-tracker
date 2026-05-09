@@ -26,7 +26,7 @@ WEBHOOK_DAW    = os.environ.get("DISCORD_WEBHOOK_DAW")
 
 STATUS_COLORS = {
     "OUVERT":    0x10b981,
-    "INCIDENT":  0xf59e0b,
+    "INTERRUPTION":  0xf59e0b,
     "RETARDÉ":   0xa78bfa,
     "TRAVAUX":   0x64748b,
     "FERMÉ":     0x991b1b,
@@ -425,12 +425,12 @@ def run_worker():
                 if old_status and old_status != new_status:
                     heure_str  = current_time.strftime('%H:%M')
 
-                    # Cas spécial : INCIDENT → OUVERT = Réouverture
+                    # Cas spécial : INTERRUPTION → OUVERT = Réouverture
                     notif_new = new_status
-                    if old_status == "INCIDENT" and new_status == "OUVERT":
+                    if old_status == "INTERRUPTION" and new_status == "OUVERT":
                         notif_new = "RÉOUVERT"
 
-                    if notif_new == "INCIDENT":
+                    if notif_new == "INTERRUPTION":
                         detail = f"Interruption détectée à {heure_str}"
                     elif notif_new == "RÉOUVERT":
                         detail = f"Réouverture à {heure_str}"
