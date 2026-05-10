@@ -26,6 +26,7 @@ RIDES_EXCLUDED = {
     "Discovery Arcade",
     "Horse-Drawn Streetcars",
     "Entry to World of Frozen",
+    "Pirates' Beach",
 }
 
 
