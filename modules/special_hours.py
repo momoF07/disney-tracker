@@ -12,7 +12,7 @@ ANTICIPATED_CLOSINGS = {
     "Casey Jr. – le Petit Train du Cirque": time(20, 0),
     "Disneyland Railroad Frontierland Depot": time(19, 45),
     "Disneyland Railroad Main Street Station": time(19, 45),
-    "Frontierland Playground": time(19, 55),
+    "Frontierland Playground": time(21, 00),
     "Le Pays des Contes de Fées, presented by Vittel": time(20, 0),
     "Discoveryland Theater": time(17, 30),
     "Thunder Mesa Riverboat Landing": time(17, 0),
