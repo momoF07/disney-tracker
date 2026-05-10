@@ -2,7 +2,7 @@ import requests
 import requests as req
 import os
 from supabase import create_client
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 import pytz
 
 from config import PARK_OPENING, PARK_CLOSING, EMT_OPENING, DAW_CLOSING, DLP_CLOSING
@@ -182,6 +182,9 @@ def compute_status(name, is_open, info, heure_act, today):
         and not is_open
     )
 
+        # Heure d'ouverture + tampon 5 min
+    h_o_tampon = (datetime.combine(datetime.today(), h_o) + __import__('datetime').timedelta(minutes=5)).time()
+
     if rehab_flag:
         return "RÉHABILITATION", h_o, h_f
     elif heure_act >= h_f:
@@ -189,11 +192,16 @@ def compute_status(name, is_open, info, heure_act, today):
     elif heure_act < h_o and not is_open:
         return "ATTENTE", h_o, h_f
     elif not is_open and not info.get('has_opened_today', False):
-        return "RETARDÉ", h_o, h_f
+        # Seulement si 5min+ après l'heure d'ouverture théorique
+        if heure_act >= h_o_tampon:
+            return "RETARDÉ", h_o, h_f
+        else:
+            return "ATTENTE", h_o, h_f
     elif not is_open:
         return "INTERRUPTION", h_o, h_f
     else:
         return "OUVERT", h_o, h_f
+
 
 
 # ============================================================
