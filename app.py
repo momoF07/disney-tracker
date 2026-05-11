@@ -530,9 +530,9 @@ with col_stats:
                     '<div style="font-family:Outfit,sans-serif; font-size:10px; font-weight:700;'
                     'color:' + color + '; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">' + label + '</div>'
                     '<div style="display:flex; gap:6px; flex-wrap:wrap;">'
-                    + stat_pill("101", nb_p, color)
-                    + stat_pill("min", total_p, "#94a3b8")
-                    + stat_pill("moy", moy_p, "#94a3b8")
+                    + stat_pill("Interruptions", nb_p, color)
+                    + stat_pill("min total", total_p, "#94a3b8")
+                    + stat_pill("moy. min", moy_p, "#94a3b8")
                     + '</div></div>'
                 )
             st.markdown(
@@ -552,7 +552,7 @@ with col_stats:
                     'font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">'
                     '📅 ' + mois_pr_label + '</div>'
                     '<div style="display:flex; gap:6px; flex-wrap:wrap;">'
-                    + stat_pill("101", nb_pr, "#64748b")
+                    + stat_pill("Interruptions", nb_pr, "#64748b")
                     + stat_pill("min total", total_pr, "#64748b")
                     + stat_pill("moy. min", moy_pr, "#64748b")
                     + '</div></div>',
@@ -585,7 +585,7 @@ with col_stats:
                         'color:' + color + '; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">'
                         + land.title() + '</div>'
                         '<div style="display:flex; gap:6px; flex-wrap:wrap;">'
-                        + stat_pill("101", nb, color)
+                        + stat_pill("Interruptions", nb, color)
                         + stat_pill("min total", total, "#7dd3fc")
                         + stat_pill("moy. min", moy, "#6ee7b7")
                         + '</div></div>',
@@ -611,7 +611,7 @@ with col_stats:
                     'color:' + color + '; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">'
                     + land.title() + '</div>'
                     '<div style="display:flex; gap:6px; flex-wrap:wrap;">'
-                    + stat_pill("101", nb, color)
+                    + stat_pill("Interruptions", nb, color)
                     + stat_pill("min total", total, "#7dd3fc")
                     + stat_pill("moy. min", moy, "#6ee7b7")
                     + '</div></div>',
@@ -646,7 +646,7 @@ with col_stats:
                     + land.title() + '</span>'
                     '</div>'
                     '<div style="display:flex; gap:6px; flex-wrap:wrap;">'
-                    + stat_pill("101", nb, "#c4b5fd")
+                    + stat_pill("Interruptions", nb, "#c4b5fd")
                     + stat_pill("min total", total, "#7dd3fc")
                     + stat_pill("moy. min", moy, "#6ee7b7")
                     + '</div></div>',
