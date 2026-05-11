@@ -164,10 +164,14 @@ def render_park_hours(schedules):
 
     if not parks: return
 
+    # DLP en premier
+    parks = sorted(parks, key=lambda p: 0 if "Disneyland" in p['ride_name'] else 1)
+
     boxes = ""
     for p in parks:
         is_dlp   = "Disneyland" in p['ride_name']
-        name     = "Disneyland Park" if is_dlp else "Disney Adventure World"
+        name     = "DLP" if is_dlp else "DAW"
+        fullname = "Disneyland Park" if is_dlp else "Disney Adventure World"
         color    = "#ffb3d1" if is_dlp else "#fb923c"
         emt_time = emts.get(p['ride_name'])
         opening  = p['opening_time'][:5]
@@ -180,34 +184,42 @@ def render_park_hours(schedules):
                 'background:rgba(167,139,250,0.1); border:1px solid rgba(167,139,250,0.2);'
                 'padding:3px 10px; border-radius:20px;">'
                 '<span style="font-size:10px;">✨</span>'
-                '<span style="color:#a78bfa; font-size:14px; font-weight:700;">EMT ' + emt_time[:5] + ' → ' + opening + '</span>'
+                '<span style="color:#a78bfa; font-size:12px; font-weight:700;">EMT ' + emt_time[:5] + ' → ' + opening + '</span>'
                 '</div>'
             )
 
         boxes += (
-            '<div style="flex:1; min-width:150px; padding:16px 18px;'
+            '<div style="flex:1; min-width:130px; padding:14px 16px;'
             'background:rgba(255,255,255,0.02); border-radius:18px;'
             'border:1px solid rgba(255,255,255,0.06);'
             'border-top:2px solid ' + color + '66;">'
-            '<div style="font-family:Outfit,sans-serif; font-size:22px; color:' + color + '; font-weight:700;'
-            'text-transform:uppercase; letter-spacing:1.5px; margin-bottom:6px; opacity:0.8;">' + name + '</div>'
-            '<div style="font-family:Outfit,sans-serif; font-size:22px; color:white; font-weight:700; line-height:1;">'
-            + opening + ' <span style="color:rgba(255,255,255,0.25); font-size:16px;">→</span> ' + closing +
+
+            # Nom court sur une ligne
+            '<div style="font-family:Outfit,sans-serif; font-size:10px; color:' + color + '; font-weight:700;'
+            'text-transform:uppercase; letter-spacing:1.5px; margin-bottom:8px; opacity:0.8;">' + fullname + '</div>'
+
+            # Ouverture → Fermeture sur la même ligne
+            '<div style="font-family:Outfit,sans-serif; font-size:20px; color:white; font-weight:700; line-height:1; white-space:nowrap;">'
+            + opening +
+            ' <span style="color:rgba(255,255,255,0.25); font-size:14px;">→</span> '
+            + closing +
             '</div>'
+
             + emt_html +
             '</div>'
         )
 
     st.markdown(
-        '<div style="background:rgba(255,255,255,0.03); padding:18px 20px; border-radius:22px;'
+        '<div style="background:rgba(255,255,255,0.03); padding:16px 18px; border-radius:22px;'
         'border:1px solid rgba(255,255,255,0.07); margin-bottom:16px; backdrop-filter:blur(20px);'
         'box-shadow:0 20px 40px rgba(0,0,0,0.3);">'
         '<div style="font-family:Outfit,sans-serif; color:rgba(255,255,255,0.4); font-size:9.5px;'
-        'font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-bottom:14px;">🕒 Horaires des parcs</div>'
-        '<div style="display:flex; gap:12px; flex-wrap:wrap;">' + boxes + '</div>'
+        'font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-bottom:12px;">🕒 Horaires des parcs</div>'
+        '<div style="display:flex; gap:10px; flex-wrap:nowrap;">' + boxes + '</div>'
         '</div>',
         unsafe_allow_html=True
     )
+
 
     # --- RADIO DISNEY VILLAGE ---
     radio_html = """<!DOCTYPE html>
