@@ -625,7 +625,7 @@ with col_stats:
                     unsafe_allow_html=True
                 )
 
-        # === PAR PARC ===
+                # === PAR PARC ===
         with st.expander("🏰 Par parc"):
             for parc_name, parc_label in [
                 ("Disneyland Park",        "🏰 Disneyland Park"),
@@ -635,11 +635,27 @@ with col_stats:
                 df_p       = df_mois[df_mois['parc'] == parc_name]
                 df_p_pr    = df_mois_pr[df_mois_pr['parc'] == parc_name] if not df_mois_pr.empty else pd.DataFrame()
                 if df_p.empty: continue
+
+                nb_p, total_p, moy_p = stats_block(df_p)
+
+                # Boîte globale du parc
                 st.markdown(
+                    '<div style="padding:12px 14px; background:' + parc_color + '08;'
+                    'border:1px solid ' + parc_color + '25; border-top:3px solid ' + parc_color + '70;'
+                    'border-radius:14px; margin-bottom:10px;">'
                     '<div style="font-family:Outfit,sans-serif; font-size:11px; font-weight:700;'
-                    'color:' + parc_color + '; margin:10px 0 6px 0;">' + parc_label + '</div>',
+                    'color:' + parc_color + '; margin-bottom:8px;">' + parc_label + '</div>'
+                    '<div style="display:flex; gap:6px; flex-wrap:wrap;">'
+                    + stat_pill("interruptions", nb_p, parc_color)
+                    + stat_pill("min total", total_p, parc_color)
+                    + stat_pill("moy. min", moy_p, parc_color)
+                    + '</div>'
+                    + prev_block(df_p_pr, parc_color, parc_color, parc_color)
+                    + '</div>',
                     unsafe_allow_html=True
                 )
+
+                # Boîtes par land
                 for land, attractions in PARKS_DATA[parc_name].items():
                     df_l    = df_p[df_p['land'] == land]
                     df_l_pr = df_p_pr[df_p_pr['land'] == land] if not df_p_pr.empty else pd.DataFrame()
@@ -647,23 +663,52 @@ with col_stats:
                     color   = LAND_COLORS.get(land, "#64748b")
                     color_l = LAND_COLORS_LIGHT.get(land, "#94a3b8")
                     nb, total, moy = stats_block(df_l)
+
+                    # Attractions du land
+                    rows_html = ""
+                    for attr_name in attractions:
+                        df_a = df_l[df_l['ride_name'] == attr_name]
+                        if df_a.empty: continue
+                        nb_a, total_a, moy_a = stats_block(df_a)
+                        rows_html += (
+                            '<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;'
+                            'padding:6px 8px; background:' + color + '06;'
+                            'border:1px solid ' + color + '12; border-radius:9px; margin-bottom:4px;">'
+                            '<div style="display:flex; align-items:center; gap:6px; flex:1; min-width:0;">'
+                            '<span style="font-size:14px; flex-shrink:0;">' + get_emoji(attr_name) + '</span>'
+                            '<span style="font-family:Mulish,sans-serif; color:rgba(255,255,255,0.7);'
+                            'font-size:10.5px; font-weight:600; word-break:break-word;">' + attr_name + '</span>'
+                            '</div>'
+                            '<div style="display:flex; gap:4px; flex-wrap:wrap; flex-shrink:0;">'
+                            '<span style="font-family:Outfit,sans-serif; font-size:10px; font-weight:800;'
+                            'color:' + color + '; background:' + color + '18; border:1px solid ' + color + '35;'
+                            'padding:2px 8px; border-radius:7px;">' + str(nb_a) + ' ×</span>'
+                            '<span style="font-family:Outfit,sans-serif; font-size:10px; font-weight:700;'
+                            'color:' + color_l + '; background:' + color_l + '15; border:1px solid ' + color_l + '30;'
+                            'padding:2px 8px; border-radius:7px;">' + str(total_a) + ' min</span>'
+                            '<span style="font-family:Outfit,sans-serif; font-size:10px; font-weight:600;'
+                            'color:' + color_l + '99; background:' + color_l + '10; border:1px solid ' + color_l + '20;'
+                            'padding:2px 8px; border-radius:7px;">∅ ' + str(moy_a) + ' min</span>'
+                            '</div></div>'
+                        )
+
                     st.markdown(
                         '<div style="padding:9px 12px; background:' + color + '08;'
                         'border:1px solid ' + color + '25; border-left:3px solid ' + color + ';'
-                        'border-radius:11px; margin-bottom:4px;">'
+                        'border-radius:11px; margin-bottom:6px;">'
                         '<div style="font-family:Outfit,sans-serif; font-size:9.5px; font-weight:700;'
                         'color:' + color + '; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">'
                         + land.title() + '</div>'
-                        '<div style="display:flex; gap:6px; flex-wrap:wrap;">'
+                        '<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:' + ('8px' if rows_html else '0') + ';">'
                         + stat_pill("interruptions", nb, color)
                         + stat_pill("min total", total, color_l)
                         + stat_pill("moy. min", moy, color_l)
                         + '</div>'
+                        + (('<div style="margin-top:8px;">' + rows_html + '</div>') if rows_html else '')
                         + prev_block(df_l_pr, color, color_l, color_l)
                         + '</div>',
                         unsafe_allow_html=True
                     )
-                
 
         # === PAR LAND ===
         with st.expander("🗺️ Par land"):
@@ -678,25 +723,6 @@ with col_stats:
                 df_l_pr = df_mois_pr[df_mois_pr['land'] == land] if not df_mois_pr.empty else pd.DataFrame()
                 nb, total, moy = stats_block(df_l)
 
-                # Stats globales du land
-                st.markdown(
-                    '<div style="padding:10px 14px; background:' + color + '08;'
-                    'border:1px solid ' + color + '25; border-left:3px solid ' + color + ';'
-                    'border-radius:12px; margin-bottom:8px;">'
-                    '<div style="font-family:Outfit,sans-serif; font-size:10px; font-weight:700;'
-                    'color:' + color + '; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">'
-                    + land.title() + '</div>'
-                    '<div style="display:flex; gap:6px; flex-wrap:wrap;">'
-                    + stat_pill("interruptions", nb, color)
-                    + stat_pill("min total", total, color_l)
-                    + stat_pill("moy. min", moy, color_l)
-                    + '</div>'
-                    + prev_block(df_l_pr, color, color_l, color_l)
-                    + '</div>',
-                    unsafe_allow_html=True
-                )
-
-                # Stats par attraction du land
                 attractions_du_land = [
                     a for p_lands in PARKS_DATA.values()
                     for l, attrs in p_lands.items()
@@ -710,36 +736,43 @@ with col_stats:
                     nb_a, total_a, moy_a = stats_block(df_a)
                     rows_html += (
                         '<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;'
-                        'padding:7px 10px; background:' + color + '06;'
-                        'border:1px solid ' + color + '15; border-radius:10px; margin-bottom:5px;">'
-
-                        # Nom attraction
-                        '<div style="display:flex; align-items:center; gap:6px; min-width:180px; flex:1;">'
-                        '<span style="font-size:15px;">' + get_emoji(attr_name) + '</span>'
-                        '<span style="font-family:Mulish,sans-serif; color:rgba(255,255,255,0.75);'
-                        'font-size:11px; font-weight:600;">' + attr_name + '</span>'
+                        'padding:6px 8px; background:' + color + '06;'
+                        'border:1px solid ' + color + '12; border-radius:9px; margin-bottom:4px;">'
+                        '<div style="display:flex; align-items:center; gap:6px; flex:1; min-width:0;">'
+                        '<span style="font-size:14px; flex-shrink:0;">' + get_emoji(attr_name) + '</span>'
+                        '<span style="font-family:Mulish,sans-serif; color:rgba(255,255,255,0.7);'
+                        'font-size:10.5px; font-weight:600; word-break:break-word;">' + attr_name + '</span>'
                         '</div>'
-
-                        # Pills stats
-                        '<div style="display:flex; gap:5px; flex-wrap:wrap;">'
-                        '<span style="font-family:Outfit,sans-serif; font-size:11px; font-weight:800;'
+                        '<div style="display:flex; gap:4px; flex-wrap:wrap; flex-shrink:0;">'
+                        '<span style="font-family:Outfit,sans-serif; font-size:10px; font-weight:800;'
                         'color:' + color + '; background:' + color + '18; border:1px solid ' + color + '35;'
-                        'padding:3px 10px; border-radius:8px;">' + str(nb_a) + ' ×</span>'
-
-                        '<span style="font-family:Outfit,sans-serif; font-size:11px; font-weight:700;'
+                        'padding:2px 8px; border-radius:7px;">' + str(nb_a) + ' ×</span>'
+                        '<span style="font-family:Outfit,sans-serif; font-size:10px; font-weight:700;'
                         'color:' + color_l + '; background:' + color_l + '15; border:1px solid ' + color_l + '30;'
-                        'padding:3px 10px; border-radius:8px;">' + str(total_a) + ' min</span>'
-
-                        '<span style="font-family:Outfit,sans-serif; font-size:11px; font-weight:700;'
+                        'padding:2px 8px; border-radius:7px;">' + str(total_a) + ' min</span>'
+                        '<span style="font-family:Outfit,sans-serif; font-size:10px; font-weight:600;'
                         'color:' + color_l + '99; background:' + color_l + '10; border:1px solid ' + color_l + '20;'
-                        'padding:3px 10px; border-radius:8px;">moy. ' + str(moy_a) + ' min</span>'
-                        '</div>'
-                        '</div>'
+                        'padding:2px 8px; border-radius:7px;">∅ ' + str(moy_a) + ' min</span>'
+                        '</div></div>'
                     )
 
-                if rows_html:
-                    st.markdown(rows_html, unsafe_allow_html=True)
-
+                st.markdown(
+                    '<div style="padding:10px 14px; background:' + color + '08;'
+                    'border:1px solid ' + color + '25; border-left:3px solid ' + color + ';'
+                    'border-radius:12px; margin-bottom:8px;">'
+                    '<div style="font-family:Outfit,sans-serif; font-size:10px; font-weight:700;'
+                    'color:' + color + '; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">'
+                    + land.title() + '</div>'
+                    '<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:' + ('10px' if rows_html else '0') + ';">'
+                    + stat_pill("interruptions", nb, color)
+                    + stat_pill("min total", total, color_l)
+                    + stat_pill("moy. min", moy, color_l)
+                    + '</div>'
+                    + (('<div style="margin-top:8px;">' + rows_html + '</div>') if rows_html else '')
+                    + prev_block(df_l_pr, color, color_l, color_l)
+                    + '</div>',
+                    unsafe_allow_html=True
+                )
                 detail_expander(df_l, f"Détail — {land.title()}")
 
         # === PAR ATTRACTION ===
