@@ -543,7 +543,6 @@ with col_stats:
         st.caption("Pas d'interruptions ce mois-ci.")
     else:
         nb_g, total_g, moy_g = stats_block(df_mois)
-        df_g_pr = stats_block(df_mois_pr)
 
         # === RÉSUMÉ GLOBAL ===
         st.markdown(
@@ -551,8 +550,6 @@ with col_stats:
             + badge(nb_g, "Interruptions", "#c4b5fd")
             + badge(total_g, "Min Total", "#7dd3fc")
             + badge(moy_g, "Min Moyenne", "#6ee7b7")
-            + '</div>',
-            + prev_block(df_g_pr, "#c4b5fd", "#7dd3fc", "#6ee7b7")
             + '</div>',
             unsafe_allow_html=True
         )
