@@ -156,7 +156,7 @@ def render_ride_card(ride, sub, wait, bg, card_style, pill, show_wait=True):
 
 
 
-def render_park_hoursv2(schedules):
+def render_park_hours_v2(schedules):
     if not schedules: return
 
     parks = [s for s in schedules if s.get('type') == 'PARK']
