@@ -167,7 +167,7 @@ def render_park_hours(schedules):
     boxes = ""
     for p in parks:
         is_dlp   = "Disneyland" in p['ride_name']
-        name     = "DLP" if is_dlp else "DAW"
+        name     = "Disneyland Park" if is_dlp else "Disney Adventure World"
         color    = "#ffb3d1" if is_dlp else "#fb923c"
         emt_time = emts.get(p['ride_name'])
         opening  = p['opening_time'][:5]
@@ -189,7 +189,7 @@ def render_park_hours(schedules):
             'background:rgba(255,255,255,0.02); border-radius:18px;'
             'border:1px solid rgba(255,255,255,0.06);'
             'border-top:2px solid ' + color + '66;">'
-            '<div style="font-family:Outfit,sans-serif; font-size:9.5px; color:' + color + '; font-weight:700;'
+            '<div style="font-family:Outfit,sans-serif; font-size:22px; color:' + color + '; font-weight:700;'
             'text-transform:uppercase; letter-spacing:1.5px; margin-bottom:6px; opacity:0.8;">' + name + '</div>'
             '<div style="font-family:Outfit,sans-serif; font-size:22px; color:white; font-weight:700; line-height:1;">'
             + opening + ' <span style="color:rgba(255,255,255,0.25); font-size:16px;">→</span> ' + closing +
