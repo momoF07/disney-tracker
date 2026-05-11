@@ -650,6 +650,8 @@ with col_stats:
                 ]
                 rows_html = ""
                 for attr_name in attractions_du_land:
+                    df_r    = df_mois[df_mois['ride_name'] == attr_name]
+                    df_r_pr = df_mois_pr[df_mois_pr['ride_name'] == attr_name] if not df_mois_pr.empty else pd.DataFrame()
                     df_a = df_l[df_l['ride_name'] == attr_name]
                     if df_a.empty: continue
                     nb_a, total_a, moy_a = stats_block(df_a)
