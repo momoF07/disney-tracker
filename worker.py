@@ -128,61 +128,60 @@ def send_notif(ride_name, old_status, new_status, detail=""):
     except Exception as e:
         print(f"⚠️ Notif Discord : {e}")
 
+def send_recap_journee(all_pannes):
+    if not WEBHOOK_NOTIFS: return
 
+    now      = datetime.now(paris_tz)
+    tomorrow = now + timedelta(days=1)
 
-now = datetime.now(paris_tz)
-# if not (now.hour == 23 and now.minute < 10):
-#     return
+    # if not (now.hour == 23 and now.minute < 10):
+    #     return
 
-terminées = [p for p in all_pannes if p["statut"] == "TERMINEE" and p.get("duree", 0) >= 5]
-if not terminées: return
+    terminées = [p for p in all_pannes if p["statut"] == "TERMINEE" and p.get("duree", 0) >= 5]
+    if not terminées: return
 
-total_min = sum(p.get("duree", 0) for p in terminées)
-lines     = []
-for p in sorted(terminées, key=lambda x: x["debut"]):
-    duree = p.get("duree", 0)
-    lines.append(f"🟠 **{p['ride']}**\n— {p['debut']} · `{duree} min`")
+    total_min = sum(p.get("duree", 0) for p in terminées)
+    lines     = []
+    for p in sorted(terminées, key=lambda x: x["debut"]):
+        duree = p.get("duree", 0)
+        lines.append(f"🟠 **{p['ride']}**\n— {p['debut']} · `{duree} min`")
 
-chunks = [lines[i:i+8] for i in range(0, len(lines), 8)]
+    chunks = [lines[i:i+8] for i in range(0, len(lines), 8)]
 
-try:
-    # Message d'ouverture
-    embed_open = {
-        "title":       f"🌙 Fin de journée — {now.strftime('%d/%m/%Y')}",
-        "description": "Les parcs ferment leurs portes. Voici le bilan des interruptions du jour.",
-        "color":       0x6d28d9,
-    }
-    req.post(WEBHOOK_NOTIFS, json={"embeds": [embed_open]})
+    try:
+        # Message ouverture
+        req.post(WEBHOOK_NOTIFS, json={
+            "content": f"# 🌙 Fin de journée du {now.strftime('%d/%m/%Y')}"
+        })
 
-    # Chunks du récap
-    for i, chunk in enumerate(chunks):
-        if i == 0:
-            embed = {
-                "title":       "📋 Récap des interruptions",
-                "description": f"**{len(terminées)}** interruption(s) · **{total_min}** min au total",
-                "color":       0x6d28d9,
-                "fields":      [{"name": "Détail", "value": "\n".join(chunk), "inline": False}],
-            }
-        else:
-            embed = {
-                "color":  0x6d28d9,
-                "fields": [{"name": "\u200b", "value": "\n".join(chunk), "inline": False}],
-            }
-        res = req.post(WEBHOOK_NOTIFS, json={"embeds": [embed]})
-        print(f"✅ Récap chunk {i+1}/{len(chunks)} envoyé. Status: {res.status_code} — {res.text[:100]}")
+        # Chunks du récap
+        for i, chunk in enumerate(chunks):
+            if i == 0:
+                embed = {
+                    "title":       "📋 Récap des interruptions",
+                    "description": f"**{len(terminées)}** interruption(s) · **{total_min}** min au total",
+                    "color":       0x6d28d9,
+                    "fields":      [{"name": "Détail", "value": "\n".join(chunk), "inline": False}],
+                    "footer":      {"text": f"{i+1}/{len(chunks)}"}
+                }
+            else:
+                embed = {
+                    "color":  0x6d28d9,
+                    "fields": [{"name": "\u200b", "value": "\n".join(chunk), "inline": False}],
+                    "footer": {"text": f"{i+1}/{len(chunks)}"}
+                }
+            res = req.post(WEBHOOK_NOTIFS, json={"embeds": [embed]})
+            print(f"✅ Récap chunk {i+1}/{len(chunks)} envoyé. Status: {res.status_code} — {res.text[:100]}")
 
-    # Message de clôture
-    embed_close = {
-        "title":       "🌅 Bonne nuit !",
-        "description": "À demain pour une nouvelle journée à Disneyland Paris. 🏰✨",
-        "color":       0x6d28d9,
-        "footer":      {"text": f"Journée du {now.strftime('%d/%m/%Y')}"}
-    }
-    req.post(WEBHOOK_NOTIFS, json={"embeds": [embed_close]})
-    
-    req.post(WEBHOOK_NOTIFS, json={"content": f"# 🌙 Fin de journée du {now.strftime('%d/%m/%Y')}\n-# ——\n# 🌅 Début de la journée du {(now + __import__('datetime').timedelta(days=1)).strftime('%d/%m/%Y')}"}
+        # Message clôture
+        req.post(WEBHOOK_NOTIFS, json={
+            "content": f"-# ——\n# 🌅 Début de la journée du {tomorrow.strftime('%d/%m/%Y')}"
+        })
 
+        print("✅ Récap journée envoyé.")
 
+    except Exception as e:
+        print(f"⚠️ Récap journée : {e}")
 
 
 # ============================================================
