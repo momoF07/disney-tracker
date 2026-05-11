@@ -606,9 +606,9 @@ with col_stats:
                         + badge_sm(nb_l, "Interruptions", color)
                         + badge_sm(total_l, "Min Total", color_l)
                         + badge_sm(moy_l, "Min Moyenne", color_l)
+                        + prev_block(df_l_pr, color, color_l, color_l)
                         + '</div>'
                         + rides_html
-                        + prev_block(df_l_pr, color, color_l, color_l)
                         + '</div>'
                     )
 
@@ -664,6 +664,7 @@ with col_stats:
                         + badge_sm(nb_a, "Interruptions", color)
                         + badge_sm(total_a, "Min Total", color_l)
                         + badge_sm(moy_a, "Min Moyenne", color_l)
+                        + prev_block(df_r_pr, color, color_l, color_l)
                         + '</div></div>'
                     )
 
@@ -678,9 +679,9 @@ with col_stats:
                     + badge(nb, "Interruptions", color)
                     + badge(total, "Min Total", color_l)
                     + badge(moy, "Min Moyenne", color_l)
+                    + prev_block(df_l_pr, color, color_l, color_l)
                     + '</div>'
                     + (('<div style="margin-top:8px;">' + rows_html + '</div>') if rows_html else '')
-                    + prev_block(df_l_pr, color, color_l, color_l)
                     + '</div>',
                     unsafe_allow_html=True
                 )
@@ -719,8 +720,8 @@ with col_stats:
                     + badge(nb, "Interruptions", color)
                     + badge(total, "Min Total", color_l)
                     + badge(moy, "Min Moyenne", color_l)
-                    + '</div>'
                     + prev_block(df_r_pr, color, color_l, color_l)
+                    + '</div>'
                     + '</div>',
                     unsafe_allow_html=True
                 )
