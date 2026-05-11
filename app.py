@@ -395,23 +395,49 @@ with col_stats:
     st.subheader("📊 Stats")
 
     LAND_COLORS = {
-        "MAINSTREET":      "#fcd34d",
-        "FRONTIERLAND":    "#c17f3a",
-        "ADVENTURELAND":   "#4ade80",
-        "FANTASYLAND":     "#e879f9",
-        "DISCOVERYLAND":   "#fbbf24",
-        "AVENGERS CAMPUS": "#f87171",
-        "WORLD OF PIXAR":  "#38bdf8",
-        "PRODUCTION 3":    "#d4ac0d",
-        "WORLD OF FROZEN": "#bae6fd",
-        "ADVENTURE WAY":   "#86efac",
+        "MAINSTREET":      "#f59e0b",
+        "FRONTIERLAND":    "#ef6c00",
+        "ADVENTURELAND":   "#16a34a",
+        "FANTASYLAND":     "#9333ea",
+        "DISCOVERYLAND":   "#0ea5e9",
+        "AVENGERS CAMPUS": "#dc2626",
+        "WORLD OF PIXAR":  "#2563eb",
+        "PRODUCTION 3":    "#ca8a04",
+        "WORLD OF FROZEN": "#06b6d4",
+        "ADVENTURE WAY":   "#059669",
     }
 
-    # --- DATES ---
+    # Variantes pour les attractions (plus claires)
+    LAND_COLORS_LIGHT = {
+        "MAINSTREET":      "#fcd34d",
+        "FRONTIERLAND":    "#fb923c",
+        "ADVENTURELAND":   "#4ade80",
+        "FANTASYLAND":     "#c084fc",
+        "DISCOVERYLAND":   "#38bdf8",
+        "AVENGERS CAMPUS": "#f87171",
+        "WORLD OF PIXAR":  "#60a5fa",
+        "PRODUCTION 3":    "#fde047",
+        "WORLD OF FROZEN": "#67e8f9",
+        "ADVENTURE WAY":   "#34d399",
+    }
+
+    PARC_COLORS = {
+        "Disneyland Park":        "#ffb3d1",
+        "Disney Adventure World": "#fb923c",
+    }
+
+    GLOBAL_COLORS = {
+        "interruptions": "#c4b5fd",
+        "min":           "#7dd3fc",
+        "moy":           "#6ee7b7",
+    }
+
     now_paris     = maintenant
     debut_mois    = now_paris.replace(day=1, hour=2, minute=30, second=0, microsecond=0)
     debut_mois_pr = (debut_mois - pd.DateOffset(months=1)).to_pydatetime()
     fin_mois_pr   = debut_mois
+    mois_label    = now_paris.strftime("%B %Y").capitalize()
+    mois_pr_label = debut_mois_pr.strftime("%B %Y").capitalize()
 
     def load_df(date_from, date_to=None):
         try:
@@ -431,15 +457,14 @@ with col_stats:
             df = df[df['duree_min'] <= 420]
             df = df[~df['ride_name'].isin(STATS_EXCLUDED)]
             df = df[~df.apply(is_during_rehab, axis=1)]
-            ride_to_park_l = {}
-            ride_to_land_l = {}
+            r2p, r2l = {}, {}
             for park, lands in PARKS_DATA.items():
                 for land, attractions in lands.items():
                     for attr in attractions:
-                        ride_to_park_l[attr] = park
-                        ride_to_land_l[attr] = land
-            df['parc'] = df['ride_name'].map(ride_to_park_l).fillna("Inconnu")
-            df['land'] = df['ride_name'].map(ride_to_land_l).fillna("Inconnu")
+                        r2p[attr] = park
+                        r2l[attr] = land
+            df['parc'] = df['ride_name'].map(r2p).fillna("Inconnu")
+            df['land'] = df['ride_name'].map(r2l).fillna("Inconnu")
             return df
         except Exception as e:
             st.error(f"Erreur stats : {e}")
@@ -448,7 +473,6 @@ with col_stats:
     df_mois    = load_df(debut_mois)
     df_mois_pr = load_df(debut_mois_pr, fin_mois_pr)
 
-    # --- MAPPING ---
     ride_to_park = {}
     ride_to_land = {}
     for park, lands in PARKS_DATA.items():
@@ -463,14 +487,36 @@ with col_stats:
         moy   = int(df['duree_min'].mean()) if nb > 0 else 0
         return nb, total, moy
 
-    def stat_pill(label, value, color="#64748b"):
+    def stat_pill(label, value, color="#64748b", small=False):
+        fs     = "12px" if small else "17px"
+        fs_lbl = "6.5px" if small else "8.5px"
+        pad    = "4px 8px" if small else "7px 13px"
+        mw     = "42px" if small else "65px"
+        br     = "8px" if small else "12px"
         return (
             '<div style="display:inline-flex; flex-direction:column; align-items:center;'
-            'background:' + color + '12; border:1px solid ' + color + '30;'
-            'border-radius:12px; padding:7px 13px; min-width:65px;">'
-            '<span style="font-family:Outfit,sans-serif; font-size:17px; font-weight:800; color:' + color + '; line-height:1;">' + str(value) + '</span>'
-            '<span style="font-size:8.5px; color:' + color + '80; font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:3px;">' + label + '</span>'
+            'background:' + color + '18; border:1px solid ' + color + '35;'
+            'border-radius:' + br + '; padding:' + pad + '; min-width:' + mw + ';">'
+            '<span style="font-family:Outfit,sans-serif; font-size:' + fs + '; font-weight:800; color:' + color + '; line-height:1;">' + str(value) + '</span>'
+            '<span style="font-size:' + fs_lbl + '; color:' + color + '90; font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:3px;">' + label + '</span>'
             '</div>'
+        )
+
+    def prev_block(df_pr, c_int="#64748b", c_min="#64748b", c_moy="#64748b"):
+        if df_pr is None or df_pr.empty: return ""
+        nb, total, moy = stats_block(df_pr)
+        return (
+            '<div style="margin-top:10px; padding:8px 10px;'
+            'background:rgba(255,255,255,0.015); border:1px solid rgba(255,255,255,0.05);'
+            'border-radius:10px; opacity:0.6;">'
+            '<div style="font-family:Outfit,sans-serif; font-size:8px; color:#475569;'
+            'font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">'
+            '📅 ' + mois_pr_label + '</div>'
+            '<div style="display:flex; gap:4px; flex-wrap:wrap;">'
+            + stat_pill("interruptions", nb, c_int, small=True)
+            + stat_pill("min total", total, c_min, small=True)
+            + stat_pill("moy. min", moy, c_moy, small=True)
+            + '</div></div>'
         )
 
     def detail_expander(df_sub, label):
@@ -481,6 +527,8 @@ with col_stats:
                 duree     = int(row['duree_min'])
                 fin_color = "#f87171" if fin == "En cours" else "#94a3b8"
                 rname     = row['ride_name']
+                land_r    = ride_to_land.get(rname, "")
+                rc        = LAND_COLORS_LIGHT.get(land_r, "#94a3b8")
                 st.markdown(
                     '<div style="display:flex; justify-content:space-between; align-items:center;'
                     'padding:6px 10px; background:rgba(255,255,255,0.02); border-radius:8px; margin-bottom:4px;">'
@@ -489,37 +537,33 @@ with col_stats:
                     '<div>'
                     '<span style="color:rgba(255,255,255,0.65); font-size:11px; font-weight:500; display:block;">' + rname + '</span>'
                     '<span style="color:#475569; font-size:10px;">' + debut + ' → <span style="color:' + fin_color + ';">' + fin + '</span></span>'
-                    '</div>'
-                    '</div>'
+                    '</div></div>'
                     '<span style="font-family:Outfit,sans-serif; font-size:11px; font-weight:700;'
-                    'color:#fbbf24; background:rgba(251,191,36,0.1); border:1px solid rgba(251,191,36,0.2);'
+                    'color:' + rc + '; background:' + rc + '15; border:1px solid ' + rc + '30;'
                     'padding:1px 8px; border-radius:8px;">' + str(duree) + ' min</span>'
                     '</div>',
                     unsafe_allow_html=True
                 )
 
     if df_mois.empty:
-        st.caption(f"Pas d'interruptions ce mois-ci.")
+        st.caption("Pas d'interruptions ce mois-ci.")
     else:
-        mois_label = now_paris.strftime("%B %Y").capitalize()
-        mois_pr_label = debut_mois_pr.strftime("%B %Y").capitalize()
-
         # === GLOBAL ===
         with st.expander(f"🌍 Global — {mois_label}", expanded=True):
             nb, total, moy = stats_block(df_mois)
             st.markdown(
                 '<div style="display:flex; gap:8px; flex-wrap:wrap; padding:4px 0;">'
-                + stat_pill("interruptions", nb, "#c4b5fd")
-                + stat_pill("min total", total, "#7dd3fc")
-                + stat_pill("moy. min", moy, "#6ee7b7")
+                + stat_pill("interruptions", nb, GLOBAL_COLORS["interruptions"])
+                + stat_pill("min total", total, GLOBAL_COLORS["min"])
+                + stat_pill("moy. min", moy, GLOBAL_COLORS["moy"])
                 + '</div>',
                 unsafe_allow_html=True
             )
 
             parc_cards = ""
             for parc_name, label, color in [
-                ("Disneyland Park",       "🏰 DLP", "#ffb3d1"),
-                ("Disney Adventure World","🎬 DAW", "#fb923c")
+                ("Disneyland Park",        "🏰 DLP", PARC_COLORS["Disneyland Park"]),
+                ("Disney Adventure World", "🎬 DAW", PARC_COLORS["Disney Adventure World"]),
             ]:
                 df_p = df_mois[df_mois['parc'] == parc_name]
                 nb_p, total_p, moy_p = stats_block(df_p)
@@ -530,9 +574,9 @@ with col_stats:
                     '<div style="font-family:Outfit,sans-serif; font-size:10px; font-weight:700;'
                     'color:' + color + '; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">' + label + '</div>'
                     '<div style="display:flex; gap:6px; flex-wrap:wrap;">'
-                    + stat_pill("Interruptions", nb_p, color)
-                    + stat_pill("min total", total_p, "#94a3b8")
-                    + stat_pill("moy. min", moy_p, "#94a3b8")
+                    + stat_pill("interruptions", nb_p, color)
+                    + stat_pill("min total", total_p, color)
+                    + stat_pill("moy. min", moy_p, color)
                     + '</div></div>'
                 )
             st.markdown(
@@ -541,31 +585,54 @@ with col_stats:
                 unsafe_allow_html=True
             )
 
-            # Mois précédent (compact)
+            # Mois précédent global
             if not df_mois_pr.empty:
                 nb_pr, total_pr, moy_pr = stats_block(df_mois_pr)
+                parc_cards_pr = ""
+                for parc_name, label, color in [
+                    ("Disneyland Park",        "🏰 DLP", PARC_COLORS["Disneyland Park"]),
+                    ("Disney Adventure World", "🎬 DAW", PARC_COLORS["Disney Adventure World"]),
+                ]:
+                    df_p_pr = df_mois_pr[df_mois_pr['parc'] == parc_name]
+                    nb_p, total_p, moy_p = stats_block(df_p_pr)
+                    parc_cards_pr += (
+                        '<div style="flex:1; min-width:100px; background:' + color + '06;'
+                        'border:1px solid ' + color + '18; border-top:2px solid ' + color + '45;'
+                        'border-radius:10px; padding:7px 9px;">'
+                        '<div style="font-family:Outfit,sans-serif; font-size:8px; font-weight:700;'
+                        'color:' + color + '99; text-transform:uppercase; letter-spacing:1px; margin-bottom:5px;">' + label + '</div>'
+                        '<div style="display:flex; gap:4px; flex-wrap:wrap;">'
+                        + stat_pill("interruptions", nb_p, color, small=True)
+                        + stat_pill("min total", total_p, color, small=True)
+                        + stat_pill("moy. min", moy_p, color, small=True)
+                        + '</div></div>'
+                    )
                 st.markdown(
-                    '<div style="margin-top:14px; padding:10px 14px;'
-                    'background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06);'
-                    'border-radius:12px;">'
-                    '<div style="font-family:Outfit,sans-serif; font-size:9px; color:#475569;'
+                    '<div style="margin-top:14px; padding:10px 12px;'
+                    'background:rgba(255,255,255,0.015); border:1px solid rgba(255,255,255,0.05);'
+                    'border-radius:12px; opacity:0.7;">'
+                    '<div style="font-family:Outfit,sans-serif; font-size:8.5px; color:#475569;'
                     'font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">'
                     '📅 ' + mois_pr_label + '</div>'
-                    '<div style="display:flex; gap:6px; flex-wrap:wrap;">'
-                    + stat_pill("Interruptions", nb_pr, "#64748b")
-                    + stat_pill("min total", total_pr, "#64748b")
-                    + stat_pill("moy. min", moy_pr, "#64748b")
-                    + '</div></div>',
+                    '<div style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px;">'
+                    + stat_pill("interruptions", nb_pr, GLOBAL_COLORS["interruptions"], small=True)
+                    + stat_pill("min total", total_pr, GLOBAL_COLORS["min"], small=True)
+                    + stat_pill("moy. min", moy_pr, GLOBAL_COLORS["moy"], small=True)
+                    + '</div>'
+                    '<div style="display:flex; flex-direction:column; gap:5px;">'
+                    + parc_cards_pr + '</div></div>',
                     unsafe_allow_html=True
                 )
 
         # === PAR PARC ===
         with st.expander("🏰 Par parc"):
-            for parc_name, parc_label, parc_color in [
-                ("Disneyland Park",       "🏰 Disneyland Park", "#ffb3d1"),
-                ("Disney Adventure World","🎬 Disney Adventure World", "#fb923c")
+            for parc_name, parc_label in [
+                ("Disneyland Park",        "🏰 Disneyland Park"),
+                ("Disney Adventure World", "🎬 Disney Adventure World"),
             ]:
-                df_p = df_mois[df_mois['parc'] == parc_name]
+                parc_color = PARC_COLORS[parc_name]
+                df_p       = df_mois[df_mois['parc'] == parc_name]
+                df_p_pr    = df_mois_pr[df_mois_pr['parc'] == parc_name] if not df_mois_pr.empty else pd.DataFrame()
                 if df_p.empty: continue
                 st.markdown(
                     '<div style="font-family:Outfit,sans-serif; font-size:11px; font-weight:700;'
@@ -573,9 +640,11 @@ with col_stats:
                     unsafe_allow_html=True
                 )
                 for land, attractions in PARKS_DATA[parc_name].items():
-                    df_l = df_p[df_p['land'] == land]
+                    df_l    = df_p[df_p['land'] == land]
+                    df_l_pr = df_p_pr[df_p_pr['land'] == land] if not df_p_pr.empty else pd.DataFrame()
                     if df_l.empty: continue
-                    color = LAND_COLORS.get(land, "#64748b")
+                    color   = LAND_COLORS.get(land, "#64748b")
+                    color_l = LAND_COLORS_LIGHT.get(land, "#94a3b8")
                     nb, total, moy = stats_block(df_l)
                     st.markdown(
                         '<div style="padding:9px 12px; background:' + color + '08;'
@@ -585,23 +654,27 @@ with col_stats:
                         'color:' + color + '; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">'
                         + land.title() + '</div>'
                         '<div style="display:flex; gap:6px; flex-wrap:wrap;">'
-                        + stat_pill("Interruptions", nb, color)
-                        + stat_pill("min total", total, "#7dd3fc")
-                        + stat_pill("moy. min", moy, "#6ee7b7")
-                        + '</div></div>',
+                        + stat_pill("interruptions", nb, color)
+                        + stat_pill("min total", total, color_l)
+                        + stat_pill("moy. min", moy, color_l)
+                        + '</div>'
+                        + prev_block(df_l_pr, color, color_l, color_l)
+                        + '</div>',
                         unsafe_allow_html=True
                     )
                     detail_expander(df_l, f"Détail — {land.title()}")
 
         # === PAR LAND ===
         with st.expander("🗺️ Par land"):
-            all_lands      = [l for lands in PARKS_DATA.values() for l in lands.keys()]
+            all_lands       = [l for lands in PARKS_DATA.values() for l in lands.keys()]
             available_lands = [l for l in all_lands if not df_mois[df_mois['land'] == l].empty]
             selected_lands  = st.multiselect("", options=available_lands,
                 default=available_lands[:1] if available_lands else [], key="stats_lands")
             for land in selected_lands:
-                color = LAND_COLORS.get(land, "#64748b")
-                df_l  = df_mois[df_mois['land'] == land]
+                color   = LAND_COLORS.get(land, "#64748b")
+                color_l = LAND_COLORS_LIGHT.get(land, "#94a3b8")
+                df_l    = df_mois[df_mois['land'] == land]
+                df_l_pr = df_mois_pr[df_mois_pr['land'] == land] if not df_mois_pr.empty else pd.DataFrame()
                 nb, total, moy = stats_block(df_l)
                 st.markdown(
                     '<div style="padding:10px 14px; background:' + color + '08;'
@@ -611,10 +684,12 @@ with col_stats:
                     'color:' + color + '; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">'
                     + land.title() + '</div>'
                     '<div style="display:flex; gap:6px; flex-wrap:wrap;">'
-                    + stat_pill("Interruptions", nb, color)
-                    + stat_pill("min total", total, "#7dd3fc")
-                    + stat_pill("moy. min", moy, "#6ee7b7")
-                    + '</div></div>',
+                    + stat_pill("interruptions", nb, color)
+                    + stat_pill("min total", total, color_l)
+                    + stat_pill("moy. min", moy, color_l)
+                    + '</div>'
+                    + prev_block(df_l_pr, color, color_l, color_l)
+                    + '</div>',
                     unsafe_allow_html=True
                 )
                 detail_expander(df_l, f"Détail — {land.title()}")
@@ -627,16 +702,19 @@ with col_stats:
                 default=available_rides[:1] if available_rides else [],
                 format_func=lambda x: f"{get_emoji(x)} {x}", key="stats_rides")
             for ride in selected_rides:
-                land  = ride_to_land.get(ride, "Inconnu")
-                color = LAND_COLORS.get(land, "#64748b")
-                df_r  = df_mois[df_mois['ride_name'] == ride]
+                land    = ride_to_land.get(ride, "Inconnu")
+                color   = LAND_COLORS.get(land, "#64748b")
+                color_l = LAND_COLORS_LIGHT.get(land, "#94a3b8")
+                df_r    = df_mois[df_mois['ride_name'] == ride]
+                df_r_pr = df_mois_pr[df_mois_pr['ride_name'] == ride] if not df_mois_pr.empty else pd.DataFrame()
                 nb, total, moy = stats_block(df_r)
                 st.markdown(
-                    '<div style="padding:10px 14px; background:rgba(255,255,255,0.02);'
-                    'border:1px solid rgba(255,255,255,0.06); border-radius:12px; margin-bottom:4px;">'
+                    '<div style="padding:10px 14px; background:' + color + '06;'
+                    'border:1px solid ' + color + '20; border-left:3px solid ' + color_l + ';'
+                    'border-radius:12px; margin-bottom:4px;">'
                     '<div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">'
                     '<span style="font-size:18px;">' + get_emoji(ride) + '</span>'
-                    '<span style="font-family:Outfit,sans-serif; color:rgba(255,255,255,0.75);'
+                    '<span style="font-family:Outfit,sans-serif; color:rgba(255,255,255,0.8);'
                     'font-size:12px; font-weight:600;">' + ride + '</span>'
                     '</div>'
                     '<div style="margin-bottom:8px; margin-left:26px;">'
@@ -646,14 +724,15 @@ with col_stats:
                     + land.title() + '</span>'
                     '</div>'
                     '<div style="display:flex; gap:6px; flex-wrap:wrap;">'
-                    + stat_pill("Interruptions", nb, "#c4b5fd")
-                    + stat_pill("min total", total, "#7dd3fc")
-                    + stat_pill("moy. min", moy, "#6ee7b7")
-                    + '</div></div>',
+                    + stat_pill("interruptions", nb, color)
+                    + stat_pill("min total", total, color_l)
+                    + stat_pill("moy. min", moy, color_l)
+                    + '</div>'
+                    + prev_block(df_r_pr, color, color_l, color_l)
+                    + '</div>',
                     unsafe_allow_html=True
                 )
                 detail_expander(df_r, f"Détail — {ride}")
-
 
 st.divider()
 footer_html = f"""
