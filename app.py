@@ -551,6 +551,8 @@ with col_stats:
             + badge(total_g, "Min Total", "#7dd3fc")
             + badge(moy_g, "Min Moyenne", "#6ee7b7")
             + '</div>',
+            + prev_block(df_l_pr, color, color_l, color_l)
+            + '</div>'
             unsafe_allow_html=True
         )
 
