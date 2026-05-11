@@ -10,7 +10,7 @@ from streamlit_autorefresh import st_autorefresh
 
 # --- IMPORTS DES MODULES ---
 from ui.styles import apply_custom_style
-from ui.comp import render_weather_card, render_ride_card, render_api_info, render_park_hours_v2, render_upcoming_shows
+from ui.comp import render_weather_card, render_ride_card, render_api_info, render_park_hours, render_upcoming_shows
 from ui.popup import render_shortcuts_popover, render_history_expander
 from modules.rehabilitations import REHAB_LIST
 from modules.weather import get_disney_weather, get_maintenance_weather
@@ -159,8 +159,13 @@ except Exception as e:
     st.error(f"Erreur de connexion aux horaires : {e}")
     schedules_data = []
 
-render_park_hours_v2(schedules_data)
-render_upcoming_shows(schedules_data)
+col_h1, col_h2 = st.columns([1, 1])
+with col_h1:
+    render_park_hours(schedules_data)
+with col_h2:
+    render_upcoming_shows(schedules_data)
+
+
 
 # --- HEADER INFO ---
 render_api_info(derniere_maj, st.session_state.last_refresh)
