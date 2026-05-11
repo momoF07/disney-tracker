@@ -578,6 +578,8 @@ with col_stats:
 
                     rides_html = ""
                     for attr_name in attractions:
+                        df_r    = df_mois[df_mois['ride_name'] == attr_name]
+                        df_r_pr = df_mois_pr[df_mois_pr['ride_name'] == attr_name] if not df_mois_pr.empty else pd.DataFrame()
                         df_a = df_l[df_l['ride_name'] == attr_name]
                         if df_a.empty: continue
                         nb_a, total_a, moy_a = stats_block(df_a)
@@ -592,7 +594,9 @@ with col_stats:
                             + badge_sm(nb_a, "Interruptions", color)
                             + badge_sm(total_a, "Min Total", color_l)
                             + badge_sm(moy_a, "Min Moyenne", color_l)
-                            + '</div></div>'
+                            + '</div>'
+                            + prev_block(df_r_pr, color, color_l, color_l)
+                            + '</div>'
                         )
 
                     lands_html += (
