@@ -156,14 +156,14 @@ def send_recap_journee(all_pannes):
                     "title":       "📋 Récap des interruptions du jour",
                     "description": f"**{len(terminées)}** interruption(s) · **{total_min}** min au total",
                     "color":       0x6d28d9,
-                    "fields":      [{"name": "Détail", "value": "\n".join(chunk), "inline": False}],
+                    "fields":      [{"name": "Détail", "\nvalue": "\n".join(chunk), "inline": False}],
                     "footer":      {"text": f"Journée du {now.strftime('%d/%m/%Y')}"}
                 }
             else:
                 embed = {
                     "title":  "",
                     "color":  0x6d28d9,
-                    "fields": [{"name": "\u200b", "value": "\n".join(chunk), "inline": False}],
+                    "fields": [{"name": "\u200b", "\nvalue": "\n".join(chunk), "inline": False}],
                     "footer": {"text": f"Journée du {now.strftime('%d/%m/%Y')} ({i+1}/{len(chunks)})"}
                 }
             res = req.post(WEBHOOK_NOTIFS, json={"embeds": [embed]})
