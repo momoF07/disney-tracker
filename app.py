@@ -554,7 +554,7 @@ with col_stats:
             + '</div>',
             + '<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px;">'
             + prev_block(df_g_pr, "#c4b5fd", "#7dd3fc", "#6ee7b7")
-            + '</div>'
+            + '</div>',
             unsafe_allow_html=True
         )
 
