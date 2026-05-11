@@ -504,10 +504,10 @@ with col_stats:
         if df_pr is None or df_pr.empty: return ""
         nb, total, moy = stats_block(df_pr)
         return (
-            '<div style="margin-top:8px; padding:6px 10px;'
+            '<div style="margin-top:8px; padding:6px 6px;'
             'background:rgba(255,255,255,0.015); border:1px solid rgba(255,255,255,0.05);'
-            'border-radius:9px; opacity:0.6;">'
-            '<span style="font-size:7.5px; color:#475569; font-weight:700;'
+            'border-radius:8px; opacity:0.5;">'
+            '<span style="font-size:7px; color:#475569; font-weight:700;'
             'text-transform:uppercase; letter-spacing:1px;">📅 ' + mois_pr_label + ' — </span>'
             + badge_sm(nb, "Interruptions", c_int)
             + badge_sm(total, "Min Total", c_min)
