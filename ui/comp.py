@@ -189,9 +189,9 @@ def render_park_hours(schedules):
             'background:rgba(255,255,255,0.02); border-radius:18px;'
             'border:1px solid rgba(255,255,255,0.06);'
             'border-top:2px solid ' + color + '66;">'
-            '<div style="font-family:Outfit,sans-serif; font-size:9px; color:' + color + '; font-weight:700;'
+            '<div style="font-family:Outfit,sans-serif; font-size:8px; color:' + color + '; font-weight:700;'
             'text-transform:uppercase; letter-spacing:1.5px; margin-bottom:6px; opacity:0.8;">' + name + '</div>'
-            '<div style="font-family:Outfit,sans-serif; font-size:22px; color:white; font-weight:700; line-height:1;">'
+            '<div style="font-family:Outfit,sans-serif; font-size:17px; color:white; font-weight:700; line-height:1;">'
             + opening + ' <span style="color:rgba(255,255,255,0.25); font-size:16px;">→</span> ' + closing +
             '</div>'
             + emt_html +
