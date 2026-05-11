@@ -182,6 +182,7 @@ try:
     
     req.post(WEBHOOK_NOTIFS, json={
 "content": f"# 🌙 Fin de journée du {now.strftime('%d/%m/%Y')}\n-# ——\n# 🌅 Début de la journée du {(now + __import__('datetime').timedelta(days=1)).strftime('%d/%m/%Y')}"
+}
 
 
 
