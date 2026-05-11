@@ -95,6 +95,8 @@ def set_message_id(key, value):
 # ============================================================
 # NOTIFICATIONS DISCORD
 # ============================================================
+from modules.ride_images import get_ride_image
+
 def send_notif(ride_name, old_status, new_status, detail=""):
     if not WEBHOOK_NOTIFS:
         return
@@ -104,6 +106,7 @@ def send_notif(ride_name, old_status, new_status, detail=""):
     heure = datetime.now(paris_tz).strftime("%H:%M")
     e_old = STATUS_EMOJI.get(old_status, "⚪")
     e_new = STATUS_EMOJI.get(new_status, "⚪")
+    image = get_ride_image(ride_name)
 
     embed = {
         "title":       f"{e_new} {ride_name}",
@@ -115,11 +118,16 @@ def send_notif(ride_name, old_status, new_status, detail=""):
         ],
         "footer": {"text": "Disney Wait Time Bot"}
     }
+
+    if image:
+        embed["thumbnail"] = {"url": image}
+
     try:
         req.post(WEBHOOK_NOTIFS, json={"embeds": [embed]})
         print(f"  📣 Notif → {ride_name} : {old_status} → {new_status}")
     except Exception as e:
         print(f"⚠️ Notif Discord : {e}")
+
 
 
 def send_recap_journee(all_pannes):
