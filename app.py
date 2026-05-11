@@ -670,7 +670,7 @@ with col_stats:
             available_lands = [l for l in all_lands if not df_mois[df_mois['land'] == l].empty]
             selected_lands  = st.multiselect("", options=available_lands,
                 default=available_lands[:1] if available_lands else [], key="stats_lands")
-                        for land in selected_lands:
+            for land in selected_lands:
                 color   = LAND_COLORS.get(land, "#64748b")
                 color_l = LAND_COLORS_LIGHT.get(land, "#94a3b8")
                 df_l    = df_mois[df_mois['land'] == land]
