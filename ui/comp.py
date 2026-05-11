@@ -195,11 +195,11 @@ def render_park_hours_v2(schedules):
             'border-top:2px solid ' + color + '66;">'
 
             # Nom court sur une ligne
-            '<div style="font-family:Outfit,sans-serif; font-size:6px; color:' + color + '; font-weight:700;'
+            '<div style="font-family:Outfit,sans-serif; font-size:12px; color:' + color + '; font-weight:700;'
             'text-transform:uppercase; letter-spacing:1.5px; margin-bottom:8px; opacity:0.8;">' + fullname + '</div>'
 
             # Ouverture → Fermeture sur la même ligne
-            '<div style="font-family:Outfit,sans-serif; font-size:15px; color:red; font-weight:700; line-height:1; white-space:nowrap;">'
+            '<div style="font-family:Outfit,sans-serif; font-size:20px; color:white; font-weight:700; line-height:1; white-space:nowrap;">'
             + opening +
             ' <span style="color:rgba(255,255,255,0.25); font-size:14px;">→</span> '
             + closing +
