@@ -392,7 +392,14 @@ with col_flux:
         st.caption("Aucune activité majeure aujourd'hui.")
 
 with col_stats:
-    st.subheader("📊 Stats")
+    now_paris     = maintenant
+    debut_mois    = now_paris.replace(day=1, hour=2, minute=30, second=0, microsecond=0)
+    debut_mois_pr = (debut_mois - pd.DateOffset(months=1)).to_pydatetime()
+    fin_mois_pr   = debut_mois
+    mois_label    = now_paris.strftime("%B %Y").capitalize()
+    mois_pr_label = debut_mois_pr.strftime("%B %Y").capitalize()
+
+    st.subheader(f"📊 Stats —-— {mois_label}")
 
     LAND_COLORS = {
         "MAINSTREET":      "#f59e0b",
@@ -432,13 +439,7 @@ with col_stats:
         "moy":           "#6ee7b7",
     }
 
-    now_paris     = maintenant
-    debut_mois    = now_paris.replace(day=1, hour=2, minute=30, second=0, microsecond=0)
-    debut_mois_pr = (debut_mois - pd.DateOffset(months=1)).to_pydatetime()
-    fin_mois_pr   = debut_mois
-    mois_label    = now_paris.strftime("%B %Y").capitalize()
-    mois_pr_label = debut_mois_pr.strftime("%B %Y").capitalize()
-
+    
     def load_df(date_from, date_to=None):
         try:
             q = supabase.table("logs_101").select("*").gte("start_time", date_from.isoformat())
