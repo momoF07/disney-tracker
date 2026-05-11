@@ -670,16 +670,18 @@ with col_stats:
             available_lands = [l for l in all_lands if not df_mois[df_mois['land'] == l].empty]
             selected_lands  = st.multiselect("", options=available_lands,
                 default=available_lands[:1] if available_lands else [], key="stats_lands")
-            for land in selected_lands:
+                        for land in selected_lands:
                 color   = LAND_COLORS.get(land, "#64748b")
                 color_l = LAND_COLORS_LIGHT.get(land, "#94a3b8")
                 df_l    = df_mois[df_mois['land'] == land]
                 df_l_pr = df_mois_pr[df_mois_pr['land'] == land] if not df_mois_pr.empty else pd.DataFrame()
                 nb, total, moy = stats_block(df_l)
+
+                # Stats globales du land
                 st.markdown(
                     '<div style="padding:10px 14px; background:' + color + '08;'
                     'border:1px solid ' + color + '25; border-left:3px solid ' + color + ';'
-                    'border-radius:12px; margin-bottom:4px;">'
+                    'border-radius:12px; margin-bottom:8px;">'
                     '<div style="font-family:Outfit,sans-serif; font-size:10px; font-weight:700;'
                     'color:' + color + '; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">'
                     + land.title() + '</div>'
@@ -692,7 +694,52 @@ with col_stats:
                     + '</div>',
                     unsafe_allow_html=True
                 )
-                detail_expander(df_l, f"Détail du mois actuel – {land.title()}")
+
+                # Stats par attraction du land
+                attractions_du_land = [
+                    a for p_lands in PARKS_DATA.values()
+                    for l, attrs in p_lands.items()
+                    if l == land
+                    for a in attrs
+                ]
+                rows_html = ""
+                for attr_name in attractions_du_land:
+                    df_a = df_l[df_l['ride_name'] == attr_name]
+                    if df_a.empty: continue
+                    nb_a, total_a, moy_a = stats_block(df_a)
+                    rows_html += (
+                        '<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;'
+                        'padding:7px 10px; background:' + color + '06;'
+                        'border:1px solid ' + color + '15; border-radius:10px; margin-bottom:5px;">'
+
+                        # Nom attraction
+                        '<div style="display:flex; align-items:center; gap:6px; min-width:180px; flex:1;">'
+                        '<span style="font-size:15px;">' + get_emoji(attr_name) + '</span>'
+                        '<span style="font-family:Mulish,sans-serif; color:rgba(255,255,255,0.75);'
+                        'font-size:11px; font-weight:600;">' + attr_name + '</span>'
+                        '</div>'
+
+                        # Pills stats
+                        '<div style="display:flex; gap:5px; flex-wrap:wrap;">'
+                        '<span style="font-family:Outfit,sans-serif; font-size:11px; font-weight:800;'
+                        'color:' + color + '; background:' + color + '18; border:1px solid ' + color + '35;'
+                        'padding:3px 10px; border-radius:8px;">' + str(nb_a) + ' ×</span>'
+
+                        '<span style="font-family:Outfit,sans-serif; font-size:11px; font-weight:700;'
+                        'color:' + color_l + '; background:' + color_l + '15; border:1px solid ' + color_l + '30;'
+                        'padding:3px 10px; border-radius:8px;">' + str(total_a) + ' min</span>'
+
+                        '<span style="font-family:Outfit,sans-serif; font-size:11px; font-weight:700;'
+                        'color:' + color_l + '99; background:' + color_l + '10; border:1px solid ' + color_l + '20;'
+                        'padding:3px 10px; border-radius:8px;">moy. ' + str(moy_a) + ' min</span>'
+                        '</div>'
+                        '</div>'
+                    )
+
+                if rows_html:
+                    st.markdown(rows_html, unsafe_allow_html=True)
+
+                detail_expander(df_l, f"Détail — {land.title()}")
 
         # === PAR ATTRACTION ===
         with st.expander("🎢 Par attraction"):
