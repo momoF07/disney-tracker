@@ -167,7 +167,7 @@ def render_park_hours(schedules):
     boxes = ""
     for p in parks:
         is_dlp   = "Disneyland" in p['ride_name']
-        name     = "Disneyland Park" if is_dlp else "Disney Adventure World"
+        name     = "DLP" if is_dlp else "DAW"
         color    = "#ffb3d1" if is_dlp else "#fb923c"
         emt_time = emts.get(p['ride_name'])
         opening  = p['opening_time'][:5]
@@ -188,10 +188,10 @@ def render_park_hours(schedules):
             '<div style="flex:1; min-width:150px; padding:16px 18px;'
             'background:rgba(255,255,255,0.02); border-radius:18px;'
             'border:1px solid rgba(255,255,255,0.06);'
-            'border-top:4px solid ' + color + '66;">'
-            '<div style="font-family:Outfit,sans-serif; font-size:12px; color:' + color + '; font-weight:700;'
-            'text-transform:uppercase; letter-spacing:5px; margin-bottom:6px; opacity:0.8;">' + name + '</div>'
-            '<div style="font-family:Outfit,sans-serif; font-size:10px; color:white; font-weight:700; line-height:1;">'
+            'border-top:2px solid ' + color + '66;">'
+            '<div style="font-family:Outfit,sans-serif; font-size:9.5px; color:' + color + '; font-weight:700;'
+            'text-transform:uppercase; letter-spacing:1.5px; margin-bottom:6px; opacity:0.8;">' + name + '</div>'
+            '<div style="font-family:Outfit,sans-serif; font-size:22px; color:white; font-weight:700; line-height:0.5;">'
             + opening + ' <span style="color:rgba(255,255,255,0.25); font-size:16px;">→</span> ' + closing +
             '</div>'
             + emt_html +
