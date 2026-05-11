@@ -448,8 +448,13 @@ def run_worker():
                 active_panne         = supabase.table("logs_101")\
                     .select("*").eq("ride_name", name).is_("end_time", "null").execute().data
                 theoriquement_ouvert = (h_o <= current_time < h_f)
+                
+                # Tampon fermeture : pas d'incident dans les 30 min avant la fermeture
+                from datetime import datetime as dt_class, timedelta
+                h_f_tampon = (dt_class.combine(dt_class.today(), h_f) - timedelta(minutes=15)).time()
+                trop_proche_fermeture = current_time >= h_f_tampon
 
-                if not is_open and theoriquement_ouvert and not active_panne:
+                if not is_open and theoriquement_ouvert and not active_panne and not trop_proche_fermeture:
                     supabase.table("logs_101").insert({
                         "ride_name":  name,
                         "start_time": datetime.now(pytz.utc).isoformat()
