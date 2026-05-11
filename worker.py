@@ -149,12 +149,14 @@ def send_recap_journee(all_pannes):
     chunks = [lines[i:i+8] for i in range(0, len(lines), 8)]
 
     try:
-        # Message ouverture
-        req.post(WEBHOOK_NOTIFS, json={
-            "content": f"# 🌙 Fin de journée du {now.strftime('%d/%m/%Y')}"
-        })
+        # 1. Embed fin de journée
+        req.post(WEBHOOK_NOTIFS, json={"embeds": [{
+            "title":       f"🌙 Fin de journée — {now.strftime('%d/%m/%Y')}",
+            "description": "Les parcs ferment leurs portes. Voici le bilan des interruptions du jour.",
+            "color":       0x6d28d9,
+        }]})
 
-        # Chunks du récap
+        # 2. Embeds récap
         for i, chunk in enumerate(chunks):
             if i == 0:
                 embed = {
@@ -171,17 +173,18 @@ def send_recap_journee(all_pannes):
                     "footer": {"text": f"{i+1}/{len(chunks)}"}
                 }
             res = req.post(WEBHOOK_NOTIFS, json={"embeds": [embed]})
-            print(f"✅ Récap chunk {i+1}/{len(chunks)} envoyé. Status: {res.status_code} — {res.text[:100]}")
+            print(f"✅ Récap chunk {i+1}/{len(chunks)} envoyé. Status: {res.status_code}")
 
-        # Message clôture
+        # 3. Message début journée suivante
         req.post(WEBHOOK_NOTIFS, json={
-            "content": f"-# ——\n# 🌅 Début de la journée du {tomorrow.strftime('%d/%m/%Y')}"
+            "content": f"# 🌅 Début de la journée du {tomorrow.strftime('%d/%m/%Y')}"
         })
 
         print("✅ Récap journée envoyé.")
 
     except Exception as e:
         print(f"⚠️ Récap journée : {e}")
+
 
 
 # ============================================================
