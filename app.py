@@ -159,7 +159,7 @@ except Exception as e:
     st.error(f"Erreur de connexion aux horaires : {e}")
     schedules_data = []
 
-col_h1, col_h2 = st.columns([1, 1])
+col_h1, col_h2 = st.columns([1.5, 1])
 with col_h1:
     render_park_hours(schedules_data)
 with col_h2:
