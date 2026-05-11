@@ -120,7 +120,7 @@ def send_notif(ride_name, old_status, new_status, detail=""):
     }
 
     if image:
-        embed["thumbnail"] = {"url": image}
+        embed["image"] = {"url": image}
 
     try:
         req.post(WEBHOOK_NOTIFS, json={"embeds": [embed]})
