@@ -156,7 +156,7 @@ def render_ride_card(ride, sub, wait, bg, card_style, pill, show_wait=True):
 
 
 
-def render_park_hours_v2(schedules):
+def render_park_hours(schedules):
     if not schedules: return
 
     parks = [s for s in schedules if s.get('type') == 'PARK']
@@ -171,7 +171,7 @@ def render_park_hours_v2(schedules):
     for p in parks:
         is_dlp   = "Disneyland" in p['ride_name']
         name     = "DLP" if is_dlp else "DAW"
-        fullname = "Disneyland Park" if is_dlp else "Disney Adventure World"
+        fullname = "Disneyland<br>Park" if is_dlp else "Disney<br>Adventure World"
         color    = "#ffb3d1" if is_dlp else "#fb923c"
         emt_time = emts.get(p['ride_name'])
         opening  = p['opening_time'][:5]
@@ -181,7 +181,7 @@ def render_park_hours_v2(schedules):
         if emt_time:
             emt_html = (
                 '<div style="margin-top:8px; display:inline-flex; align-items:center; gap:5px;'
-                'background:rgba(167,139,250,0.1); border:1px solid rgba(167,139,250,0.2);'
+                'background:rgba(167,139,250,0.1); border:1.5px solid rgba(167,139,250,0.2);'
                 'padding:3px 10px; border-radius:20px;">'
                 '<span style="font-size:10px;">✨</span>'
                 '<span style="color:#a78bfa; font-size:12px; font-weight:700;">EMT ' + emt_time[:5] + ' → ' + opening + '</span>'
@@ -192,16 +192,16 @@ def render_park_hours_v2(schedules):
             '<div style="flex:1; min-width:130px; padding:14px 16px;'
             'background:rgba(255,255,255,0.02); border-radius:18px;'
             'border:1px solid rgba(255,255,255,0.06);'
-            'border-top:2px solid ' + color + '66;">'
+            'border-top:3.5px solid ' + color + '66;">'
 
             # Nom court sur une ligne
             '<div style="font-family:Outfit,sans-serif; font-size:12px; color:' + color + '; font-weight:700;'
             'text-transform:uppercase; letter-spacing:1.5px; margin-bottom:8px; opacity:0.8;">' + fullname + '</div>'
 
             # Ouverture → Fermeture sur la même ligne
-            '<div style="font-family:Outfit,sans-serif; font-size:20px; color:white; font-weight:700; line-height:1; white-space:nowrap;">'
+            '<div style="font-family:Outfit,sans-serif; font-size:22px; color:white; font-weight:700; line-height:1; white-space:nowrap;">'
             + opening +
-            ' <span style="color:rgba(255,255,255,0.25); font-size:14px;">→</span> '
+            ' <span style="color:rgba(255,255,255,0.25); font-size:16px;">→</span> '
             + closing +
             '</div>'
 
