@@ -396,8 +396,14 @@ with col_stats:
     debut_mois    = now_paris.replace(day=1, hour=2, minute=30, second=0, microsecond=0)
     debut_mois_pr = (debut_mois - pd.DateOffset(months=1)).to_pydatetime()
     fin_mois_pr   = debut_mois
-    mois_label    = now_paris.strftime("%B %Y").capitalize()
-    mois_pr_label = debut_mois_pr.strftime("%B %Y").capitalize()
+    
+    MOIS_FR = {
+        1: "Janvier", 2: "Février", 3: "Mars", 4: "Avril",
+        5: "Mai", 6: "Juin", 7: "Juillet", 8: "Août",
+        9: "Septembre", 10: "Octobre", 11: "Novembre", 12: "Décembre"
+    }
+    mois_label    = f"{MOIS_FR[now_paris.month]} {now_paris.year}"
+    mois_pr_label = f"{MOIS_FR[debut_mois_pr.month]} {debut_mois_pr.year}"
 
     st.subheader(f"📊 Stats — {mois_label}")
 
@@ -544,15 +550,32 @@ with col_stats:
     else:
         nb_g, total_g, moy_g = stats_block(df_mois)
 
+
         # === RÉSUMÉ GLOBAL ===
         st.markdown(
-            '<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px;">'
+            '<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px;">'
             + badge(nb_g, "Interruptions", "#c4b5fd")
             + badge(total_g, "Min Total", "#7dd3fc")
             + badge(moy_g, "Min Moyenne", "#6ee7b7")
             + '</div>',
             unsafe_allow_html=True
         )
+
+        # Mois précédent global
+        if not df_mois_pr.empty:
+            nb_pr, total_pr, moy_pr = stats_block(df_mois_pr)
+            st.markdown(
+                '<div style="display:flex; align-items:center; gap:4px; flex-wrap:wrap; margin-bottom:14px;'
+                'padding:6px 10px; background:rgba(255,255,255,0.015); border:1px solid rgba(255,255,255,0.05);'
+                'border-radius:10px; opacity:0.6;">'
+                '<span style="font-size:7.5px; color:#475569; font-weight:700; text-transform:uppercase;'
+                'letter-spacing:1px; margin-right:2px;">📅 ' + mois_pr_label + ' —</span>'
+                + badge_sm(nb_pr, "Interruptions", "#c4b5fd")
+                + badge_sm(total_pr, "Min Total", "#7dd3fc")
+                + badge_sm(moy_pr, "Min Moyenne", "#6ee7b7")
+                + '</div>',
+                unsafe_allow_html=True
+            )
 
         # === PAR PARC ===
         with st.expander("🏰 Par parc", expanded=True):
