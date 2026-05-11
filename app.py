@@ -589,9 +589,9 @@ with col_stats:
                             '<span style="font-family:Mulish,sans-serif; color:rgba(255,255,255,0.65);'
                             'font-size:10px; font-weight:600; flex:1; min-width:0; word-break:break-word;">' + attr_name + '</span>'
                             '<div style="display:flex; gap:3px; flex-shrink:0;">'
-                            + badge_sm(nb_a, "×", color)
-                            + badge_sm(total_a, "min", color_l)
-                            + badge_sm(moy_a, "∅min", color_l)
+                            + badge_sm(nb_a, "Interruptions", color)
+                            + badge_sm(total_a, "Total", color_l)
+                            + badge_sm(moy_a, "Moyenne", color_l)
                             + '</div></div>'
                         )
 
@@ -603,9 +603,9 @@ with col_stats:
                         'color:' + color + '; text-transform:uppercase; letter-spacing:1px; margin-bottom:5px;">'
                         + land.title() + '</div>'
                         '<div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:' + ('6px' if rides_html else '0') + ';">'
-                        + badge_sm(nb_l, "interruptions", color)
-                        + badge_sm(total_l, "min total", color_l)
-                        + badge_sm(moy_l, "∅ min", color_l)
+                        + badge_sm(nb_l, "Interruptions", color)
+                        + badge_sm(total_l, "Total", color_l)
+                        + badge_sm(moy_l, "Moyenne", color_l)
                         + '</div>'
                         + rides_html
                         + prev_block(df_l_pr, color, color_l, color_l)
@@ -620,9 +620,9 @@ with col_stats:
                     '<div style="font-family:Outfit,sans-serif; font-size:11px; font-weight:700;'
                     'color:' + parc_color + '; margin-bottom:8px;">' + parc_label + '</div>'
                     '<div style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:10px;">'
-                    + badge(nb_p, "interruptions", parc_color)
-                    + badge(total_p, "min total", parc_color)
-                    + badge(moy_p, "∅ min", parc_color)
+                    + badge(nb_p, "Interruptions", parc_color)
+                    + badge(total_p, "Total", parc_color)
+                    + badge(moy_p, "Moyenne", parc_color)
                     + '</div>'
                     + lands_html
                     + prev_parc_html
@@ -661,9 +661,9 @@ with col_stats:
                         '<span style="font-family:Mulish,sans-serif; color:rgba(255,255,255,0.65);'
                         'font-size:10px; font-weight:600; flex:1; min-width:0; word-break:break-word;">' + attr_name + '</span>'
                         '<div style="display:flex; gap:3px; flex-shrink:0;">'
-                        + badge_sm(nb_a, "×", color)
-                        + badge_sm(total_a, "min", color_l)
-                        + badge_sm(moy_a, "∅min", color_l)
+                        + badge_sm(nb_a, "Interruptions", color)
+                        + badge_sm(total_a, "Total", color_l)
+                        + badge_sm(moy_a, "Moyenne", color_l)
                         + '</div></div>'
                     )
 
@@ -675,9 +675,9 @@ with col_stats:
                     'color:' + color + '; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">'
                     + land.title() + '</div>'
                     '<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:' + ('10px' if rows_html else '0') + ';">'
-                    + badge(nb, "interruptions", color)
-                    + badge(total, "min total", color_l)
-                    + badge(moy, "moy. min", color_l)
+                    + badge(nb, "Interruptions", color)
+                    + badge(total, "Total", color_l)
+                    + badge(moy, "Moyenne", color_l)
                     + '</div>'
                     + (('<div style="margin-top:8px;">' + rows_html + '</div>') if rows_html else '')
                     + prev_block(df_l_pr, color, color_l, color_l)
@@ -716,9 +716,9 @@ with col_stats:
                     + land.title() + '</span>'
                     '</div>'
                     '<div style="display:flex; gap:6px; flex-wrap:wrap;">'
-                    + badge(nb, "interruptions", color)
-                    + badge(total, "min total", color_l)
-                    + badge(moy, "moy. min", color_l)
+                    + badge(nb, "Interruptions", color)
+                    + badge(total, "Total", color_l)
+                    + badge(moy, "Moyenne", color_l)
                     + '</div>'
                     + prev_block(df_r_pr, color, color_l, color_l)
                     + '</div>',
