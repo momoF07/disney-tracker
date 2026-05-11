@@ -144,10 +144,10 @@ def send_recap_journee(all_pannes):
     lines     = []
     for p in sorted(terminées, key=lambda x: x["debut"]):
         duree = p.get("duree", 0)
-        lines.append(f"🟠 **{p['ride']}** — {p['debut']} · `{duree} min`")
+        lines.append(f"🟠 **{p['ride']}**\n— {p['debut']} · `{duree} min`")
 
-    # Découpe en chunks de 10 lignes max
-    chunks = [lines[i:i+10] for i in range(0, len(lines), 10)]
+    # Découpe en chunks de 8 lignes max
+    chunks = [lines[i:i+8] for i in range(0, len(lines), 8)]
 
     try:
         for i, chunk in enumerate(chunks):
@@ -156,21 +156,19 @@ def send_recap_journee(all_pannes):
                     "title":       "📋 Récap des interruptions du jour",
                     "description": f"**{len(terminées)}** interruption(s) · **{total_min}** min au total",
                     "color":       0x6d28d9,
-                    "fields":      [{"name": "Détail", "\nvalue": "\n".join(chunk), "inline": False}],
+                    "fields":      [{"name": "Détail", "value": "\n".join(chunk), "inline": False}],
                     "footer":      {"text": f"Journée du {now.strftime('%d/%m/%Y')}"}
                 }
             else:
                 embed = {
-                    "title":  "",
                     "color":  0x6d28d9,
-                    "fields": [{"name": "\u200b", "\nvalue": "\n".join(chunk), "inline": False}],
+                    "fields": [{"name": "\u200b", "value": "\n".join(chunk), "inline": False}],
                     "footer": {"text": f"Journée du {now.strftime('%d/%m/%Y')} ({i+1}/{len(chunks)})"}
                 }
             res = req.post(WEBHOOK_NOTIFS, json={"embeds": [embed]})
-            print(f"✅ Récap chunk {i+1}/{len(chunks)} envoyé. Status: {res.status_code}")
+            print(f"✅ Récap chunk {i+1}/{len(chunks)} envoyé. Status: {res.status_code} — {res.text[:100]}")
     except Exception as e:
         print(f"⚠️ Récap journée : {e}")
-
 
 
 # ============================================================
