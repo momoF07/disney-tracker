@@ -180,12 +180,12 @@ def render_park_hours(schedules):
                 'background:rgba(167,139,250,0.1); border:1px solid rgba(167,139,250,0.2);'
                 'padding:3px 10px; border-radius:20px;">'
                 '<span style="font-size:10px;">✨</span>'
-                '<span style="color:#a78bfa; font-size:10px; font-weight:700;">EMT ' + emt_time[:5] + ' → ' + opening + '</span>'
+                '<span style="color:#a78bfa; font-size:14px; font-weight:700;">EMT ' + emt_time[:5] + ' → ' + opening + '</span>'
                 '</div>'
             )
 
         boxes += (
-            '<div style="flex:1; min-width:300px; padding:16px 18px;'
+            '<div style="flex:1; min-width:150px; padding:16px 18px;'
             'background:rgba(255,255,255,0.02); border-radius:18px;'
             'border:1px solid rgba(255,255,255,0.06);'
             'border-top:2px solid ' + color + '66;">'
