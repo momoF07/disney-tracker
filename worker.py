@@ -134,7 +134,7 @@ def send_recap_journee(all_pannes):
     if not WEBHOOK_NOTIFS: return
 
     now = datetime.now(paris_tz)
-    if not (now.hour == 23 and now.minute < 10):
+    if not (now.hour == 20 and now.minute < 15):
         return
 
     terminées = [p for p in all_pannes if p["statut"] == "TERMINEE" and p.get("duree", 0) >= 5]
