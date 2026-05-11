@@ -392,9 +392,8 @@ with col_flux:
         st.caption("Aucune activité majeure aujourd'hui.")
 
 with col_stats:
-    st.subheader("📊 Stats — 30 jours")
+    st.subheader("📊 Stats")
 
-    # Couleurs par land
     LAND_COLORS = {
         "MAINSTREET":      "#fcd34d",
         "FRONTIERLAND":    "#c17f3a",
@@ -408,115 +407,183 @@ with col_stats:
         "ADVENTURE WAY":   "#86efac",
     }
 
-    try:
-        resp_30j = supabase.table("logs_101").select("*").gte("start_time", date_30j).execute()
-        df_30j = pd.DataFrame(resp_30j.data)
-    except Exception as e:
-        st.error(f"Erreur stats : {e}")
-        df_30j = pd.DataFrame()
+    # --- DATES ---
+    now_paris     = maintenant
+    debut_mois    = now_paris.replace(day=1, hour=2, minute=30, second=0, microsecond=0)
+    debut_mois_pr = (debut_mois - pd.DateOffset(months=1)).to_pydatetime()
+    fin_mois_pr   = debut_mois
 
-    if df_30j.empty:
-        st.caption("Pas de données.")
-    else:
-        df_30j = df_30j.copy()
-        df_30j['start_dt'] = pd.to_datetime(df_30j['start_time']).dt.tz_convert('Europe/Paris')
-        df_30j['end_dt']   = df_30j['end_time'].apply(
-            lambda x: pd.to_datetime(x).tz_convert('Europe/Paris') if pd.notna(x) else pd.Timestamp.now(tz='Europe/Paris')
-        )
-        df_30j['duree_min'] = (df_30j['end_dt'] - df_30j['start_dt']).dt.total_seconds() / 60
-        df_30j = df_30j[df_30j['duree_min'] >= 5]
-        df_30j = df_30j[df_30j['duree_min'] <= 420]  # exclut les fausses pannes de fin de journée
-        df_30j = df_30j[~df_30j['ride_name'].isin(STATS_EXCLUDED)]
-        df_30j = df_30j[~df_30j.apply(is_during_rehab, axis=1)]
-
-        if df_30j.empty:
-            st.caption("Pas d'interruptions significatives sur les 30 derniers jours.")
-        else:
-            ride_to_park = {}
-            ride_to_land = {}
+    def load_df(date_from, date_to=None):
+        try:
+            q = supabase.table("logs_101").select("*").gte("start_time", date_from.isoformat())
+            if date_to:
+                q = q.lt("start_time", date_to.isoformat())
+            resp = q.execute()
+            df = pd.DataFrame(resp.data)
+            if df.empty: return df
+            df = df.copy()
+            df['start_dt'] = pd.to_datetime(df['start_time']).dt.tz_convert('Europe/Paris')
+            df['end_dt']   = df['end_time'].apply(
+                lambda x: pd.to_datetime(x).tz_convert('Europe/Paris') if pd.notna(x) else pd.Timestamp.now(tz='Europe/Paris')
+            )
+            df['duree_min'] = (df['end_dt'] - df['start_dt']).dt.total_seconds() / 60
+            df = df[df['duree_min'] >= 5]
+            df = df[df['duree_min'] <= 420]
+            df = df[~df['ride_name'].isin(STATS_EXCLUDED)]
+            df = df[~df.apply(is_during_rehab, axis=1)]
+            ride_to_park_l = {}
+            ride_to_land_l = {}
             for park, lands in PARKS_DATA.items():
                 for land, attractions in lands.items():
                     for attr in attractions:
-                        ride_to_park[attr] = park
-                        ride_to_land[attr] = land
+                        ride_to_park_l[attr] = park
+                        ride_to_land_l[attr] = land
+            df['parc'] = df['ride_name'].map(ride_to_park_l).fillna("Inconnu")
+            df['land'] = df['ride_name'].map(ride_to_land_l).fillna("Inconnu")
+            return df
+        except Exception as e:
+            st.error(f"Erreur stats : {e}")
+            return pd.DataFrame()
 
-            df_30j['parc'] = df_30j['ride_name'].map(ride_to_park).fillna("Inconnu")
-            df_30j['land'] = df_30j['ride_name'].map(ride_to_land).fillna("Inconnu")
+    df_mois    = load_df(debut_mois)
+    df_mois_pr = load_df(debut_mois_pr, fin_mois_pr)
 
-            def stats_block(df):
-                nb    = len(df)
-                total = int(df['duree_min'].sum())
-                moy   = int(df['duree_min'].mean()) if nb > 0 else 0
-                return nb, total, moy
+    # --- MAPPING ---
+    ride_to_park = {}
+    ride_to_land = {}
+    for park, lands in PARKS_DATA.items():
+        for land, attractions in lands.items():
+            for attr in attractions:
+                ride_to_park[attr] = park
+                ride_to_land[attr] = land
 
-            def stat_pill(label, value, color="#64748b"):
-                return (
-                    '<div style="display:inline-flex; flex-direction:column; align-items:center;'
-                    'background:' + color + '12; border:1px solid ' + color + '30;'
-                    'border-radius:12px; padding:7px 13px; min-width:65px;">'
-                    '<span style="font-family:Outfit,sans-serif; font-size:17px; font-weight:800; color:' + color + '; line-height:1;">' + str(value) + '</span>'
-                    '<span style="font-size:8.5px; color:' + color + '80; font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:3px;">' + label + '</span>'
+    def stats_block(df):
+        nb    = len(df)
+        total = int(df['duree_min'].sum()) if nb > 0 else 0
+        moy   = int(df['duree_min'].mean()) if nb > 0 else 0
+        return nb, total, moy
+
+    def stat_pill(label, value, color="#64748b"):
+        return (
+            '<div style="display:inline-flex; flex-direction:column; align-items:center;'
+            'background:' + color + '12; border:1px solid ' + color + '30;'
+            'border-radius:12px; padding:7px 13px; min-width:65px;">'
+            '<span style="font-family:Outfit,sans-serif; font-size:17px; font-weight:800; color:' + color + '; line-height:1;">' + str(value) + '</span>'
+            '<span style="font-size:8.5px; color:' + color + '80; font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:3px;">' + label + '</span>'
+            '</div>'
+        )
+
+    def detail_expander(df_sub, label):
+        with st.expander(f"📋 {label}"):
+            for _, row in df_sub.sort_values('start_dt', ascending=False).iterrows():
+                debut     = row['start_dt'].strftime('%d/%m %H:%M')
+                fin       = row['end_dt'].strftime('%H:%M') if pd.notna(row['end_time']) else "En cours"
+                duree     = int(row['duree_min'])
+                fin_color = "#f87171" if fin == "En cours" else "#94a3b8"
+                rname     = row['ride_name']
+                st.markdown(
+                    '<div style="display:flex; justify-content:space-between; align-items:center;'
+                    'padding:6px 10px; background:rgba(255,255,255,0.02); border-radius:8px; margin-bottom:4px;">'
+                    '<div style="display:flex; align-items:center; gap:8px;">'
+                    '<span style="font-size:14px;">' + get_emoji(rname) + '</span>'
+                    '<div>'
+                    '<span style="color:rgba(255,255,255,0.65); font-size:11px; font-weight:500; display:block;">' + rname + '</span>'
+                    '<span style="color:#475569; font-size:10px;">' + debut + ' → <span style="color:' + fin_color + ';">' + fin + '</span></span>'
                     '</div>'
-                )
-
-            # --- GLOBAL ---
-            with st.expander("🌍 Global", expanded=True):
-                nb, total, moy = stats_block(df_30j)
-                st.markdown(
-                    '<div style="display:flex; gap:8px; flex-wrap:wrap; padding:4px 0;">'
-                    + stat_pill("interruptions", nb, "#c4b5fd")
-                    + stat_pill("min total", total, "#7dd3fc")
-                    + stat_pill("moy. min", moy, "#6ee7b7")
-                    + '</div><div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">',
-                    unsafe_allow_html=True
-                )
-                parc_cards = ""
-                for parc_name, label, color in [
-                    ("Disneyland Park", "🏰 Disneyland Park", "#ffb3d1"),
-                    ("Disney Adventure World", "🎬 Disney Adventure World", "#fb923c")
-                ]:
-                    df_p = df_30j[df_30j['parc'] == parc_name]
-                    nb_p, total_p, moy_p = stats_block(df_p)
-                    parc_cards += (
-                        '<div style="flex:1; min-width:140px; background:' + color + '08;'
-                        'border:1px solid ' + color + '25; border-top:3px solid ' + color + '70;'
-                        'border-radius:14px; padding:10px 12px;">'
-                        '<div style="font-family:Outfit,sans-serif; font-size:10px; font-weight:700;'
-                        'color:' + color + '; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">' + label + '</div>'
-                        '<div style="display:flex; gap:6px; flex-wrap:wrap;">'
-                        + stat_pill("101", nb_p, color)
-                        + stat_pill("min total", total_p, "#94a3b8")
-                        + stat_pill("moy. min", moy_p, "#94a3b8")
-                        + '</div></div>'
-                    )
-
-                st.markdown(
-                    '<div style="display:flex; flex-direction:column; gap:6px; margin-top:12px;">'
-                    + parc_cards +
+                    '</div>'
+                    '<span style="font-family:Outfit,sans-serif; font-size:11px; font-weight:700;'
+                    'color:#fbbf24; background:rgba(251,191,36,0.1); border:1px solid rgba(251,191,36,0.2);'
+                    'padding:1px 8px; border-radius:8px;">' + str(duree) + ' min</span>'
                     '</div>',
                     unsafe_allow_html=True
                 )
 
-            # --- PAR LAND ---
-            with st.expander("🗺️ Par land"):
-                all_lands = []
-                for lands in PARKS_DATA.values():
-                    all_lands.extend(lands.keys())
-                available_lands = [l for l in all_lands if not df_30j[df_30j['land'] == l].empty]
-                selected_lands = st.multiselect("", options=available_lands,
-                    default=available_lands[:1] if available_lands else [], key="stats_lands")
-                for land in selected_lands:
+    if df_mois.empty:
+        st.caption(f"Pas d'interruptions ce mois-ci.")
+    else:
+        mois_label = now_paris.strftime("%B %Y").capitalize()
+        mois_pr_label = debut_mois_pr.strftime("%B %Y").capitalize()
+
+        # === GLOBAL ===
+        with st.expander(f"🌍 Global — {mois_label}", expanded=True):
+            nb, total, moy = stats_block(df_mois)
+            st.markdown(
+                '<div style="display:flex; gap:8px; flex-wrap:wrap; padding:4px 0;">'
+                + stat_pill("interruptions", nb, "#c4b5fd")
+                + stat_pill("min total", total, "#7dd3fc")
+                + stat_pill("moy. min", moy, "#6ee7b7")
+                + '</div>',
+                unsafe_allow_html=True
+            )
+
+            parc_cards = ""
+            for parc_name, label, color in [
+                ("Disneyland Park",       "🏰 DLP", "#ffb3d1"),
+                ("Disney Adventure World","🎬 DAW", "#fb923c")
+            ]:
+                df_p = df_mois[df_mois['parc'] == parc_name]
+                nb_p, total_p, moy_p = stats_block(df_p)
+                parc_cards += (
+                    '<div style="flex:1; min-width:140px; background:' + color + '08;'
+                    'border:1px solid ' + color + '25; border-top:3px solid ' + color + '70;'
+                    'border-radius:14px; padding:10px 12px;">'
+                    '<div style="font-family:Outfit,sans-serif; font-size:10px; font-weight:700;'
+                    'color:' + color + '; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">' + label + '</div>'
+                    '<div style="display:flex; gap:6px; flex-wrap:wrap;">'
+                    + stat_pill("101", nb_p, color)
+                    + stat_pill("min", total_p, "#94a3b8")
+                    + stat_pill("moy", moy_p, "#94a3b8")
+                    + '</div></div>'
+                )
+            st.markdown(
+                '<div style="display:flex; flex-direction:column; gap:6px; margin-top:12px;">'
+                + parc_cards + '</div>',
+                unsafe_allow_html=True
+            )
+
+            # Mois précédent (compact)
+            if not df_mois_pr.empty:
+                nb_pr, total_pr, moy_pr = stats_block(df_mois_pr)
+                st.markdown(
+                    '<div style="margin-top:14px; padding:10px 14px;'
+                    'background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06);'
+                    'border-radius:12px;">'
+                    '<div style="font-family:Outfit,sans-serif; font-size:9px; color:#475569;'
+                    'font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">'
+                    '📅 ' + mois_pr_label + '</div>'
+                    '<div style="display:flex; gap:6px; flex-wrap:wrap;">'
+                    + stat_pill("101", nb_pr, "#64748b")
+                    + stat_pill("min total", total_pr, "#64748b")
+                    + stat_pill("moy. min", moy_pr, "#64748b")
+                    + '</div></div>',
+                    unsafe_allow_html=True
+                )
+
+        # === PAR PARC ===
+        with st.expander("🏰 Par parc"):
+            for parc_name, parc_label, parc_color in [
+                ("Disneyland Park",       "🏰 Disneyland Park", "#ffb3d1"),
+                ("Disney Adventure World","🎬 Disney Adventure World", "#fb923c")
+            ]:
+                df_p = df_mois[df_mois['parc'] == parc_name]
+                if df_p.empty: continue
+                st.markdown(
+                    '<div style="font-family:Outfit,sans-serif; font-size:11px; font-weight:700;'
+                    'color:' + parc_color + '; margin:10px 0 6px 0;">' + parc_label + '</div>',
+                    unsafe_allow_html=True
+                )
+                for land, attractions in PARKS_DATA[parc_name].items():
+                    df_l = df_p[df_p['land'] == land]
+                    if df_l.empty: continue
                     color = LAND_COLORS.get(land, "#64748b")
-                    df_l  = df_30j[df_30j['land'] == land]
                     nb, total, moy = stats_block(df_l)
                     st.markdown(
-                        '<div style="padding:10px 14px; background:' + color + '08;'
+                        '<div style="padding:9px 12px; background:' + color + '08;'
                         'border:1px solid ' + color + '25; border-left:3px solid ' + color + ';'
-                        'border-radius:12px; margin-bottom:4px;">'
-                        '<div style="font-family:Outfit,sans-serif; font-size:10px; font-weight:700;'
-                        'color:' + color + '; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">'
-                        + land.title() +
-                        '</div>'
+                        'border-radius:11px; margin-bottom:4px;">'
+                        '<div style="font-family:Outfit,sans-serif; font-size:9.5px; font-weight:700;'
+                        'color:' + color + '; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">'
+                        + land.title() + '</div>'
                         '<div style="display:flex; gap:6px; flex-wrap:wrap;">'
                         + stat_pill("101", nb, color)
                         + stat_pill("min total", total, "#7dd3fc")
@@ -524,85 +591,69 @@ with col_stats:
                         + '</div></div>',
                         unsafe_allow_html=True
                     )
-                    with st.expander(f"📋 Détail des interruptions — {land.title()}"):
-                        df_l_sorted = df_l.sort_values('start_dt', ascending=False)
-                        for _, row in df_l_sorted.iterrows():
-                            debut = row['start_dt'].strftime('%d/%m %H:%M')
-                            duree = int(row['duree_min'])
-                            ride_name = row['ride_name']
-                            ride_color = LAND_COLORS.get(row['land'], "#64748b")
-                            st.markdown(
-                                '<div style="display:flex; justify-content:space-between; align-items:center;'
-                                'padding:6px 10px; background:rgba(255,255,255,0.02); border-radius:8px; margin-bottom:4px;">'
-                                '<div style="display:flex; align-items:center; gap:8px;">'
-                                '<span style="font-size:14px;">' + get_emoji(ride_name) + '</span>'
-                                '<span style="color:rgba(255,255,255,0.65); font-size:11px; font-weight:500;">' + ride_name + '</span>'
-                                '</div>'
-                                '<div style="display:flex; align-items:center; gap:8px;">'
-                                '<span style="color:#475569; font-size:10px;">' + debut + '</span>'
-                                '<span style="font-family:Outfit,sans-serif; font-size:11px; font-weight:700;'
-                                'color:#fbbf24; background:rgba(251,191,36,0.1); border:1px solid rgba(251,191,36,0.2);'
-                                'padding:1px 8px; border-radius:8px;">' + str(duree) + ' min</span>'
-                                '</div>'
-                                '</div>',
-                                unsafe_allow_html=True
-                            )
+                    detail_expander(df_l, f"Détail — {land.title()}")
 
-            # --- PAR ATTRACTION ---
-            with st.expander("🎢 Par attraction"):
-                available_rides = (df_30j.groupby('ride_name')['duree_min'].count()
-                                .sort_values(ascending=False).index.tolist())
-                selected_rides = st.multiselect("", options=available_rides,
-                    default=available_rides[:1] if available_rides else [],
-                    format_func=lambda x: f"{get_emoji(x)} {x}", key="stats_rides")
-                for ride in selected_rides:
-                    land  = ride_to_land.get(ride, "Inconnu")
-                    color = LAND_COLORS.get(land, "#64748b")
-                    df_r  = df_30j[df_30j['ride_name'] == ride]
-                    nb, total, moy = stats_block(df_r)
-                    st.markdown(
-                        '<div style="padding:10px 14px; background:rgba(255,255,255,0.02);'
-                        'border:1px solid rgba(255,255,255,0.06);'
-                        'border-radius:12px; margin-bottom:4px;">'
-                        '<div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">'
-                        '<span style="font-size:18px;">' + get_emoji(ride) + '</span>'
-                        '<span style="font-family:Outfit,sans-serif; color:rgba(255,255,255,0.75);'
-                        'font-size:12px; font-weight:600;">' + ride + '</span>'
-                        '</div>'
-                        '<div style="margin-bottom:10px; margin-left:26px;">'
-                        '<span style="font-size:9px; font-weight:700; padding:2px 9px; border-radius:20px;'
-                        'background:' + color + '20; color:' + color + '; border:1px solid ' + color + '40;'
-                        'font-family:Outfit,sans-serif; text-transform:uppercase; letter-spacing:0.8px;">'
-                        + land.title() +
-                        '</span>'
-                        '</div>'
-                        '<div style="display:flex; gap:6px; flex-wrap:wrap;">'
-                        + stat_pill("101", nb, "#c4b5fd")
-                        + stat_pill("min total", total, "#7dd3fc")
-                        + stat_pill("moy. min", moy, "#6ee7b7")
-                        + '</div></div>',
-                        unsafe_allow_html=True
-                    )
-                    with st.expander(f"📋 Détail des interruptions — {ride}"):
-                        df_r_sorted = df_r.sort_values('start_dt', ascending=False)
-                        for _, row in df_r_sorted.iterrows():
-                            debut = row['start_dt'].strftime('%d/%m %H:%M')
-                            fin   = row['end_dt'].strftime('%H:%M') if pd.notna(row['end_time']) else "En cours"
-                            duree = int(row['duree_min'])
-                            fin_color = "#f87171" if fin == "En cours" else "#94a3b8"
-                            st.markdown(
-                                '<div style="display:flex; justify-content:space-between; align-items:center;'
-                                'padding:6px 10px; background:rgba(255,255,255,0.02); border-radius:8px; margin-bottom:4px;">'
-                                '<div>'
-                                '<span style="color:#475569; font-size:10px; display:block;">' + debut + ' → '
-                                '<span style="color:' + fin_color + ';">' + fin + '</span></span>'
-                                '</div>'
-                                '<span style="font-family:Outfit,sans-serif; font-size:11px; font-weight:700;'
-                                'color:#fbbf24; background:rgba(251,191,36,0.1); border:1px solid rgba(251,191,36,0.2);'
-                                'padding:1px 8px; border-radius:8px;">' + str(duree) + ' min</span>'
-                                '</div>',
-                                unsafe_allow_html=True
-                            )
+        # === PAR LAND ===
+        with st.expander("🗺️ Par land"):
+            all_lands      = [l for lands in PARKS_DATA.values() for l in lands.keys()]
+            available_lands = [l for l in all_lands if not df_mois[df_mois['land'] == l].empty]
+            selected_lands  = st.multiselect("", options=available_lands,
+                default=available_lands[:1] if available_lands else [], key="stats_lands")
+            for land in selected_lands:
+                color = LAND_COLORS.get(land, "#64748b")
+                df_l  = df_mois[df_mois['land'] == land]
+                nb, total, moy = stats_block(df_l)
+                st.markdown(
+                    '<div style="padding:10px 14px; background:' + color + '08;'
+                    'border:1px solid ' + color + '25; border-left:3px solid ' + color + ';'
+                    'border-radius:12px; margin-bottom:4px;">'
+                    '<div style="font-family:Outfit,sans-serif; font-size:10px; font-weight:700;'
+                    'color:' + color + '; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">'
+                    + land.title() + '</div>'
+                    '<div style="display:flex; gap:6px; flex-wrap:wrap;">'
+                    + stat_pill("101", nb, color)
+                    + stat_pill("min total", total, "#7dd3fc")
+                    + stat_pill("moy. min", moy, "#6ee7b7")
+                    + '</div></div>',
+                    unsafe_allow_html=True
+                )
+                detail_expander(df_l, f"Détail — {land.title()}")
+
+        # === PAR ATTRACTION ===
+        with st.expander("🎢 Par attraction"):
+            available_rides = (df_mois.groupby('ride_name')['duree_min'].count()
+                               .sort_values(ascending=False).index.tolist())
+            selected_rides  = st.multiselect("", options=available_rides,
+                default=available_rides[:1] if available_rides else [],
+                format_func=lambda x: f"{get_emoji(x)} {x}", key="stats_rides")
+            for ride in selected_rides:
+                land  = ride_to_land.get(ride, "Inconnu")
+                color = LAND_COLORS.get(land, "#64748b")
+                df_r  = df_mois[df_mois['ride_name'] == ride]
+                nb, total, moy = stats_block(df_r)
+                st.markdown(
+                    '<div style="padding:10px 14px; background:rgba(255,255,255,0.02);'
+                    'border:1px solid rgba(255,255,255,0.06); border-radius:12px; margin-bottom:4px;">'
+                    '<div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">'
+                    '<span style="font-size:18px;">' + get_emoji(ride) + '</span>'
+                    '<span style="font-family:Outfit,sans-serif; color:rgba(255,255,255,0.75);'
+                    'font-size:12px; font-weight:600;">' + ride + '</span>'
+                    '</div>'
+                    '<div style="margin-bottom:8px; margin-left:26px;">'
+                    '<span style="font-size:9px; font-weight:700; padding:2px 9px; border-radius:20px;'
+                    'background:' + color + '20; color:' + color + '; border:1px solid ' + color + '40;'
+                    'font-family:Outfit,sans-serif; text-transform:uppercase; letter-spacing:0.8px;">'
+                    + land.title() + '</span>'
+                    '</div>'
+                    '<div style="display:flex; gap:6px; flex-wrap:wrap;">'
+                    + stat_pill("101", nb, "#c4b5fd")
+                    + stat_pill("min total", total, "#7dd3fc")
+                    + stat_pill("moy. min", moy, "#6ee7b7")
+                    + '</div></div>',
+                    unsafe_allow_html=True
+                )
+                detail_expander(df_r, f"Détail — {ride}")
+
 
 st.divider()
 footer_html = f"""
