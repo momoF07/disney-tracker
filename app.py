@@ -666,8 +666,9 @@ with col_stats:
                         + badge_sm(nb_a, "Interruptions", color)
                         + badge_sm(total_a, "Min Total", color_l)
                         + badge_sm(moy_a, "Min Moyenne", color_l)
+                        + '</div>'
                         + prev_block(df_r_pr, color, color_l, color_l)
-                        + '</div></div>'
+                        + '</div>'
                     )
 
                 st.markdown(
