@@ -120,7 +120,7 @@ def send_notif(ride_name, old_status, new_status, detail=""):
     }
 
     if image:
-        embed["image"] = {"url": image}
+        embed["thumbnail"] = {"url": image}
 
     try:
         req.post(WEBHOOK_NOTIFS, json={"embeds": [embed]})
@@ -150,7 +150,7 @@ def send_recap_journee(all_pannes):
         "title":       "📋 Récap des interruptions du jour",
         "description": f"**{len(terminées)}** interruption(s) · **{total_min}** min au total",
         "color":       0x6d28d9,
-        "fields":      [{"name": "Détail", "value": "\n".join(lines[:20]), "inline": False}],
+        "fields":      [{"name": "Détail", "value": "\n".join(lines[:100]), "inline": False}],
         "footer":      {"text": f"Journée du {now.strftime('%d/%m/%Y')}"}
     }
     try:
