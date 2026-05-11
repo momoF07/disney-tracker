@@ -133,11 +133,15 @@ def send_notif(ride_name, old_status, new_status, detail=""):
 def send_recap_journee(all_pannes):
     if not WEBHOOK_NOTIFS: return
 
+    print(f"[RECAP] all_pannes reçu : {len(all_pannes)} entrées")
+    print(f"[RECAP] terminées : {[p for p in all_pannes if p['statut'] == 'TERMINEE']}")
+
     now = datetime.now(paris_tz)
-    #if not (now.hour == 23 and now.minute < 10):
-        #return
+    # if not (now.hour == 23 and now.minute < 10):
+    #     return
 
     terminées = [p for p in all_pannes if p["statut"] == "TERMINEE" and p.get("duree", 0) >= 5]
+    print(f"[RECAP] terminées >= 5min : {len(terminées)}")
     if not terminées: return
 
     total_min = sum(p.get("duree", 0) for p in terminées)
@@ -150,12 +154,12 @@ def send_recap_journee(all_pannes):
         "title":       "📋 Récap des interruptions du jour",
         "description": f"**{len(terminées)}** interruption(s) · **{total_min}** min au total",
         "color":       0x6d28d9,
-        "fields":      [{"name": "Détail", "value": "\n".join(lines[:100]), "inline": False}],
+        "fields":      [{"name": "Détail", "value": "\n".join(lines[:20]), "inline": False}],
         "footer":      {"text": f"Journée du {now.strftime('%d/%m/%Y')}"}
     }
     try:
-        req.post(WEBHOOK_NOTIFS, json={"embeds": [embed]})
-        print("✅ Récap journée envoyé.")
+        res = req.post(WEBHOOK_NOTIFS, json={"embeds": [embed]})
+        print(f"✅ Récap journée envoyé. Status: {res.status_code}")
     except Exception as e:
         print(f"⚠️ Récap journée : {e}")
 
