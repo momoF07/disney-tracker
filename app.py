@@ -21,7 +21,7 @@ from ui.filters import render_quick_filters
 from maintenance import show_maintenance
 
 # --- VERSION ---
-webversion = "v5.1"
+webversion = "v5.2"
 
 # --- RÉFÉRENTIEL DES ATTRACTIONS ---
 ALL_RIDES_LIST = sorted(list(set(RIDES_DLP + RIDES_DAW)))
@@ -662,7 +662,7 @@ with col_stats:
                         + '</div>',
                         unsafe_allow_html=True
                     )
-                    detail_expander(df_l, f"Détail — {land.title()}")
+                    detail_expander(df_l, f"Détail du mois actuel — {land.title()}")
 
         # === PAR LAND ===
         with st.expander("🗺️ Par land"):
@@ -692,7 +692,7 @@ with col_stats:
                     + '</div>',
                     unsafe_allow_html=True
                 )
-                detail_expander(df_l, f"Détail — {land.title()}")
+                detail_expander(df_l, f"Détail du mois actuel – {land.title()}")
 
         # === PAR ATTRACTION ===
         with st.expander("🎢 Par attraction"):
@@ -732,7 +732,7 @@ with col_stats:
                     + '</div>',
                     unsafe_allow_html=True
                 )
-                detail_expander(df_r, f"Détail — {ride}")
+                detail_expander(df_r, f"Détail du mois actuel — {ride}")
 
 st.divider()
 footer_html = f"""
