@@ -550,8 +550,6 @@ with col_stats:
             + badge(nb_g, "Interruptions", "#c4b5fd")
             + badge(total_g, "Min Total", "#7dd3fc")
             + badge(moy_g, "Min Moyenne", "#6ee7b7")
-            + '</div>'
-            + prev_block(df_l_pr, color, color_l, color_l)
             + '</div>',
             unsafe_allow_html=True
         )
@@ -625,9 +623,9 @@ with col_stats:
                     + badge(nb_p, "Interruptions", parc_color)
                     + badge(total_p, "Min Total", parc_color)
                     + badge(moy_p, "Min Moyenne", parc_color)
+                    + prev_parc_html
                     + '</div>'
                     + lands_html
-                    + prev_parc_html
                     + '</div>',
                     unsafe_allow_html=True
                 )
