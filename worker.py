@@ -95,7 +95,7 @@ def set_message_id(key, value):
 # ============================================================
 # NOTIFICATIONS DISCORD
 # ============================================================
-from modules.ride_images import get_ride_image
+from modules.rides_images import get_ride_image
 
 def send_notif(ride_name, old_status, new_status, detail=""):
     if not WEBHOOK_NOTIFS:
