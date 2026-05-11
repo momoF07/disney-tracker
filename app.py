@@ -663,7 +663,7 @@ with col_stats:
                         + '</div>',
                         unsafe_allow_html=True
                     )
-                    detail_expander(df_l, f"Détail du mois actuel — {land.title()}")
+                
 
         # === PAR LAND ===
         with st.expander("🗺️ Par land"):
