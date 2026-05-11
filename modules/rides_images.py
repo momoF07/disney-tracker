@@ -44,7 +44,7 @@ RIDE_IMAGES = {
         "https://media.disneylandparis.com/d4th/fr-fr/images/n020759_2022-10-06_world_dumbo-attraction_1-1_tcm808-223474.png?w=360",
     "Mad Hatter's Tea Cups":
         "https://media.disneylandparis.com/d4th/fr-fr/images/n017931_2050jan01_mad-hatters-tea-cups_1-1_tcm808-159351.jpg?w=360",
-    "Le Carrousel de Lancelot ":
+    "Le Carrousel de Lancelot":
         "https://media.disneylandparis.com/d4th/fr-fr/images/n017611_2050jan01_le-carrousel-de-lancelot_1-1_tcm808-159457.jpg?w=360",
     "Blanche-Neige et les Sept Nains\u00ae":
         "https://media.disneylandparis.com/d4th/fr-fr/images/n014348_2020feb01_blanche-neige-et-les-sept-nains_1-1_tcm808-157310.jpg?w=360",
