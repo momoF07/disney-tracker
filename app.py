@@ -500,6 +500,45 @@ with col_stats:
             '</span>'
         )
 
+    def prev_block(df_pr, c_int="#64748b", c_min="#64748b", c_moy="#64748b"):
+        if df_pr is None or df_pr.empty: return ""
+        nb, total, moy = stats_block(df_pr)
+        return (
+            '<div style="margin-top:8px; padding:6px 10px;'
+            'background:rgba(255,255,255,0.015); border:1px solid rgba(255,255,255,0.05);'
+            'border-radius:9px; opacity:0.6;">'
+            '<span style="font-size:7.5px; color:#475569; font-weight:700;'
+            'text-transform:uppercase; letter-spacing:1px;">📅 ' + mois_pr_label + ' — </span>'
+            + badge_sm(nb, "×", c_int)
+            + badge_sm(total, "min", c_min)
+            + badge_sm(moy, "∅min", c_moy)
+            + '</div>'
+        )
+
+    def detail_expander(df_sub, label, color_l):
+        with st.expander(f"📋 {label}"):
+            for _, row in df_sub.sort_values('start_dt', ascending=False).iterrows():
+                debut     = row['start_dt'].strftime('%d/%m %H:%M')
+                fin       = row['end_dt'].strftime('%H:%M') if pd.notna(row['end_time']) else "En cours"
+                duree     = int(row['duree_min'])
+                fin_color = "#f87171" if fin == "En cours" else "#94a3b8"
+                rname     = row['ride_name']
+                st.markdown(
+                    '<div style="display:flex; justify-content:space-between; align-items:center;'
+                    'padding:5px 8px; background:rgba(255,255,255,0.02); border-radius:7px; margin-bottom:3px;">'
+                    '<div style="display:flex; align-items:center; gap:6px;">'
+                    '<span style="font-size:13px;">' + get_emoji(rname) + '</span>'
+                    '<div>'
+                    '<span style="color:rgba(255,255,255,0.65); font-size:10px; font-weight:500; display:block;">' + rname + '</span>'
+                    '<span style="color:#475569; font-size:9px;">' + debut + ' → <span style="color:' + fin_color + ';">' + fin + '</span></span>'
+                    '</div></div>'
+                    '<span style="font-family:Outfit,sans-serif; font-size:10px; font-weight:700;'
+                    'color:' + color_l + '; background:' + color_l + '15; border:1px solid ' + color_l + '30;'
+                    'padding:1px 7px; border-radius:6px;">' + str(duree) + ' min</span>'
+                    '</div>',
+                    unsafe_allow_html=True
+                )
+
     if df_mois.empty:
         st.caption("Pas d'interruptions ce mois-ci.")
     else:
@@ -528,23 +567,53 @@ with col_stats:
 
                 nb_p, total_p, moy_p = stats_block(df_p)
 
-                # Mois précédent parc
-                prev_parc_html = ""
-                if not df_p_pr.empty:
-                    nb_pp, total_pp, moy_pp = stats_block(df_p_pr)
-                    prev_parc_html = (
-                        '<div style="margin-top:8px; padding:6px 10px;'
-                        'background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.05);'
-                        'border-radius:9px; opacity:0.6;">'
-                        '<span style="font-size:7.5px; color:#475569; font-weight:700;'
-                        'text-transform:uppercase; letter-spacing:1px;">📅 ' + mois_pr_label + ' — </span>'
-                        + badge_sm(nb_pp, "×", parc_color)
-                        + badge_sm(total_pp, "min", parc_color)
-                        + badge_sm(moy_pp, "∅min", parc_color)
+                lands_html = ""
+                for land, attractions in PARKS_DATA[parc_name].items():
+                    df_l    = df_p[df_p['land'] == land]
+                    df_l_pr = df_p_pr[df_p_pr['land'] == land] if not df_p_pr.empty else pd.DataFrame()
+                    if df_l.empty: continue
+                    color   = LAND_COLORS.get(land, "#64748b")
+                    color_l = LAND_COLORS_LIGHT.get(land, "#94a3b8")
+                    nb_l, total_l, moy_l = stats_block(df_l)
+
+                    rides_html = ""
+                    for attr_name in attractions:
+                        df_a = df_l[df_l['ride_name'] == attr_name]
+                        if df_a.empty: continue
+                        nb_a, total_a, moy_a = stats_block(df_a)
+                        rides_html += (
+                            '<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;'
+                            'padding:5px 8px; background:' + color + '06;'
+                            'border:1px solid ' + color + '12; border-radius:8px; margin-bottom:3px;">'
+                            '<span style="font-size:13px; flex-shrink:0;">' + get_emoji(attr_name) + '</span>'
+                            '<span style="font-family:Mulish,sans-serif; color:rgba(255,255,255,0.65);'
+                            'font-size:10px; font-weight:600; flex:1; min-width:0; word-break:break-word;">' + attr_name + '</span>'
+                            '<div style="display:flex; gap:3px; flex-shrink:0;">'
+                            + badge_sm(nb_a, "×", color)
+                            + badge_sm(total_a, "min", color_l)
+                            + badge_sm(moy_a, "∅min", color_l)
+                            + '</div></div>'
+                        )
+
+                    lands_html += (
+                        '<div style="padding:8px 10px; background:' + color + '08;'
+                        'border:1px solid ' + color + '28; border-left:3px solid ' + color + ';'
+                        'border-radius:10px; margin-bottom:5px;">'
+                        '<div style="font-family:Outfit,sans-serif; font-size:9px; font-weight:700;'
+                        'color:' + color + '; text-transform:uppercase; letter-spacing:1px; margin-bottom:5px;">'
+                        + land.title() + '</div>'
+                        '<div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:' + ('6px' if rides_html else '0') + ';">'
+                        + badge_sm(nb_l, "interruptions", color)
+                        + badge_sm(total_l, "min total", color_l)
+                        + badge_sm(moy_l, "∅ min", color_l)
+                        + '</div>'
+                        + rides_html
+                        + prev_block(df_l_pr, color, color_l, color_l)
                         + '</div>'
                     )
 
-                # Header grande boîte parc
+                prev_parc_html = prev_block(df_p_pr, parc_color, parc_color, parc_color)
+
                 st.markdown(
                     '<div style="padding:13px 14px; background:' + parc_color + '06;'
                     'border:2px solid ' + parc_color + '35; border-radius:16px; margin-bottom:10px;">'
@@ -554,121 +623,108 @@ with col_stats:
                     + badge(nb_p, "interruptions", parc_color)
                     + badge(total_p, "min total", parc_color)
                     + badge(moy_p, "∅ min", parc_color)
+                    + '</div>'
+                    + lands_html
+                    + prev_parc_html
                     + '</div>',
                     unsafe_allow_html=True
                 )
 
-                # Lands + attractions (popover)
-                for land, attractions in PARKS_DATA[parc_name].items():
-                    df_l    = df_p[df_p['land'] == land]
-                    df_l_pr = df_p_pr[df_p_pr['land'] == land] if not df_p_pr.empty else pd.DataFrame()
-                    if df_l.empty: continue
-                    color   = LAND_COLORS.get(land, "#64748b")
-                    color_l = LAND_COLORS_LIGHT.get(land, "#94a3b8")
-                    nb_l, total_l, moy_l = stats_block(df_l)
+        # === PAR LAND ===
+        with st.expander("🗺️ Par land"):
+            all_lands       = [l for lands in PARKS_DATA.values() for l in lands.keys()]
+            available_lands = [l for l in all_lands if not df_mois[df_mois['land'] == l].empty]
+            selected_lands  = st.multiselect("", options=available_lands,
+                default=available_lands[:1] if available_lands else [], key="stats_lands")
+            for land in selected_lands:
+                color   = LAND_COLORS.get(land, "#64748b")
+                color_l = LAND_COLORS_LIGHT.get(land, "#94a3b8")
+                df_l    = df_mois[df_mois['land'] == land]
+                df_l_pr = df_mois_pr[df_mois_pr['land'] == land] if not df_mois_pr.empty else pd.DataFrame()
+                nb, total, moy = stats_block(df_l)
 
-                    # Mois précédent land
-                    prev_land_html = ""
-                    if not df_l_pr.empty:
-                        nb_lp, total_lp, moy_lp = stats_block(df_l_pr)
-                        prev_land_html = (
-                            '<div style="margin-top:6px; padding:5px 8px;'
-                            'background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.05);'
-                            'border-radius:8px; opacity:0.6;">'
-                            '<span style="font-size:7.5px; color:#475569; font-weight:700;'
-                            'text-transform:uppercase; letter-spacing:1px;">📅 ' + mois_pr_label + ' — </span>'
-                            + badge_sm(nb_lp, "×", color)
-                            + badge_sm(total_lp, "min", color_l)
-                            + badge_sm(moy_lp, "∅min", color_l)
-                            + '</div>'
-                        )
-
-                    # Header land
-                    st.markdown(
-                        '<div style="padding:8px 10px; background:' + color + '08;'
-                        'border:1px solid ' + color + '28; border-left:3px solid ' + color + ';'
-                        'border-radius:10px; margin-bottom:4px;">'
-                        '<div style="font-family:Outfit,sans-serif; font-size:9px; font-weight:700;'
-                        'color:' + color + '; text-transform:uppercase; letter-spacing:1px; margin-bottom:5px;">'
-                        + land.title() + '</div>'
-                        '<div style="display:flex; gap:4px; flex-wrap:wrap;">'
-                        + badge_sm(nb_l, "interruptions", color)
-                        + badge_sm(total_l, "min total", color_l)
-                        + badge_sm(moy_l, "∅ min", color_l)
-                        + '</div>'
-                        + prev_land_html
-                        + '</div>',
-                        unsafe_allow_html=True
+                attractions_du_land = [
+                    a for p_lands in PARKS_DATA.values()
+                    for l, attrs in p_lands.items()
+                    if l == land for a in attrs
+                ]
+                rows_html = ""
+                for attr_name in attractions_du_land:
+                    df_a = df_l[df_l['ride_name'] == attr_name]
+                    if df_a.empty: continue
+                    nb_a, total_a, moy_a = stats_block(df_a)
+                    rows_html += (
+                        '<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;'
+                        'padding:5px 8px; background:' + color + '06;'
+                        'border:1px solid ' + color + '12; border-radius:8px; margin-bottom:3px;">'
+                        '<span style="font-size:13px; flex-shrink:0;">' + get_emoji(attr_name) + '</span>'
+                        '<span style="font-family:Mulish,sans-serif; color:rgba(255,255,255,0.65);'
+                        'font-size:10px; font-weight:600; flex:1; min-width:0; word-break:break-word;">' + attr_name + '</span>'
+                        '<div style="display:flex; gap:3px; flex-shrink:0;">'
+                        + badge_sm(nb_a, "×", color)
+                        + badge_sm(total_a, "min", color_l)
+                        + badge_sm(moy_a, "∅min", color_l)
+                        + '</div></div>'
                     )
 
-                    # Attractions cliquables — popover
-                    for attr_name in attractions:
-                        df_a    = df_l[df_l['ride_name'] == attr_name]
-                        df_a_pr = df_l_pr[df_l_pr['ride_name'] == attr_name] if not df_l_pr.empty else pd.DataFrame()
-                        if df_a.empty: continue
-                        nb_a, total_a, moy_a = stats_block(df_a)
-
-                        with st.popover(
-                            f"{get_emoji(attr_name)} {attr_name}  —  {nb_a}× · {total_a}min · ∅{moy_a}min",
-                            use_container_width=True
-                        ):
-                            st.markdown(
-                                '<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">'
-                                + badge(nb_a, "interruptions", color)
-                                + badge(total_a, "min total", color_l)
-                                + badge(moy_a, "∅ min", color_l)
-                                + '</div>',
-                                unsafe_allow_html=True
-                            )
-
-                            if not df_a_pr.empty:
-                                nb_ap, total_ap, moy_ap = stats_block(df_a_pr)
-                                st.markdown(
-                                    '<div style="padding:7px 10px; background:rgba(255,255,255,0.02);'
-                                    'border:1px solid rgba(255,255,255,0.06); border-radius:9px;'
-                                    'margin-bottom:10px; opacity:0.7;">'
-                                    '<div style="font-size:8px; color:#475569; font-weight:700;'
-                                    'text-transform:uppercase; letter-spacing:1px; margin-bottom:5px;">'
-                                    '📅 ' + mois_pr_label + '</div>'
-                                    '<div style="display:flex; gap:4px; flex-wrap:wrap;">'
-                                    + badge_sm(nb_ap, "interruptions", color)
-                                    + badge_sm(total_ap, "min total", color_l)
-                                    + badge_sm(moy_ap, "∅ min", color_l)
-                                    + '</div></div>',
-                                    unsafe_allow_html=True
-                                )
-
-                            st.markdown(
-                                '<div style="font-size:9px; color:#475569; font-weight:700;'
-                                'text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">'
-                                '📋 Détail des interruptions</div>',
-                                unsafe_allow_html=True
-                            )
-                            for _, row in df_a.sort_values('start_dt', ascending=False).iterrows():
-                                debut     = row['start_dt'].strftime('%d/%m %H:%M')
-                                fin       = row['end_dt'].strftime('%H:%M') if pd.notna(row['end_time']) else "En cours"
-                                duree     = int(row['duree_min'])
-                                fin_color = "#f87171" if fin == "En cours" else "#94a3b8"
-                                st.markdown(
-                                    '<div style="display:flex; justify-content:space-between; align-items:center;'
-                                    'padding:5px 8px; background:rgba(255,255,255,0.02); border-radius:7px; margin-bottom:3px;">'
-                                    '<span style="color:#475569; font-size:10px;">'
-                                    + debut + ' → <span style="color:' + fin_color + ';">' + fin + '</span></span>'
-                                    '<span style="font-family:Outfit,sans-serif; font-size:10px; font-weight:700;'
-                                    'color:' + color_l + '; background:' + color_l + '15;'
-                                    'border:1px solid ' + color_l + '30; padding:1px 7px; border-radius:6px;">'
-                                    + str(duree) + ' min</span>'
-                                    '</div>',
-                                    unsafe_allow_html=True
-                                )
-
-                # Fermeture grande boîte parc
                 st.markdown(
-                    prev_parc_html + '</div>',
+                    '<div style="padding:10px 14px; background:' + color + '08;'
+                    'border:1px solid ' + color + '25; border-left:3px solid ' + color + ';'
+                    'border-radius:12px; margin-bottom:8px;">'
+                    '<div style="font-family:Outfit,sans-serif; font-size:10px; font-weight:700;'
+                    'color:' + color + '; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">'
+                    + land.title() + '</div>'
+                    '<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:' + ('10px' if rows_html else '0') + ';">'
+                    + badge(nb, "interruptions", color)
+                    + badge(total, "min total", color_l)
+                    + badge(moy, "moy. min", color_l)
+                    + '</div>'
+                    + (('<div style="margin-top:8px;">' + rows_html + '</div>') if rows_html else '')
+                    + prev_block(df_l_pr, color, color_l, color_l)
+                    + '</div>',
                     unsafe_allow_html=True
                 )
+                detail_expander(df_l, f"Détail — {land.title()}", color_l)
 
-
+        # === PAR ATTRACTION ===
+        with st.expander("🎢 Par attraction"):
+            available_rides = (df_mois.groupby('ride_name')['duree_min'].count()
+                               .sort_values(ascending=False).index.tolist())
+            selected_rides  = st.multiselect("", options=available_rides,
+                default=available_rides[:1] if available_rides else [],
+                format_func=lambda x: f"{get_emoji(x)} {x}", key="stats_rides")
+            for ride in selected_rides:
+                land    = ride_to_land.get(ride, "Inconnu")
+                color   = LAND_COLORS.get(land, "#64748b")
+                color_l = LAND_COLORS_LIGHT.get(land, "#94a3b8")
+                df_r    = df_mois[df_mois['ride_name'] == ride]
+                df_r_pr = df_mois_pr[df_mois_pr['ride_name'] == ride] if not df_mois_pr.empty else pd.DataFrame()
+                nb, total, moy = stats_block(df_r)
+                st.markdown(
+                    '<div style="padding:10px 14px; background:' + color + '06;'
+                    'border:1px solid ' + color + '20; border-left:3px solid ' + color_l + ';'
+                    'border-radius:12px; margin-bottom:4px;">'
+                    '<div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">'
+                    '<span style="font-size:18px;">' + get_emoji(ride) + '</span>'
+                    '<span style="font-family:Outfit,sans-serif; color:rgba(255,255,255,0.8);'
+                    'font-size:12px; font-weight:600;">' + ride + '</span>'
+                    '</div>'
+                    '<div style="margin-bottom:8px; margin-left:26px;">'
+                    '<span style="font-size:9px; font-weight:700; padding:2px 9px; border-radius:20px;'
+                    'background:' + color + '20; color:' + color + '; border:1px solid ' + color + '40;'
+                    'font-family:Outfit,sans-serif; text-transform:uppercase; letter-spacing:0.8px;">'
+                    + land.title() + '</span>'
+                    '</div>'
+                    '<div style="display:flex; gap:6px; flex-wrap:wrap;">'
+                    + badge(nb, "interruptions", color)
+                    + badge(total, "min total", color_l)
+                    + badge(moy, "moy. min", color_l)
+                    + '</div>'
+                    + prev_block(df_r_pr, color, color_l, color_l)
+                    + '</div>',
+                    unsafe_allow_html=True
+                )
+                detail_expander(df_r, f"Détail — {ride}", color_l)
 
 st.divider()
 footer_html = f"""
