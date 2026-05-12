@@ -138,8 +138,8 @@ def send_recap_journee(all_pannes):
     yesterday_str = yesterday.strftime('%d/%m/%Y')
 
 
-    if not (now.hour == 7 and now.minute < 40):
-        return
+    #if not (now.hour == 23 and now.minute >= 55):
+        #return
 
     terminées = [p for p in all_pannes if p["statut"] == "TERMINEE" and p.get("duree", 0) >= 5]
     if not terminées: return
