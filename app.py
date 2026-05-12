@@ -449,10 +449,11 @@ with col_stats:
             df = pd.DataFrame(resp.data)
             if df.empty: return df
             df = df.copy()
-            df['start_dt'] = pd.to_datetime(df['start_time']).dt.tz_convert('Europe/Paris')
+            df['start_dt'] = pd.to_datetime(df['start_time'], format='mixed').dt.tz_convert('Europe/Paris')
             df['end_dt']   = df['end_time'].apply(
-                lambda x: pd.to_datetime(x).tz_convert('Europe/Paris') if pd.notna(x) else pd.Timestamp.now(tz='Europe/Paris')
+                lambda x: pd.to_datetime(x, format='mixed').tz_convert('Europe/Paris') if pd.notna(x) else pd.Timestamp.now(tz='Europe/Paris')
             )
+
             df['duree_min'] = (df['end_dt'] - df['start_dt']).dt.total_seconds() / 60
             df = df[df['duree_min'] >= 5]
             df = df[df['duree_min'] <= 420]
