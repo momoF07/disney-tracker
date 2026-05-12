@@ -131,17 +131,30 @@ def send_notif(ride_name, old_status, new_status, detail=""):
 def send_recap_journee(all_pannes):
     if not WEBHOOK_NOTIFS: return
 
-    now      = datetime.now(paris_tz)
+    now       = datetime.now(paris_tz)
     yesterday = now - timedelta(days=1)
-    # tomorrow = now + timedelta(days=1)  # remplace par :
     today_str = now.strftime('%d/%m/%Y')
-    yesterday_str = yesterday.strftime('%d/%m/%Y')
 
+    # if not (now.hour == 23 and now.minute >= 55):
+    #     return
 
-    #if not (now.hour == 23 and now.minute >= 55):
-        #return
+    # TEST — 20 derniers logs
+    resp = supabase.table("logs_101").select("*").order("id", desc=True).limit(20).execute()
+    all_pannes_test = []
+    for row in resp.data:
+        d_p   = parse_dt(row["start_time"])
+        f_p   = parse_dt(row["end_time"]) if row.get("end_time") else None
+        duree = int((f_p - d_p).total_seconds() / 60) if f_p else 0
+        all_pannes_test.append({
+            "ride":   row["ride_name"],
+            "debut":  d_p.strftime("%H:%M"),
+            "statut": "EN_COURS" if not row.get("end_time") else "TERMINEE",
+            "duree":  duree
+        })
+    terminées = [p for p in all_pannes_test if p["statut"] == "TERMINEE" and p.get("duree", 0) >= 5]
+    # FIN TEST — en prod remplacer par :
+    # terminées = [p for p in all_pannes if p["statut"] == "TERMINEE" and p.get("duree", 0) >= 5]
 
-    terminées = [p for p in all_pannes if p["statut"] == "TERMINEE" and p.get("duree", 0) >= 5]
     if not terminées: return
 
     total_min = sum(p.get("duree", 0) for p in terminées)
@@ -151,7 +164,7 @@ def send_recap_journee(all_pannes):
         lines.append(f"🟠 **{p['ride']}**\n— {p['debut']} · `{duree} min`")
 
     chunks = [lines[i:i+8] for i in range(0, len(lines), 8)]
-    
+
     try:
         sched = supabase.table("ride_schedules").select("*").execute().data or []
         parks = [s for s in sched if s.get("type") == "PARK"]
@@ -159,15 +172,15 @@ def send_recap_journee(all_pannes):
 
         horaires_msg = ""
         for p in parks:
-            is_dlp   = "Disneyland" in p["ride_name"]
-            nom      = "Disneyland Park 🏰" if is_dlp else "Disney Adventure World 🎬"
-            opening  = p["opening_time"][:5]
-            emt      = next((e["opening_time"][:5] for e in emts if e["ride_name"].replace("EMT ", "") == p["ride_name"]), None)
-            emt_str  = f", EMT dès **{emt}**" if emt else ""
-            horaires_msg += f"Le parc **{nom}** : ouvrira à **{opening}**\n{emt_str}\n\n"
+            is_dlp  = "Disneyland" in p["ride_name"]
+            nom     = "Disneyland Park 🏰" if is_dlp else "Disney Adventure World 🎬"
+            opening = p["opening_time"][:5]
+            emt     = next((e["opening_time"][:5] for e in emts if e["ride_name"].replace("EMT ", "") == p["ride_name"]), None)
+            emt_str = f", EMT dès **{emt}**" if emt else ""
+            horaires_msg += f"Le parc **{nom}** ouvrira à **{opening}**{emt_str}\n\n"
     except:
         horaires_msg = ""
-    
+
     try:
         # 1. Embed fin de journée
         req.post(WEBHOOK_NOTIFS, json={"embeds": [{
@@ -195,18 +208,18 @@ def send_recap_journee(all_pannes):
             res = req.post(WEBHOOK_NOTIFS, json={"embeds": [embed]})
             print(f"✅ Récap chunk {i+1}/{len(chunks)} envoyé. Status: {res.status_code}")
 
-        # 3. Message début journée suivante
+        # 3. Embed début journée suivante
         req.post(WEBHOOK_NOTIFS, json={"embeds": [{
-            "title":       f"🌅 Début de la journée du {today.strftime('%d/%m/%Y')}",
+            "title":       f"🌅 Début de la journée du {today_str}",
             "description": horaires_msg if horaires_msg else "Horaires non disponibles.",
             "color":       0x6d28d9,
         }]})
 
-        
         print("✅ Récap journée envoyé.")
 
     except Exception as e:
         print(f"⚠️ Récap journée : {e}")
+
 
 
 
