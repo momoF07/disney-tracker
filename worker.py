@@ -166,20 +166,24 @@ def send_recap_journee(all_pannes):
     chunks = [lines[i:i+8] for i in range(0, len(lines), 8)]
 
     try:
-        sched = supabase.table("ride_schedules").select("*").execute().data or []
-        parks = [s for s in sched if s.get("type") == "PARK"]
-        emts  = [s for s in sched if s.get("type") == "EMT"]
+            sched = supabase.table("ride_schedules").select("*").execute().data or []
+            parks = sorted(
+                [s for s in sched if s.get("type") == "PARK"],
+                key=lambda p: 0 if "Disneyland" in p["ride_name"] else 1
+            )
+            emts  = [s for s in sched if s.get("type") == "EMT"]
 
-        horaires_msg = ""
-        for p in parks:
-            is_dlp  = "Disneyland" in p["ride_name"]
-            nom     = "Disneyland Park 🏰" if is_dlp else "Disney Adventure World 🎬"
-            opening = p["opening_time"][:5]
-            emt     = next((e["opening_time"][:5] for e in emts if e["ride_name"].replace("EMT ", "") == p["ride_name"]), None)
-            emt_str = f", EMT dès **{emt}**" if emt else ""
-            horaires_msg += f"Le parc **{nom}** ouvrira à **{opening}**{emt_str}\n\n"
-    except:
-        horaires_msg = ""
+            horaires_msg = ""
+            for p in parks:
+                is_dlp  = "Disneyland" in p["ride_name"]
+                nom     = "Disneyland Park 🏰" if is_dlp else "Disney Adventure World 🎬"
+                opening = p["opening_time"][:5]
+                emt     = next((e["opening_time"][:5] for e in emts if e["ride_name"].replace("EMT ", "") == p["ride_name"]), None)
+                emt_str = f"Les EMT commencent dès **{emt}**" if emt else ""
+                horaires_msg += f"Le parc **{nom}** ouvrira à **{opening}**\n{emt_str}\n\n"
+        except:
+            horaires_msg = ""
+
 
     try:
         # 1. Embed fin de journée
