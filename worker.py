@@ -132,9 +132,13 @@ def send_recap_journee(all_pannes):
     if not WEBHOOK_NOTIFS: return
 
     now      = datetime.now(paris_tz)
-    tomorrow = now + timedelta(days=1)
+    yesterday = now - timedelta(days=1)
+    # tomorrow = now + timedelta(days=1)  # remplace par :
+    today_str = now.strftime('%d/%m/%Y')
+    yesterday_str = yesterday.strftime('%d/%m/%Y')
 
-    if not (now.hour == 23 and now.minute < 10):
+
+    if not (now.hour == 7 and now.minute < 40):
         return
 
     terminées = [p for p in all_pannes if p["statut"] == "TERMINEE" and p.get("duree", 0) >= 5]
@@ -147,11 +151,27 @@ def send_recap_journee(all_pannes):
         lines.append(f"🟠 **{p['ride']}**\n— {p['debut']} · `{duree} min`")
 
     chunks = [lines[i:i+8] for i in range(0, len(lines), 8)]
+    
+    try:
+        sched = supabase.table("ride_schedules").select("*").execute().data or []
+        parks = [s for s in sched if s.get("type") == "PARK"]
+        emts  = [s for s in sched if s.get("type") == "EMT"]
 
+        horaires_msg = ""
+        for p in parks:
+            is_dlp   = "Disneyland" in p["ride_name"]
+            nom      = "Disneyland Park 🏰" if is_dlp else "Disney Adventure World 🎬"
+            opening  = p["opening_time"][:5]
+            emt      = next((e["opening_time"][:5] for e in emts if e["ride_name"].replace("EMT ", "") == p["ride_name"]), None)
+            emt_str  = f", EMT dès **{emt}**" if emt else ""
+            horaires_msg += f"Le parc **{nom}** : ouvrira à **{opening}**\n{emt_str}\n\n"
+    except:
+        horaires_msg = ""
+    
     try:
         # 1. Embed fin de journée
         req.post(WEBHOOK_NOTIFS, json={"embeds": [{
-            "title":       f"🌙 Fin de journée — {now.strftime('%d/%m/%Y')}",
+            "title":       f"🌙 Fin de journée — {yesterday.strftime('%d/%m/%Y')}",
             "description": "Les parcs ferment leurs portes. Voici le bilan des interruptions du jour.",
             "color":       0x6d28d9,
         }]})
@@ -176,10 +196,13 @@ def send_recap_journee(all_pannes):
             print(f"✅ Récap chunk {i+1}/{len(chunks)} envoyé. Status: {res.status_code}")
 
         # 3. Message début journée suivante
-        req.post(WEBHOOK_NOTIFS, json={
-            "content": f"# 🌅 Début de la journée du {tomorrow.strftime('%d/%m/%Y')}"
-        })
+        req.post(WEBHOOK_NOTIFS, json={"embeds": [{
+            "title":       f"🌅 Début de la journée du {today.strftime('%d/%m/%Y')}",
+            "description": horaires_msg if horaires_msg else "Horaires non disponibles.",
+            "color":       0x6d28d9,
+        }]})
 
+        
         print("✅ Récap journée envoyé.")
 
     except Exception as e:
