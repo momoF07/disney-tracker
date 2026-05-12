@@ -181,8 +181,8 @@ def send_recap_journee(all_pannes):
                 emt     = next((e["opening_time"][:5] for e in emts if e["ride_name"].replace("EMT ", "") == p["ride_name"]), None)
                 emt_str = f"Les EMT commencent dès **{emt}**" if emt else ""
                 horaires_msg += f"Le parc **{nom}** ouvrira à **{opening}**\n{emt_str}\n\n"
-        except:
-            horaires_msg = ""
+    except:
+        horaires_msg = ""
 
 
     try:
