@@ -134,8 +134,7 @@ def send_recap_journee(all_pannes):
     now      = datetime.now(paris_tz)
     tomorrow = now + timedelta(days=1)
 
-    if not (now.hour == 22 and 44 <= now.minute <= 49):
-       return
+    
 
     terminées = [p for p in all_pannes if p["statut"] == "TERMINEE" and p.get("duree", 0) >= 5]
     if not terminées: return
