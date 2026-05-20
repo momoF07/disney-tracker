@@ -29,7 +29,6 @@ RIDES_EXCLUDED = {
     "Pirates' Beach",
 }
 
-
 # --- DISCORD WEBHOOKS ---
 WEBHOOK_NOTIFS = os.environ.get("DISCORD_WEBHOOK_NOTIFS")
 WEBHOOK_DLP    = os.environ.get("DISCORD_WEBHOOK_DLP")
@@ -128,6 +127,7 @@ def send_notif(ride_name, old_status, new_status, detail=""):
     except Exception as e:
         print(f"⚠️ Notif Discord : {e}")
 
+
 def send_recap_journee(all_pannes):
     if not WEBHOOK_NOTIFS: return
 
@@ -135,7 +135,7 @@ def send_recap_journee(all_pannes):
     tomorrow = now + timedelta(days=1)
 
     if not (now.hour == 22 and 44 <= now.minute <= 49):
-       return
+        return
 
     terminées = [p for p in all_pannes if p["statut"] == "TERMINEE" and p.get("duree", 0) >= 5]
     if not terminées: return
@@ -237,8 +237,8 @@ def compute_status(name, is_open, info, heure_act, today):
         and not is_open
     )
 
-        # Heure d'ouverture + tampon 5 min
-    h_o_tampon = (datetime.combine(datetime.today(), h_o) + __import__('datetime').timedelta(minutes=5)).time()
+    # Tampon 5 min après ouverture avant de déclarer RETARDÉ
+    h_o_tampon = (datetime.combine(datetime.today(), h_o) + timedelta(minutes=5)).time()
 
     if rehab_flag:
         return "RÉHABILITATION", h_o, h_f
@@ -247,7 +247,6 @@ def compute_status(name, is_open, info, heure_act, today):
     elif heure_act < h_o and not is_open:
         return "ATTENTE", h_o, h_f
     elif not is_open and not info.get('has_opened_today', False):
-        # Seulement si 5min+ après l'heure d'ouverture théorique
         if heure_act >= h_o_tampon:
             return "RETARDÉ", h_o, h_f
         else:
@@ -256,7 +255,6 @@ def compute_status(name, is_open, info, heure_act, today):
         return "INTERRUPTION", h_o, h_f
     else:
         return "OUVERT", h_o, h_f
-
 
 
 # ============================================================
@@ -472,8 +470,6 @@ def run_worker():
                 if item.get('name') in RIDES_EXCLUDED:
                     continue
 
-
-
                 name    = item.get('name')
                 is_open = (item.get('status') == "OPERATING")
                 wait    = item.get('queue', {}).get('STANDBY', {}).get('waitTime', 0)
@@ -503,10 +499,8 @@ def run_worker():
                 active_panne         = supabase.table("logs_101")\
                     .select("*").eq("ride_name", name).is_("end_time", "null").execute().data
                 theoriquement_ouvert = (h_o <= current_time < h_f)
-                
-                # Tampon fermeture : pas d'incident dans les 30 min avant la fermeture
-                from datetime import datetime as dt_class, timedelta
-                h_f_tampon = (dt_class.combine(dt_class.today(), h_f) - timedelta(minutes=15)).time()
+
+                h_f_tampon        = (datetime.combine(datetime.today(), h_f) - timedelta(minutes=15)).time()
                 trop_proche_fermeture = current_time >= h_f_tampon
 
                 if not is_open and theoriquement_ouvert and not active_panne and not trop_proche_fermeture:
@@ -523,16 +517,33 @@ def run_worker():
                         "end_time": datetime.now(pytz.utc).isoformat()
                     }).eq("id", active_panne[0]['id']).execute()
 
-                    # Notif réouverture avec durée
                     if old_status == "INTERRUPTION":
                         send_notif(
                             name, "INTERRUPTION", "RÉOUVERT",
                             f"Réouverture à {current_time.strftime('%H:%M')} après **{duree_min} min** d'interruption"
                         )
-                        # On passe old_status à RÉOUVERT pour éviter double notif
                         old_status = "RÉOUVERT"
 
-                # 4. NOTIFICATIONS DISCORD (autres transitions)
+                # 4. LOGS DO (Delayed Opening)
+                active_do = supabase.table("logs_do")\
+                    .select("*").eq("ride_name", name).is_("end_time", "null").execute().data
+
+                if new_status == "RETARDÉ" and not active_do:
+                    supabase.table("logs_do").insert({
+                        "ride_name":  name,
+                        "start_time": datetime.now(pytz.utc).isoformat()
+                    }).execute()
+                    print(f"  🟣 DO détecté : {name}")
+
+                elif is_open and active_do:
+                    debut_do  = parse_dt(active_do[0]['start_time'])
+                    duree_do  = int((datetime.now(pytz.utc).astimezone(paris_tz) - debut_do).total_seconds() / 60)
+                    supabase.table("logs_do").update({
+                        "end_time": datetime.now(pytz.utc).isoformat()
+                    }).eq("id", active_do[0]['id']).execute()
+                    print(f"  ✅ DO terminé : {name} ({duree_do} min)")
+
+                # 5. NOTIFICATIONS DISCORD (autres transitions)
                 if old_status and old_status != new_status and old_status != "RÉOUVERT":
                     heure_str = current_time.strftime('%H:%M')
                     notif_new = new_status
