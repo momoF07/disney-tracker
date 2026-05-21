@@ -5,12 +5,15 @@ import os
 import pandas as pd
 from datetime import datetime, time
 import pytz
+from streamlit_autorefresh import st_autorefresh
 
 from config import PARK_OPENING, DLP_CLOSING, DAW_CLOSING, EMT_OPENING
 from modules.special_hours import ANTICIPATED_CLOSINGS, EMT_EARLY_OPEN
 from modules.emojis import RIDES_DAW
 
 st.set_page_config(page_title="Frontierland Live Tracker", page_icon="assets/fondfrontier.png", layout="wide", initial_sidebar_state="collapsed")
+
+st_autorefresh(interval=60000, key="frontier_refresh")
 
 webversion = "v1"
 
@@ -51,7 +54,7 @@ st.markdown(f"""
     }}
 
     .block-container {{
-        padding: 2rem 1.5rem !important;
+        padding: 3rem 1.5rem 2rem !important;
         max-width: 100% !important;
     }}
 
@@ -61,6 +64,7 @@ st.markdown(f"""
         letter-spacing: 4px;
         color: {COLOR};
         text-align: center;
+        margin-top: 1.5rem;
         margin-bottom: 0.2rem;
         text-shadow: 0 0 40px {COLOR}44;
     }}
@@ -73,6 +77,10 @@ st.markdown(f"""
         letter-spacing: 3px;
         text-transform: uppercase;
         margin-bottom: 2.5rem;
+    }}
+
+    [data-testid="column"] {{
+        min-height: 650px;
     }}
 </style>
 """, unsafe_allow_html=True)
@@ -110,11 +118,28 @@ def load_data():
         df = df[(df['duree_min'] >= 5) & (df['duree_min'] <= 420)]
         return df
 
-    logs_mois    = get_logs(debut_mois)
-    logs_mois_pr = get_logs(debut_mois_pr, debut_mois)
-    return live, status, logs_mois, logs_mois_pr
+    def get_logs_do(date_from, date_to=None):
+        q = supabase.table("logs_do").select("*").gte("start_time", date_from.isoformat())
+        if date_to:
+            q = q.lt("start_time", date_to.isoformat())
+        df = pd.DataFrame(q.execute().data)
+        if df.empty: return df
+        df['start_dt']  = pd.to_datetime(df['start_time'], format='mixed').dt.tz_convert('Europe/Paris')
+        df['end_dt']    = df['end_time'].apply(
+            lambda x: pd.to_datetime(x, format='mixed').tz_convert('Europe/Paris') if pd.notna(x)
+            else pd.Timestamp.now(tz='Europe/Paris')
+        )
+        df['duree_min'] = (df['end_dt'] - df['start_dt']).dt.total_seconds() / 60
+        df = df[df['duree_min'] >= 5]
+        return df
 
-live, status_map, logs_mois, logs_mois_pr = load_data()
+    logs_mois       = get_logs(debut_mois)
+    logs_mois_pr    = get_logs(debut_mois_pr, debut_mois)
+    logs_do_mois    = get_logs_do(debut_mois)
+    logs_do_mois_pr = get_logs_do(debut_mois_pr, debut_mois)
+    return live, status, logs_mois, logs_mois_pr, logs_do_mois, logs_do_mois_pr
+
+live, status_map, logs_mois, logs_mois_pr, logs_do_mois, logs_do_mois_pr = load_data()
 
 # ============================================================
 # HEADER
@@ -135,6 +160,8 @@ for col, (ride_name, emoji) in zip(cols, FRONTIERLAND_RIDES.items()):
                            live.get("Disneyland Railroad Frontierland Depot") or {})
             df_r        = logs_mois[logs_mois['ride_name'].isin(RAILROAD_RIDES)] if not logs_mois.empty else pd.DataFrame()
             df_r_pr     = logs_mois_pr[logs_mois_pr['ride_name'].isin(RAILROAD_RIDES)] if not logs_mois_pr.empty else pd.DataFrame()
+            df_do       = logs_do_mois[logs_do_mois['ride_name'].isin(RAILROAD_RIDES)] if not logs_do_mois.empty else pd.DataFrame()
+            df_do_pr    = logs_do_mois_pr[logs_do_mois_pr['ride_name'].isin(RAILROAD_RIDES)] if not logs_do_mois_pr.empty else pd.DataFrame()
             has_opened  = (status_map.get("Disneyland Railroad Main Street Station", {}).get('has_opened_today', False) or
                            status_map.get("Disneyland Railroad Frontierland Depot", {}).get('has_opened_today', False))
             last_status = ride_data.get('last_status', '')
@@ -142,27 +169,34 @@ for col, (ride_name, emoji) in zip(cols, FRONTIERLAND_RIDES.items()):
             ride_data   = live.get(ride_name, {})
             df_r        = logs_mois[logs_mois['ride_name'] == ride_name] if not logs_mois.empty else pd.DataFrame()
             df_r_pr     = logs_mois_pr[logs_mois_pr['ride_name'] == ride_name] if not logs_mois_pr.empty else pd.DataFrame()
+            df_do       = logs_do_mois[logs_do_mois['ride_name'] == ride_name] if not logs_do_mois.empty else pd.DataFrame()
+            df_do_pr    = logs_do_mois_pr[logs_do_mois_pr['ride_name'] == ride_name] if not logs_do_mois_pr.empty else pd.DataFrame()
             has_opened  = status_map.get(ride_name, {}).get('has_opened_today', False)
             last_status = ride_data.get('last_status', '')
 
         is_open = ride_data.get('is_open', False)
         wait    = ride_data.get('wait_time', 0) or 0
 
-        # Stats mois
+        # Stats 101
         nb    = len(df_r)
         total = int(df_r['duree_min'].sum()) if nb > 0 else 0
         moy   = int(df_r['duree_min'].mean()) if nb > 0 else 0
 
-        # Stats mois précédent
         nb_pr    = len(df_r_pr)
         total_pr = int(df_r_pr['duree_min'].sum()) if nb_pr > 0 else 0
         moy_pr   = int(df_r_pr['duree_min'].mean()) if nb_pr > 0 else 0
 
+        # Stats DO
+        nb_do       = len(df_do)
+        total_do    = int(df_do['duree_min'].sum()) if nb_do > 0 else 0
+        nb_do_pr    = len(df_do_pr)
+        total_do_pr = int(df_do_pr['duree_min'].sum()) if nb_do_pr > 0 else 0
+
         # Heure théorique
-        is_daw  = ride_name in RIDES_DAW
-        h_f     = ANTICIPATED_CLOSINGS.get(ride_name, DAW_CLOSING if is_daw else DLP_CLOSING)
-        h_o     = EMT_OPENING if ride_name in EMT_EARLY_OPEN else PARK_OPENING
-        h_now   = now_paris.time()
+        is_daw = ride_name in RIDES_DAW
+        h_f    = ANTICIPATED_CLOSINGS.get(ride_name, DAW_CLOSING if is_daw else DLP_CLOSING)
+        h_o    = EMT_OPENING if ride_name in EMT_EARLY_OPEN else PARK_OPENING
+        h_now  = now_paris.time()
 
         # Statut
         if last_status == "RÉHABILITATION":
@@ -208,12 +242,47 @@ for col, (ride_name, emoji) in zip(cols, FRONTIERLAND_RIDES.items()):
             wait_unit    = "EN ATTENTE"
             card_border  = "rgba(100,116,139,0.2)"
 
+        # Badges DO (mois en cours)
+        do_badges = ""
+        if nb_do > 0:
+            do_badges += (
+                '<div style="display:inline-flex; flex-direction:column; align-items:center;'
+                'background:rgba(167,139,250,0.08); border:1px solid rgba(167,139,250,0.2);'
+                'border-radius:12px; padding:8px 14px; min-width:58px;">'
+                '<div style="font-size:1.5rem; font-weight:800; color:#a78bfa; line-height:1;">' + str(nb_do) + '</div>'
+                '<div style="font-size:7px; color:rgba(167,139,250,0.5); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:3px;">DO</div>'
+                '</div>'
+                '<div style="display:inline-flex; flex-direction:column; align-items:center;'
+                'background:rgba(167,139,250,0.08); border:1px solid rgba(167,139,250,0.2);'
+                'border-radius:12px; padding:8px 14px; min-width:58px;">'
+                '<div style="font-size:1.5rem; font-weight:800; color:#a78bfa; line-height:1;">' + str(total_do) + '</div>'
+                '<div style="font-size:7px; color:rgba(167,139,250,0.5); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:3px;">min DO</div>'
+                '</div>'
+            )
+
+        # Badges DO (mois précédent)
+        do_badges_pr = ""
+        if nb_do_pr > 0:
+            do_badges_pr += (
+                '<div style="display:inline-flex; flex-direction:column; align-items:center;'
+                'background:rgba(167,139,250,0.05); border:1px solid rgba(167,139,250,0.12);'
+                'border-radius:10px; padding:5px 10px; min-width:46px;">'
+                '<div style="font-size:1.1rem; font-weight:800; color:rgba(167,139,250,0.4); line-height:1;">' + str(nb_do_pr) + '</div>'
+                '<div style="font-size:6.5px; color:rgba(167,139,250,0.3); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:1px;">DO</div>'
+                '</div>'
+                '<div style="display:inline-flex; flex-direction:column; align-items:center;'
+                'background:rgba(167,139,250,0.05); border:1px solid rgba(167,139,250,0.12);'
+                'border-radius:10px; padding:5px 10px; min-width:46px;">'
+                '<div style="font-size:1.1rem; font-weight:800; color:rgba(167,139,250,0.4); line-height:1;">' + str(total_do_pr) + '</div>'
+                '<div style="font-size:6.5px; color:rgba(167,139,250,0.3); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:1px;">min DO</div>'
+                '</div>'
+            )
+
         st.markdown(
             '<div style="background:rgba(255,255,255,0.025); border:1px solid ' + card_border + ';'
-            'border-radius:20px; padding:24px 16px 20px; display:flex; flex-direction:column;'
+            'border-radius:20px; padding:24px 16px 28px; display:flex; flex-direction:column;'
             'align-items:center; gap:14px; position:relative; overflow:hidden;">'
 
-            # Barre de couleur en bas
             '<div style="position:absolute; bottom:0; left:0; right:0; height:3px;'
             'background:linear-gradient(90deg, transparent, ' + status_color + ', transparent); opacity:0.7;"></div>'
 
@@ -224,7 +293,7 @@ for col, (ride_name, emoji) in zip(cols, FRONTIERLAND_RIDES.items()):
 
             '<div style="display:flex; flex-direction:column; align-items:center;'
             'background:' + status_color + '18; border:1px solid ' + status_color + '35;'
-            'border-radius:14px; padding:10px 20px; width:100%;">'
+            'border-radius:14px; padding:12px 20px; width:100%;">'
             '<div style="font-size:2.5rem; font-weight:800; color:' + status_color + '; line-height:1;">' + wait_display + '</div>'
             '<div style="font-size:9px; color:' + status_color + '99; font-weight:600; text-transform:uppercase; letter-spacing:2px;">' + wait_unit + '</div>'
             '</div>'
@@ -239,25 +308,20 @@ for col, (ride_name, emoji) in zip(cols, FRONTIERLAND_RIDES.items()):
             '<div style="font-size:8px; color:rgba(255,255,255,0.25); font-weight:700;'
             'text-transform:uppercase; letter-spacing:1.5px; width:100%; text-align:center;">' + mois_label + '</div>'
 
-            '<div style="display:flex; gap:5px; flex-wrap:wrap; justify-content:center; width:100%;">'
+            '<div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:center; width:100%;">'
             '<div style="display:inline-flex; flex-direction:column; align-items:center;'
             'background:rgba(239,108,0,0.07); border:1px solid rgba(239,108,0,0.18);'
-            'border-radius:10px; padding:5px 10px; min-width:48px;">'
-            '<div style="font-size:1.2rem; font-weight:800; color:#ef6c00; line-height:1;">' + str(nb) + '</div>'
-            '<div style="font-size:6.5px; color:rgba(239,108,0,0.5); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:2px;">101</div>'
+            'border-radius:12px; padding:8px 14px; min-width:58px;">'
+            '<div style="font-size:1.5rem; font-weight:800; color:#ef6c00; line-height:1;">' + str(nb) + '</div>'
+            '<div style="font-size:7px; color:rgba(239,108,0,0.5); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:3px;">101</div>'
             '</div>'
             '<div style="display:inline-flex; flex-direction:column; align-items:center;'
             'background:rgba(239,108,0,0.07); border:1px solid rgba(239,108,0,0.18);'
-            'border-radius:10px; padding:5px 10px; min-width:48px;">'
-            '<div style="font-size:1.2rem; font-weight:800; color:#ef6c00; line-height:1;">' + str(total) + '</div>'
-            '<div style="font-size:6.5px; color:rgba(239,108,0,0.5); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:2px;">min</div>'
+            'border-radius:12px; padding:8px 14px; min-width:58px;">'
+            '<div style="font-size:1.5rem; font-weight:800; color:#ef6c00; line-height:1;">' + str(total) + '</div>'
+            '<div style="font-size:7px; color:rgba(239,108,0,0.5); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:3px;">min 101</div>'
             '</div>'
-            '<div style="display:inline-flex; flex-direction:column; align-items:center;'
-            'background:rgba(239,108,0,0.07); border:1px solid rgba(239,108,0,0.18);'
-            'border-radius:10px; padding:5px 10px; min-width:48px;">'
-            '<div style="font-size:1.2rem; font-weight:800; color:#ef6c00; line-height:1;">' + str(moy) + '</div>'
-            '<div style="font-size:6.5px; color:rgba(239,108,0,0.5); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:2px;">∅ min</div>'
-            '</div>'
+            + do_badges +
             '</div>'
 
             '<div style="width:100%; height:1px; background:rgba(255,255,255,0.05);"></div>'
@@ -268,22 +332,17 @@ for col, (ride_name, emoji) in zip(cols, FRONTIERLAND_RIDES.items()):
             '<div style="display:flex; gap:5px; flex-wrap:wrap; justify-content:center; width:100%;">'
             '<div style="display:inline-flex; flex-direction:column; align-items:center;'
             'background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);'
-            'border-radius:8px; padding:3px 8px; min-width:40px;">'
-            '<div style="font-size:0.95rem; font-weight:800; color:rgba(255,255,255,0.35); line-height:1;">' + str(nb_pr) + '</div>'
-            '<div style="font-size:6px; color:rgba(255,255,255,0.2); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:1px;">101</div>'
+            'border-radius:10px; padding:5px 10px; min-width:46px;">'
+            '<div style="font-size:1.1rem; font-weight:800; color:rgba(255,255,255,0.35); line-height:1;">' + str(nb_pr) + '</div>'
+            '<div style="font-size:6.5px; color:rgba(255,255,255,0.2); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:1px;">101</div>'
             '</div>'
             '<div style="display:inline-flex; flex-direction:column; align-items:center;'
             'background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);'
-            'border-radius:8px; padding:3px 8px; min-width:40px;">'
-            '<div style="font-size:0.95rem; font-weight:800; color:rgba(255,255,255,0.35); line-height:1;">' + str(total_pr) + '</div>'
-            '<div style="font-size:6px; color:rgba(255,255,255,0.2); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:1px;">min</div>'
+            'border-radius:10px; padding:5px 10px; min-width:46px;">'
+            '<div style="font-size:1.1rem; font-weight:800; color:rgba(255,255,255,0.35); line-height:1;">' + str(total_pr) + '</div>'
+            '<div style="font-size:6.5px; color:rgba(255,255,255,0.2); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:1px;">min 101</div>'
             '</div>'
-            '<div style="display:inline-flex; flex-direction:column; align-items:center;'
-            'background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);'
-            'border-radius:8px; padding:3px 8px; min-width:40px;">'
-            '<div style="font-size:0.95rem; font-weight:800; color:rgba(255,255,255,0.35); line-height:1;">' + str(moy_pr) + '</div>'
-            '<div style="font-size:6px; color:rgba(255,255,255,0.2); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:1px;">∅ min</div>'
-            '</div>'
+            + do_badges_pr +
             '</div>'
 
             '</div>',
@@ -293,9 +352,6 @@ for col, (ride_name, emoji) in zip(cols, FRONTIERLAND_RIDES.items()):
 # ============================================================
 # FOOTER
 # ============================================================
-from streamlit_autorefresh import st_autorefresh
-st_autorefresh(interval=60000, key="frontier_refresh")
-
 st.markdown(f"""
 <style>
     .main-footer {{
