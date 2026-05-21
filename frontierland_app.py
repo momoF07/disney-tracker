@@ -300,7 +300,6 @@ for col, (ride_name, emoji) in zip(cols, FRONTIERLAND_RIDES.items()):
         total_pr = int(df_r_pr['duree_min'].sum()) if nb_pr > 0 else 0
         moy_pr   = int(df_r_pr['duree_min'].mean()) if nb_pr > 0 else 0
 
-        # Affichage
         if is_open:
             status_color = "#10b981"
             status_label = "Ouvert"
@@ -312,60 +311,89 @@ for col, (ride_name, emoji) in zip(cols, FRONTIERLAND_RIDES.items()):
             wait_display = "—"
             wait_unit    = "ATTENTE"
 
-        st.markdown(f"""
-        <div class="ride-card">
-            <div class="ride-emoji">{emoji}</div>
-            <div class="ride-name">{ride_name}</div>
+        st.markdown(
+            '<div style="background:rgba(255,255,255,0.025); border:1px solid rgba(239,108,0,0.15);'
+            'border-radius:20px; padding:24px 16px 20px; display:flex; flex-direction:column;'
+            'align-items:center; gap:14px; position:relative; overflow:hidden;">'
 
-            <div class="wait-block">
-                <div class="wait-val">{wait_display}</div>
-                <div class="wait-label">{wait_unit}</div>
-            </div>
+            '<div style="font-size:52px; line-height:1;">' + emoji + '</div>'
+            '<div style="font-family:sans-serif; font-size:13px; font-weight:700; letter-spacing:1px;'
+            'color:rgba(255,255,255,0.85); text-align:center; line-height:1.3;">' + ride_name + '</div>'
 
-            <span class="status-pill" style="background:{status_color}20; color:{status_color}; border:1px solid {status_color}40;">
-                {status_label}
-            </span>
+            '<div style="display:flex; flex-direction:column; align-items:center;'
+            'background:rgba(239,108,0,0.1); border:1px solid rgba(239,108,0,0.25);'
+            'border-radius:14px; padding:10px 20px; width:100%;">'
+            '<div style="font-size:2.5rem; font-weight:800; color:#ef6c00; line-height:1;">' + wait_display + '</div>'
+            '<div style="font-size:9px; color:rgba(239,108,0,0.6); font-weight:600; text-transform:uppercase; letter-spacing:2px;">' + wait_unit + '</div>'
+            '</div>'
 
-            <div class="divider"></div>
+            '<span style="font-size:10px; font-weight:700; padding:3px 12px; border-radius:20px;'
+            'text-transform:uppercase; letter-spacing:1px;'
+            'background:' + status_color + '20; color:' + status_color + '; border:1px solid ' + status_color + '40;">'
+            + status_label + '</span>'
 
-            <div style="font-size:8px; color:rgba(255,255,255,0.25); font-weight:700;
-                        text-transform:uppercase; letter-spacing:1.5px; width:100%; text-align:center;">
-                {mois_label}
-            </div>
-            <div class="stats-row">
-                <div class="stat-badge">
-                    <div class="stat-val">{nb}</div>
-                    <div class="stat-lbl">101</div>
-                </div>
-                <div class="stat-badge">
-                    <div class="stat-val">{total}</div>
-                    <div class="stat-lbl">min</div>
-                </div>
-                <div class="stat-badge">
-                    <div class="stat-val">{moy}</div>
-                    <div class="stat-lbl">∅ min</div>
-                </div>
-            </div>
+            '<div style="width:100%; height:1px; background:rgba(255,255,255,0.05);"></div>'
 
-            <div class="divider"></div>
+            '<div style="font-size:8px; color:rgba(255,255,255,0.25); font-weight:700;'
+            'text-transform:uppercase; letter-spacing:1.5px; width:100%; text-align:center;">' + mois_label + '</div>'
 
-            <div class="prev-label">📅 {mois_pr_label}</div>
-            <div class="stats-row">
-                <div class="stat-badge-sm">
-                    <div class="stat-val-sm">{nb_pr}</div>
-                    <div class="stat-lbl-sm">101</div>
-                </div>
-                <div class="stat-badge-sm">
-                    <div class="stat-val-sm">{total_pr}</div>
-                    <div class="stat-lbl-sm">min</div>
-                </div>
-                <div class="stat-badge-sm">
-                    <div class="stat-val-sm">{moy_pr}</div>
-                    <div class="stat-lbl-sm">∅ min</div>
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+            '<div style="display:flex; gap:5px; flex-wrap:wrap; justify-content:center; width:100%;">'
+
+            '<div style="display:inline-flex; flex-direction:column; align-items:center;'
+            'background:rgba(239,108,0,0.07); border:1px solid rgba(239,108,0,0.18);'
+            'border-radius:10px; padding:5px 10px; min-width:48px;">'
+            '<div style="font-size:1.2rem; font-weight:800; color:#ef6c00; line-height:1;">' + str(nb) + '</div>'
+            '<div style="font-size:6.5px; color:rgba(239,108,0,0.5); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:2px;">101</div>'
+            '</div>'
+
+            '<div style="display:inline-flex; flex-direction:column; align-items:center;'
+            'background:rgba(239,108,0,0.07); border:1px solid rgba(239,108,0,0.18);'
+            'border-radius:10px; padding:5px 10px; min-width:48px;">'
+            '<div style="font-size:1.2rem; font-weight:800; color:#ef6c00; line-height:1;">' + str(total) + '</div>'
+            '<div style="font-size:6.5px; color:rgba(239,108,0,0.5); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:2px;">min</div>'
+            '</div>'
+
+            '<div style="display:inline-flex; flex-direction:column; align-items:center;'
+            'background:rgba(239,108,0,0.07); border:1px solid rgba(239,108,0,0.18);'
+            'border-radius:10px; padding:5px 10px; min-width:48px;">'
+            '<div style="font-size:1.2rem; font-weight:800; color:#ef6c00; line-height:1;">' + str(moy) + '</div>'
+            '<div style="font-size:6.5px; color:rgba(239,108,0,0.5); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:2px;">∅ min</div>'
+            '</div>'
+
+            '</div>'
+
+            '<div style="width:100%; height:1px; background:rgba(255,255,255,0.05);"></div>'
+
+            '<div style="font-size:7.5px; color:rgba(255,255,255,0.2); font-weight:700;'
+            'text-transform:uppercase; letter-spacing:1px; text-align:center; width:100%;">📅 ' + mois_pr_label + '</div>'
+
+            '<div style="display:flex; gap:5px; flex-wrap:wrap; justify-content:center; width:100%;">'
+
+            '<div style="display:inline-flex; flex-direction:column; align-items:center;'
+            'background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);'
+            'border-radius:8px; padding:3px 8px; min-width:40px;">'
+            '<div style="font-size:0.95rem; font-weight:800; color:rgba(255,255,255,0.35); line-height:1;">' + str(nb_pr) + '</div>'
+            '<div style="font-size:6px; color:rgba(255,255,255,0.2); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:1px;">101</div>'
+            '</div>'
+
+            '<div style="display:inline-flex; flex-direction:column; align-items:center;'
+            'background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);'
+            'border-radius:8px; padding:3px 8px; min-width:40px;">'
+            '<div style="font-size:0.95rem; font-weight:800; color:rgba(255,255,255,0.35); line-height:1;">' + str(total_pr) + '</div>'
+            '<div style="font-size:6px; color:rgba(255,255,255,0.2); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:1px;">min</div>'
+            '</div>'
+
+            '<div style="display:inline-flex; flex-direction:column; align-items:center;'
+            'background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);'
+            'border-radius:8px; padding:3px 8px; min-width:40px;">'
+            '<div style="font-size:0.95rem; font-weight:800; color:rgba(255,255,255,0.35); line-height:1;">' + str(moy_pr) + '</div>'
+            '<div style="font-size:6px; color:rgba(255,255,255,0.2); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:1px;">∅ min</div>'
+            '</div>'
+
+            '</div>'
+            '</div>',
+            unsafe_allow_html=True
+        )
 
 footer_html = f"""
 <style>
