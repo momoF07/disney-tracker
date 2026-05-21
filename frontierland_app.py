@@ -80,6 +80,19 @@ st.markdown(f"""
     [data-testid="column"] {{
         min-height: 650px;
     }}
+
+    div[data-testid="stExpander"] {{
+        background: rgba(255,255,255,0.015) !important;
+        border: 1px solid rgba(239,108,0,0.15) !important;
+        border-radius: 12px !important;
+        margin-top: 8px !important;
+    }}
+
+    div[data-testid="stExpander"] summary {{
+        color: rgba(255,255,255,0.4) !important;
+        font-size: 11px !important;
+        font-weight: 600 !important;
+    }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -239,7 +252,6 @@ for col, (ride_name, emoji) in zip(cols, FRONTIERLAND_RIDES.items()):
             wait_unit    = "EN ATTENTE"
             card_border  = "rgba(100,116,139,0.2)"
 
-        # Helpers badges
         def badge(val, lbl, r, g, b, small=False):
             fs   = "1.05rem" if small else "1.3rem"
             lfs  = "6px"     if small else "6.5px"
@@ -255,7 +267,6 @@ for col, (ride_name, emoji) in zip(cols, FRONTIERLAND_RIDES.items()):
                 '</div>'
             )
 
-        # Ligne 101 mois en cours
         row_101 = (
             '<div style="display:flex; gap:5px; justify-content:center; width:100%; flex-wrap:nowrap;">'
             + badge(nb,            "101",          "239","108","0")
@@ -263,16 +274,12 @@ for col, (ride_name, emoji) in zip(cols, FRONTIERLAND_RIDES.items()):
             + badge(f"{moy} min",  "Durée moyenne","239","108","0")
             + '</div>'
         )
-
-        # Ligne DO mois en cours
         row_do = (
             '<div style="display:flex; gap:5px; justify-content:center; width:100%; flex-wrap:nowrap;">'
             + badge(nb_do,            "DO",          "167","139","250")
             + badge(f"{total_do} min","Durée totale","167","139","250")
             + '</div>'
         )
-
-        # Ligne 101 mois précédent
         row_101_pr = (
             '<div style="display:flex; gap:4px; justify-content:center; width:100%; flex-wrap:nowrap;">'
             + badge(nb_pr,            "101",          "239","108","0", small=True)
@@ -280,8 +287,6 @@ for col, (ride_name, emoji) in zip(cols, FRONTIERLAND_RIDES.items()):
             + badge(f"{moy_pr} min",  "Durée moyenne","239","108","0", small=True)
             + '</div>'
         )
-
-        # Ligne DO mois précédent
         row_do_pr = (
             '<div style="display:flex; gap:4px; justify-content:center; width:100%; flex-wrap:nowrap;">'
             + badge(nb_do_pr,            "DO",          "167","139","250", small=True)
@@ -336,6 +341,54 @@ for col, (ride_name, emoji) in zip(cols, FRONTIERLAND_RIDES.items()):
             unsafe_allow_html=True
         )
 
+        # Historique interruptions
+        label_exp = f"📋 Historique 101 — {ride_name}"
+        if not df_r.empty:
+            with st.expander(label_exp):
+                for _, row in df_r.sort_values('start_dt', ascending=False).iterrows():
+                    debut     = row['start_dt'].strftime('%d/%m %H:%M')
+                    fin       = row['end_dt'].strftime('%H:%M') if pd.notna(row['end_time']) else "En cours"
+                    duree     = int(row['duree_min'])
+                    fin_color = "#f87171" if fin == "En cours" else "#94a3b8"
+                    st.markdown(
+                        '<div style="display:flex; justify-content:space-between; align-items:center;'
+                        'padding:5px 8px; background:rgba(255,255,255,0.02); border-radius:7px; margin-bottom:3px;">'
+                        '<span style="color:#94a3b8; font-size:10px;">'
+                        + debut + ' → <span style="color:' + fin_color + ';">' + fin + '</span></span>'
+                        '<span style="font-size:11px; font-weight:700;'
+                        'color:rgba(239,108,0,0.9); background:rgba(239,108,0,0.1); border:1px solid rgba(239,108,0,0.25);'
+                        'padding:1px 8px; border-radius:6px;">' + str(duree) + ' min</span>'
+                        '</div>',
+                        unsafe_allow_html=True
+                    )
+        else:
+            with st.expander(label_exp):
+                st.caption("Aucune interruption ce mois-ci.")
+
+        # Historique DO
+        label_do = f"🟣 Historique DO — {ride_name}"
+        if not df_do.empty:
+            with st.expander(label_do):
+                for _, row in df_do.sort_values('start_dt', ascending=False).iterrows():
+                    debut     = row['start_dt'].strftime('%d/%m %H:%M')
+                    fin       = row['end_dt'].strftime('%H:%M') if pd.notna(row['end_time']) else "En cours"
+                    duree     = int(row['duree_min'])
+                    fin_color = "#f87171" if fin == "En cours" else "#94a3b8"
+                    st.markdown(
+                        '<div style="display:flex; justify-content:space-between; align-items:center;'
+                        'padding:5px 8px; background:rgba(255,255,255,0.02); border-radius:7px; margin-bottom:3px;">'
+                        '<span style="color:#94a3b8; font-size:10px;">'
+                        + debut + ' → <span style="color:' + fin_color + ';">' + fin + '</span></span>'
+                        '<span style="font-size:11px; font-weight:700;'
+                        'color:rgba(167,139,250,0.9); background:rgba(167,139,250,0.1); border:1px solid rgba(167,139,250,0.25);'
+                        'padding:1px 8px; border-radius:6px;">' + str(duree) + ' min</span>'
+                        '</div>',
+                        unsafe_allow_html=True
+                    )
+        else:
+            with st.expander(label_do):
+                st.caption("Aucun DO ce mois-ci.")
+
 # ============================================================
 # FOOTER
 # ============================================================
@@ -363,7 +416,7 @@ st.markdown(f"""
     <div class="footer-item">
         <span class="version-tag">{webversion}</span>
         <span class="footer-sep">|</span>
-        Disney Wait Time Tool
+        Frontier Live Data - by Morgan F
     </div>
     <div class="footer-item" style="text-align:center; flex-grow:1;">
         API Attente : ThemePark Wiki
