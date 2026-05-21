@@ -15,6 +15,7 @@ st.set_page_config(page_title="Frontierland Live Tracker", page_icon="assets/fon
 st_autorefresh(interval=60000, key="frontier_refresh")
 
 webversion = "v1"
+showhisto = FALSE
 
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
@@ -341,52 +342,58 @@ for col, (ride_name, emoji) in zip(cols, FRONTIERLAND_RIDES.items()):
         )
 
         # Historique interruptions
-        label_exp = f"📋 Historique 101"
-        if not df_r.empty:
-            with st.expander(label_exp):
-                for _, row in df_r.sort_values('start_dt', ascending=False).iterrows():
-                    debut     = row['start_dt'].strftime('%d/%m %H:%M')
-                    fin       = row['end_dt'].strftime('%H:%M') if pd.notna(row['end_time']) else "En cours"
-                    duree     = int(row['duree_min'])
-                    fin_color = "#f87171" if fin == "En cours" else "#94a3b8"
-                    st.markdown(
-                        '<div style="display:flex; justify-content:space-between; align-items:center;'
-                        'padding:5px 8px; background:rgba(255,255,255,0.02); border-radius:7px; margin-bottom:3px;">'
-                        '<span style="color:#94a3b8; font-size:10px;">'
-                        + debut + ' → <span style="color:' + fin_color + ';">' + fin + '</span></span>'
-                        '<span style="font-size:11px; font-weight:700;'
-                        'color:rgba(239,108,0,0.9); background:rgba(239,108,0,0.1); border:1px solid rgba(239,108,0,0.25);'
-                        'padding:1px 8px; border-radius:6px;">' + str(duree) + ' min</span>'
-                        '</div>',
-                        unsafe_allow_html=True
-                    )
+        if showhisto == TRUE:
+            label_exp = f"📋 Historique 101"
+            if not df_r.empty:
+                with st.expander(label_exp):
+                    for _, row in df_r.sort_values('start_dt', ascending=False).iterrows():
+                        debut     = row['start_dt'].strftime('%d/%m %H:%M')
+                        fin       = row['end_dt'].strftime('%H:%M') if pd.notna(row['end_time']) else "En cours"
+                        duree     = int(row['duree_min'])
+                        fin_color = "#f87171" if fin == "En cours" else "#94a3b8"
+                        st.markdown(
+                            '<div style="display:flex; justify-content:space-between; align-items:center;'
+                            'padding:5px 8px; background:rgba(255,255,255,0.02); border-radius:7px; margin-bottom:3px;">'
+                            '<span style="color:#94a3b8; font-size:10px;">'
+                            + debut + ' → <span style="color:' + fin_color + ';">' + fin + '</span></span>'
+                            '<span style="font-size:11px; font-weight:700;'
+                            'color:rgba(239,108,0,0.9); background:rgba(239,108,0,0.1); border:1px solid rgba(239,108,0,0.25);'
+                            'padding:1px 8px; border-radius:6px;">' + str(duree) + ' min</span>'
+                            '</div>',
+                            unsafe_allow_html=True
+                        )
+            else:
+                with st.expander(label_exp):
+                    st.caption("Aucune interruption ce mois-ci.")
         else:
-            with st.expander(label_exp):
-                st.caption("Aucune interruption ce mois-ci.")
+            continue
 
         # Historique DO
-        label_do = f"🟣 Historique DO"
-        if not df_do.empty:
-            with st.expander(label_do):
-                for _, row in df_do.sort_values('start_dt', ascending=False).iterrows():
-                    debut     = row['start_dt'].strftime('%d/%m %H:%M')
-                    fin       = row['end_dt'].strftime('%H:%M') if pd.notna(row['end_time']) else "En cours"
-                    duree     = int(row['duree_min'])
-                    fin_color = "#f87171" if fin == "En cours" else "#94a3b8"
-                    st.markdown(
-                        '<div style="display:flex; justify-content:space-between; align-items:center;'
-                        'padding:5px 8px; background:rgba(255,255,255,0.02); border-radius:7px; margin-bottom:3px;">'
-                        '<span style="color:#94a3b8; font-size:10px;">'
-                        + debut + ' → <span style="color:' + fin_color + ';">' + fin + '</span></span>'
-                        '<span style="font-size:11px; font-weight:700;'
-                        'color:rgba(167,139,250,0.9); background:rgba(167,139,250,0.1); border:1px solid rgba(167,139,250,0.25);'
-                        'padding:1px 8px; border-radius:6px;">' + str(duree) + ' min</span>'
-                        '</div>',
-                        unsafe_allow_html=True
-                    )
+        if showhisto == TRUE:
+            label_do = f"🟣 Historique DO"
+            if not df_do.empty:
+                with st.expander(label_do):
+                    for _, row in df_do.sort_values('start_dt', ascending=False).iterrows():
+                        debut     = row['start_dt'].strftime('%d/%m %H:%M')
+                        fin       = row['end_dt'].strftime('%H:%M') if pd.notna(row['end_time']) else "En cours"
+                        duree     = int(row['duree_min'])
+                        fin_color = "#f87171" if fin == "En cours" else "#94a3b8"
+                        st.markdown(
+                            '<div style="display:flex; justify-content:space-between; align-items:center;'
+                            'padding:5px 8px; background:rgba(255,255,255,0.02); border-radius:7px; margin-bottom:3px;">'
+                            '<span style="color:#94a3b8; font-size:10px;">'
+                            + debut + ' → <span style="color:' + fin_color + ';">' + fin + '</span></span>'
+                            '<span style="font-size:11px; font-weight:700;'
+                            'color:rgba(167,139,250,0.9); background:rgba(167,139,250,0.1); border:1px solid rgba(167,139,250,0.25);'
+                            'padding:1px 8px; border-radius:6px;">' + str(duree) + ' min</span>'
+                            '</div>',
+                            unsafe_allow_html=True
+                        )
+            else:
+                with st.expander(label_do):
+                    st.caption("Aucun DO ce mois-ci.")
         else:
-            with st.expander(label_do):
-                st.caption("Aucun DO ce mois-ci.")
+            continue
 
 # ============================================================
 # FOOTER
