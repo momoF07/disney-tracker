@@ -6,7 +6,7 @@ import pandas as pd
 from datetime import datetime
 import pytz
 
-st.set_page_config(page_title="Frontierland Live", layout="wide", initial_sidebar_context="collapsed")
+st.set_page_config(page_title="Frontierland Live", layout="wide", initial_sidebar_state="collapsed")
 
 url = os.environ.get("SUPABASE_URL") or st.secrets.get("SUPABASE_URL")
 key = os.environ.get("SUPABASE_KEY") or st.secrets.get("SUPABASE_KEY")
