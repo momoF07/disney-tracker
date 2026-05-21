@@ -1,7 +1,6 @@
 # frontierland_app.py
 import streamlit as st
 from supabase import create_client
-import os
 import pandas as pd
 from datetime import datetime, time
 import pytz
@@ -177,91 +176,19 @@ for col, (ride_name, emoji) in zip(cols, FRONTIERLAND_RIDES.items()):
         is_open = ride_data.get('is_open', False)
         wait    = ride_data.get('wait_time', 0) or 0
 
-        # === STATS MOIS EN COURS ===
-        '<div style="font-size:8px; color:rgba(255,255,255,0.25); font-weight:700;'
-        'text-transform:uppercase; letter-spacing:1.5px; width:100%; text-align:center;">' + mois_label + '</div>'
+        # Stats 101
+        nb    = len(df_r)
+        total = int(df_r['duree_min'].sum()) if nb > 0 else 0
+        moy   = int(df_r['duree_min'].mean()) if nb > 0 else 0
+        nb_pr    = len(df_r_pr)
+        total_pr = int(df_r_pr['duree_min'].sum()) if nb_pr > 0 else 0
+        moy_pr   = int(df_r_pr['duree_min'].mean()) if nb_pr > 0 else 0
 
-        '<div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:center; width:100%;">'
-
-        # 101 — orange
-        '<div style="display:inline-flex; flex-direction:column; align-items:center;'
-        'background:rgba(239,108,0,0.08); border:1px solid rgba(239,108,0,0.2);'
-        'border-radius:12px; padding:8px 12px; min-width:52px;">'
-        '<div style="font-size:1.4rem; font-weight:800; color:#ef6c00; line-height:1;">' + str(nb) + '</div>'
-        '<div style="font-size:7px; color:rgba(239,108,0,0.5); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:3px;">× 101</div>'
-        '</div>'
-        '<div style="display:inline-flex; flex-direction:column; align-items:center;'
-        'background:rgba(239,108,0,0.08); border:1px solid rgba(239,108,0,0.2);'
-        'border-radius:12px; padding:8px 12px; min-width:52px;">'
-        '<div style="font-size:1.4rem; font-weight:800; color:#ef6c00; line-height:1;">' + str(total) + '</div>'
-        '<div style="font-size:7px; color:rgba(239,108,0,0.5); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:3px;">min 101</div>'
-        '</div>'
-        '<div style="display:inline-flex; flex-direction:column; align-items:center;'
-        'background:rgba(239,108,0,0.08); border:1px solid rgba(239,108,0,0.2);'
-        'border-radius:12px; padding:8px 12px; min-width:52px;">'
-        '<div style="font-size:1.4rem; font-weight:800; color:#ef6c00; line-height:1;">' + str(moy) + '</div>'
-        '<div style="font-size:7px; color:rgba(239,108,0,0.5); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:3px;">∅ min 101</div>'
-        '</div>'
-
-        # DO — violet
-        + ('<div style="display:inline-flex; flex-direction:column; align-items:center;'
-        'background:rgba(167,139,250,0.08); border:1px solid rgba(167,139,250,0.2);'
-        'border-radius:12px; padding:8px 12px; min-width:52px;">'
-        '<div style="font-size:1.4rem; font-weight:800; color:#a78bfa; line-height:1;">' + str(nb_do) + '</div>'
-        '<div style="font-size:7px; color:rgba(167,139,250,0.5); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:3px;">× DO</div>'
-        '</div>'
-        '<div style="display:inline-flex; flex-direction:column; align-items:center;'
-        'background:rgba(167,139,250,0.08); border:1px solid rgba(167,139,250,0.2);'
-        'border-radius:12px; padding:8px 12px; min-width:52px;">'
-        '<div style="font-size:1.4rem; font-weight:800; color:#a78bfa; line-height:1;">' + str(total_do) + '</div>'
-        '<div style="font-size:7px; color:rgba(167,139,250,0.5); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:3px;">min DO</div>'
-        '</div>' if nb_do > 0 else '')
-
-        + '</div>'
-
-        '<div style="width:100%; height:1px; background:rgba(255,255,255,0.05);"></div>'
-
-        # === STATS MOIS PRÉCÉDENT ===
-        '<div style="font-size:7.5px; color:rgba(255,255,255,0.2); font-weight:700;'
-        'text-transform:uppercase; letter-spacing:1px; text-align:center; width:100%;">📅 ' + mois_pr_label + '</div>'
-
-        '<div style="display:flex; gap:5px; flex-wrap:wrap; justify-content:center; width:100%;">'
-
-        # 101 pr — orange atténué
-        '<div style="display:inline-flex; flex-direction:column; align-items:center;'
-        'background:rgba(239,108,0,0.04); border:1px solid rgba(239,108,0,0.12);'
-        'border-radius:10px; padding:5px 10px; min-width:46px;">'
-        '<div style="font-size:1.05rem; font-weight:800; color:rgba(239,108,0,0.45); line-height:1;">' + str(nb_pr) + '</div>'
-        '<div style="font-size:6.5px; color:rgba(239,108,0,0.3); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:1px;">× 101</div>'
-        '</div>'
-        '<div style="display:inline-flex; flex-direction:column; align-items:center;'
-        'background:rgba(239,108,0,0.04); border:1px solid rgba(239,108,0,0.12);'
-        'border-radius:10px; padding:5px 10px; min-width:46px;">'
-        '<div style="font-size:1.05rem; font-weight:800; color:rgba(239,108,0,0.45); line-height:1;">' + str(total_pr) + '</div>'
-        '<div style="font-size:6.5px; color:rgba(239,108,0,0.3); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:1px;">min 101</div>'
-        '</div>'
-        '<div style="display:inline-flex; flex-direction:column; align-items:center;'
-        'background:rgba(239,108,0,0.04); border:1px solid rgba(239,108,0,0.12);'
-        'border-radius:10px; padding:5px 10px; min-width:46px;">'
-        '<div style="font-size:1.05rem; font-weight:800; color:rgba(239,108,0,0.45); line-height:1;">' + str(moy_pr) + '</div>'
-        '<div style="font-size:6.5px; color:rgba(239,108,0,0.3); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:1px;">∅ 101</div>'
-        '</div>'
-
-        # DO pr — violet atténué
-        + ('<div style="display:inline-flex; flex-direction:column; align-items:center;'
-        'background:rgba(167,139,250,0.04); border:1px solid rgba(167,139,250,0.1);'
-        'border-radius:10px; padding:5px 10px; min-width:46px;">'
-        '<div style="font-size:1.05rem; font-weight:800; color:rgba(167,139,250,0.4); line-height:1;">' + str(nb_do_pr) + '</div>'
-        '<div style="font-size:6.5px; color:rgba(167,139,250,0.3); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:1px;">× DO</div>'
-        '</div>'
-        '<div style="display:inline-flex; flex-direction:column; align-items:center;'
-        'background:rgba(167,139,250,0.04); border:1px solid rgba(167,139,250,0.1);'
-        'border-radius:10px; padding:5px 10px; min-width:46px;">'
-        '<div style="font-size:1.05rem; font-weight:800; color:rgba(167,139,250,0.4); line-height:1;">' + str(total_do_pr) + '</div>'
-        '<div style="font-size:6.5px; color:rgba(167,139,250,0.3); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:1px;">min DO</div>'
-        '</div>' if nb_do_pr > 0 else '')
-
-        + '</div>'
+        # Stats DO
+        nb_do       = len(df_do)
+        total_do    = int(df_do['duree_min'].sum()) if nb_do > 0 else 0
+        nb_do_pr    = len(df_do_pr)
+        total_do_pr = int(df_do_pr['duree_min'].sum()) if nb_do_pr > 0 else 0
 
         # Heure théorique
         is_daw = ride_name in RIDES_DAW
@@ -313,41 +240,43 @@ for col, (ride_name, emoji) in zip(cols, FRONTIERLAND_RIDES.items()):
             wait_unit    = "EN ATTENTE"
             card_border  = "rgba(100,116,139,0.2)"
 
-        # Badges DO (mois en cours)
-        do_badges = ""
-        if nb_do > 0:
-            do_badges += (
+        # Helpers badges
+        def badge(val, lbl, color, small=False):
+            fs   = "1.05rem" if small else "1.4rem"
+            lfs  = "6.5px"   if small else "7px"
+            pad  = "5px 10px" if small else "8px 12px"
+            mw   = "46px"    if small else "52px"
+            br   = "10px"    if small else "12px"
+            op   = "0.04" if small else "0.08"
+            bop  = "0.12" if small else "0.2"
+            cop  = "0.45" if small else "1"
+            lcop = "0.3"  if small else "0.5"
+            return (
                 '<div style="display:inline-flex; flex-direction:column; align-items:center;'
-                'background:rgba(167,139,250,0.08); border:1px solid rgba(167,139,250,0.2);'
-                'border-radius:12px; padding:8px 14px; min-width:58px;">'
-                '<div style="font-size:1.5rem; font-weight:800; color:#a78bfa; line-height:1;">' + str(nb_do) + '</div>'
-                '<div style="font-size:7px; color:rgba(167,139,250,0.5); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:3px;">DO</div>'
-                '</div>'
-                '<div style="display:inline-flex; flex-direction:column; align-items:center;'
-                'background:rgba(167,139,250,0.08); border:1px solid rgba(167,139,250,0.2);'
-                'border-radius:12px; padding:8px 14px; min-width:58px;">'
-                '<div style="font-size:1.5rem; font-weight:800; color:#a78bfa; line-height:1;">' + str(total_do) + '</div>'
-                '<div style="font-size:7px; color:rgba(167,139,250,0.5); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:3px;">min DO</div>'
+                'background:' + color + op + '; border:1px solid ' + color + bop + ';'
+                'border-radius:' + br + '; padding:' + pad + '; min-width:' + mw + ';">'
+                '<div style="font-size:' + fs + '; font-weight:800; color:' + color + cop + '; line-height:1;">' + str(val) + '</div>'
+                '<div style="font-size:' + lfs + '; color:' + color + lcop + '; font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:' + ('1px' if small else '3px') + ';">' + lbl + '</div>'
                 '</div>'
             )
 
-        # Badges DO (mois précédent)
-        do_badges_pr = ""
-        if nb_do_pr > 0:
-            do_badges_pr += (
-                '<div style="display:inline-flex; flex-direction:column; align-items:center;'
-                'background:rgba(167,139,250,0.05); border:1px solid rgba(167,139,250,0.12);'
-                'border-radius:10px; padding:5px 10px; min-width:46px;">'
-                '<div style="font-size:1.1rem; font-weight:800; color:rgba(167,139,250,0.4); line-height:1;">' + str(nb_do_pr) + '</div>'
-                '<div style="font-size:6.5px; color:rgba(167,139,250,0.3); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:1px;">DO</div>'
-                '</div>'
-                '<div style="display:inline-flex; flex-direction:column; align-items:center;'
-                'background:rgba(167,139,250,0.05); border:1px solid rgba(167,139,250,0.12);'
-                'border-radius:10px; padding:5px 10px; min-width:46px;">'
-                '<div style="font-size:1.1rem; font-weight:800; color:rgba(167,139,250,0.4); line-height:1;">' + str(total_do_pr) + '</div>'
-                '<div style="font-size:6.5px; color:rgba(167,139,250,0.3); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:1px;">min DO</div>'
-                '</div>'
-            )
+        # Badges mois en cours
+        badges_mois = (
+            badge(nb,    "× 101",    "#ef6c00") +
+            badge(total, "min 101",  "#ef6c00") +
+            badge(moy,   "∅ min 101","#ef6c00") +
+            (badge(nb_do,    "× DO",   "#a78bfa") +
+             badge(total_do, "min DO", "#a78bfa") if nb_do > 0 else "")
+        )
+
+        # Badges mois précédent
+        badges_pr = (
+            badge(nb_pr,    "× 101",    "#ef6c00", small=True) +
+            badge(total_pr, "min 101",  "#ef6c00", small=True) +
+            badge(moy_pr,   "∅ 101",    "#ef6c00", small=True) +
+            (badge(nb_do_pr,    "× DO",   "#a78bfa", small=True) +
+             badge(total_do_pr, "min DO", "#a78bfa", small=True) if nb_do_pr > 0 else "")
+        )
 
         st.markdown(
             '<div style="background:rgba(255,255,255,0.025); border:1px solid ' + card_border + ';'
@@ -380,19 +309,7 @@ for col, (ride_name, emoji) in zip(cols, FRONTIERLAND_RIDES.items()):
             'text-transform:uppercase; letter-spacing:1.5px; width:100%; text-align:center;">' + mois_label + '</div>'
 
             '<div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:center; width:100%;">'
-            '<div style="display:inline-flex; flex-direction:column; align-items:center;'
-            'background:rgba(239,108,0,0.07); border:1px solid rgba(239,108,0,0.18);'
-            'border-radius:12px; padding:8px 14px; min-width:58px;">'
-            '<div style="font-size:1.5rem; font-weight:800; color:#ef6c00; line-height:1;">' + str(nb) + '</div>'
-            '<div style="font-size:7px; color:rgba(239,108,0,0.5); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:3px;">101</div>'
-            '</div>'
-            '<div style="display:inline-flex; flex-direction:column; align-items:center;'
-            'background:rgba(239,108,0,0.07); border:1px solid rgba(239,108,0,0.18);'
-            'border-radius:12px; padding:8px 14px; min-width:58px;">'
-            '<div style="font-size:1.5rem; font-weight:800; color:#ef6c00; line-height:1;">' + str(total) + '</div>'
-            '<div style="font-size:7px; color:rgba(239,108,0,0.5); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:3px;">min 101</div>'
-            '</div>'
-            + do_badges +
+            + badges_mois +
             '</div>'
 
             '<div style="width:100%; height:1px; background:rgba(255,255,255,0.05);"></div>'
@@ -401,19 +318,7 @@ for col, (ride_name, emoji) in zip(cols, FRONTIERLAND_RIDES.items()):
             'text-transform:uppercase; letter-spacing:1px; text-align:center; width:100%;">📅 ' + mois_pr_label + '</div>'
 
             '<div style="display:flex; gap:5px; flex-wrap:wrap; justify-content:center; width:100%;">'
-            '<div style="display:inline-flex; flex-direction:column; align-items:center;'
-            'background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);'
-            'border-radius:10px; padding:5px 10px; min-width:46px;">'
-            '<div style="font-size:1.1rem; font-weight:800; color:rgba(255,255,255,0.35); line-height:1;">' + str(nb_pr) + '</div>'
-            '<div style="font-size:6.5px; color:rgba(255,255,255,0.2); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:1px;">101</div>'
-            '</div>'
-            '<div style="display:inline-flex; flex-direction:column; align-items:center;'
-            'background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);'
-            'border-radius:10px; padding:5px 10px; min-width:46px;">'
-            '<div style="font-size:1.1rem; font-weight:800; color:rgba(255,255,255,0.35); line-height:1;">' + str(total_pr) + '</div>'
-            '<div style="font-size:6.5px; color:rgba(255,255,255,0.2); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:1px;">min 101</div>'
-            '</div>'
-            + do_badges_pr +
+            + badges_pr +
             '</div>'
 
             '</div>',
