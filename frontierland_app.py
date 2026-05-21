@@ -242,37 +242,52 @@ for col, (ride_name, emoji) in zip(cols, FRONTIERLAND_RIDES.items()):
 
         # Helpers badges
         def badge(val, lbl, r, g, b, small=False):
-            fs   = "1.05rem" if small else "1.4rem"
-            lfs  = "6.5px"   if small else "7px"
-            pad  = "5px 10px" if small else "8px 12px"
-            mw   = "46px"    if small else "52px"
+            fs   = "1.05rem" if small else "1.3rem"
+            lfs  = "6px"     if small else "6.5px"
+            pad  = "5px 6px" if small else "7px 8px"
             br   = "10px"    if small else "12px"
             op   = "0.55"    if small else "1"
             return (
                 '<div style="display:inline-flex; flex-direction:column; align-items:center;'
                 'background:rgba(' + r + ',' + g + ',' + b + ',0.08); border:1px solid rgba(' + r + ',' + g + ',' + b + ',0.22);'
-                'border-radius:' + br + '; padding:' + pad + '; min-width:' + mw + ';">'
-                '<div style="font-size:' + fs + '; font-weight:800; color:rgba(' + r + ',' + g + ',' + b + ',' + op + '); line-height:1;">' + str(val) + '</div>'
-                '<div style="font-size:' + lfs + '; color:rgba(' + r + ',' + g + ',' + b + ',0.45); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:' + ('1px' if small else '3px') + ';">' + lbl + '</div>'
+                'border-radius:' + br + '; padding:' + pad + '; flex:1;">'
+                '<div style="font-size:' + fs + '; font-weight:800; color:rgba(' + r + ',' + g + ',' + b + ',' + op + '); line-height:1; white-space:nowrap;">' + str(val) + '</div>'
+                '<div style="font-size:' + lfs + '; color:rgba(' + r + ',' + g + ',' + b + ',0.45); font-weight:600; text-transform:uppercase; letter-spacing:0.6px; margin-top:' + ('1px' if small else '3px') + '; white-space:nowrap;">' + lbl + '</div>'
                 '</div>'
             )
 
-        # Badges mois en cours
-        badges_mois = (
-            badge(nb,       "101",    "239","108","0") +
-            badge(f"{total} min",    "Durée totale",  "239","108","0") +
-            badge(f"{moy} min",      "Durée moyenne","239","108","0") +
-            badge(nb_do,    "DO",     "167","139","250") +
-            badge(f"{total_do} min", "Durée totale",   "167","139","250")
+        # Ligne 101 mois en cours
+        row_101 = (
+            '<div style="display:flex; gap:5px; justify-content:center; width:100%; flex-wrap:nowrap;">'
+            + badge(nb,            "101",          "239","108","0")
+            + badge(f"{total} min","Durée totale", "239","108","0")
+            + badge(f"{moy} min",  "Durée moyenne","239","108","0")
+            + '</div>'
         )
 
-        # Badges mois précédent
-        badges_pr = (
-            badge(nb_pr,       "101",    "239","108","0",  small=True) +
-            badge(f"{total_pr} min",    "Durée totale",  "239","108","0",  small=True) +
-            badge(f"{moy_pr} min",      "Durée moyenne",    "239","108","0",  small=True) +
-            badge(nb_do_pr,    "DO",     "167","139","250", small=True) +
-            badge(f"{total_do_pr} min", "Durée totale",   "167","139","250", small=True)
+        # Ligne DO mois en cours
+        row_do = (
+            '<div style="display:flex; gap:5px; justify-content:center; width:100%; flex-wrap:nowrap;">'
+            + badge(nb_do,            "DO",          "167","139","250")
+            + badge(f"{total_do} min","Durée totale","167","139","250")
+            + '</div>'
+        )
+
+        # Ligne 101 mois précédent
+        row_101_pr = (
+            '<div style="display:flex; gap:4px; justify-content:center; width:100%; flex-wrap:nowrap;">'
+            + badge(nb_pr,            "101",          "239","108","0", small=True)
+            + badge(f"{total_pr} min","Durée totale", "239","108","0", small=True)
+            + badge(f"{moy_pr} min",  "Durée moyenne","239","108","0", small=True)
+            + '</div>'
+        )
+
+        # Ligne DO mois précédent
+        row_do_pr = (
+            '<div style="display:flex; gap:4px; justify-content:center; width:100%; flex-wrap:nowrap;">'
+            + badge(nb_do_pr,            "DO",          "167","139","250", small=True)
+            + badge(f"{total_do_pr} min","Durée totale","167","139","250", small=True)
+            + '</div>'
         )
 
         st.markdown(
@@ -305,8 +320,8 @@ for col, (ride_name, emoji) in zip(cols, FRONTIERLAND_RIDES.items()):
             '<div style="font-size:8px; color:rgba(255,255,255,0.25); font-weight:700;'
             'text-transform:uppercase; letter-spacing:1.5px; width:100%; text-align:center;">' + mois_label + '</div>'
 
-            '<div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:center; width:100%;">'
-            + badges_mois +
+            '<div style="display:flex; flex-direction:column; gap:5px; width:100%;">'
+            + row_101 + row_do +
             '</div>'
 
             '<div style="width:100%; height:1px; background:rgba(255,255,255,0.05);"></div>'
@@ -314,8 +329,8 @@ for col, (ride_name, emoji) in zip(cols, FRONTIERLAND_RIDES.items()):
             '<div style="font-size:7.5px; color:rgba(255,255,255,0.2); font-weight:700;'
             'text-transform:uppercase; letter-spacing:1px; text-align:center; width:100%;">📅 ' + mois_pr_label + '</div>'
 
-            '<div style="display:flex; gap:5px; flex-wrap:wrap; justify-content:center; width:100%;">'
-            + badges_pr +
+            '<div style="display:flex; flex-direction:column; gap:4px; width:100%;">'
+            + row_101_pr + row_do_pr +
             '</div>'
 
             '</div>',
