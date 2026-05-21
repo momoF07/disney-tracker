@@ -169,12 +169,11 @@ for col, (ride_name, emoji) in zip(cols, FRONTIERLAND_RIDES.items()):
         if ride_name == "Disneyland Railroad":
             ride_data   = (live.get("Disneyland Railroad Main Street Station") or
                            live.get("Disneyland Railroad Frontierland Depot") or {})
-            df_r        = logs_mois[logs_mois['ride_name'].isin(RAILROAD_RIDES)] if not logs_mois.empty else pd.DataFrame()
-            df_r_pr     = logs_mois_pr[logs_mois_pr['ride_name'].isin(RAILROAD_RIDES)] if not logs_mois_pr.empty else pd.DataFrame()
-            df_do       = logs_do_mois[logs_do_mois['ride_name'].isin(RAILROAD_RIDES)] if not logs_do_mois.empty else pd.DataFrame()
-            df_do_pr    = logs_do_mois_pr[logs_do_mois_pr['ride_name'].isin(RAILROAD_RIDES)] if not logs_do_mois_pr.empty else pd.DataFrame()
-            has_opened  = (status_map.get("Disneyland Railroad Main Street Station", {}).get('has_opened_today', False) or
-                           status_map.get("Disneyland Railroad Frontierland Depot", {}).get('has_opened_today', False))
+            df_r        = logs_mois[logs_mois['ride_name'] == "Disneyland Railroad Main Street Station"] if not logs_mois.empty else pd.DataFrame()
+            df_r_pr     = logs_mois_pr[logs_mois_pr['ride_name'] == "Disneyland Railroad Main Street Station"] if not logs_mois_pr.empty else pd.DataFrame()
+            df_do       = logs_do_mois[logs_do_mois['ride_name'] == "Disneyland Railroad Main Street Station"] if not logs_do_mois.empty else pd.DataFrame()
+            df_do_pr    = logs_do_mois_pr[logs_do_mois_pr['ride_name'] == "Disneyland Railroad Main Street Station"] if not logs_do_mois_pr.empty else pd.DataFrame()
+            has_opened  = status_map.get("Disneyland Railroad Main Street Station", {}).get('has_opened_today', False)
             last_status = ride_data.get('last_status', '')
         else:
             ride_data   = live.get(ride_name, {})
