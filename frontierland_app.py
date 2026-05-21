@@ -15,7 +15,7 @@ st.set_page_config(page_title="Frontierland Live Tracker", page_icon="assets/fon
 st_autorefresh(interval=60000, key="frontier_refresh")
 
 webversion = "v1"
-showhisto = FALSE
+showhisto = False
 
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
@@ -342,7 +342,7 @@ for col, (ride_name, emoji) in zip(cols, FRONTIERLAND_RIDES.items()):
         )
 
         # Historique interruptions
-        if showhisto == TRUE:
+        if showhisto == True:
             label_exp = f"📋 Historique 101"
             if not df_r.empty:
                 with st.expander(label_exp):
@@ -369,7 +369,7 @@ for col, (ride_name, emoji) in zip(cols, FRONTIERLAND_RIDES.items()):
             continue
 
         # Historique DO
-        if showhisto == TRUE:
+        if showhisto == True:
             label_do = f"🟣 Historique DO"
             if not df_do.empty:
                 with st.expander(label_do):
