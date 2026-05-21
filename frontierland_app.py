@@ -241,41 +241,38 @@ for col, (ride_name, emoji) in zip(cols, FRONTIERLAND_RIDES.items()):
             card_border  = "rgba(100,116,139,0.2)"
 
         # Helpers badges
-        def badge(val, lbl, color, small=False):
+        def badge(val, lbl, r, g, b, small=False):
             fs   = "1.05rem" if small else "1.4rem"
             lfs  = "6.5px"   if small else "7px"
             pad  = "5px 10px" if small else "8px 12px"
             mw   = "46px"    if small else "52px"
             br   = "10px"    if small else "12px"
-            op   = "0.04" if small else "0.08"
-            bop  = "0.12" if small else "0.2"
-            cop  = "0.45" if small else "1"
-            lcop = "0.3"  if small else "0.5"
+            op   = "0.55"    if small else "1"
             return (
                 '<div style="display:inline-flex; flex-direction:column; align-items:center;'
-                'background:' + color + op + '; border:1px solid ' + color + bop + ';'
+                'background:rgba(' + r + ',' + g + ',' + b + ',0.08); border:1px solid rgba(' + r + ',' + g + ',' + b + ',0.22);'
                 'border-radius:' + br + '; padding:' + pad + '; min-width:' + mw + ';">'
-                '<div style="font-size:' + fs + '; font-weight:800; color:' + color + cop + '; line-height:1;">' + str(val) + '</div>'
-                '<div style="font-size:' + lfs + '; color:' + color + lcop + '; font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:' + ('1px' if small else '3px') + ';">' + lbl + '</div>'
+                '<div style="font-size:' + fs + '; font-weight:800; color:rgba(' + r + ',' + g + ',' + b + ',' + op + '); line-height:1;">' + str(val) + '</div>'
+                '<div style="font-size:' + lfs + '; color:rgba(' + r + ',' + g + ',' + b + ',0.45); font-weight:600; text-transform:uppercase; letter-spacing:0.8px; margin-top:' + ('1px' if small else '3px') + ';">' + lbl + '</div>'
                 '</div>'
             )
 
         # Badges mois en cours
         badges_mois = (
-            badge(nb,    "× 101",    "#ef6c00") +
-            badge(total, "min 101",  "#ef6c00") +
-            badge(moy,   "∅ min 101","#ef6c00") +
-            (badge(nb_do,    "× DO",   "#a78bfa") +
-             badge(total_do, "min DO", "#a78bfa") if nb_do > 0 else "")
+            badge(nb,       "101",    "239","108","0") +
+            badge(total,    "Durée totale des 101 (min)",  "239","108","0") +
+            badge(moy,      "Durée moyenne des 101 (min)","239","108","0") +
+            badge(nb_do,    "DO",     "167","139","250") +
+            badge(total_do, "Durée totale des DO (min)",   "167","139","250")
         )
 
         # Badges mois précédent
         badges_pr = (
-            badge(nb_pr,    "× 101",    "#ef6c00", small=True) +
-            badge(total_pr, "min 101",  "#ef6c00", small=True) +
-            badge(moy_pr,   "∅ 101",    "#ef6c00", small=True) +
-            (badge(nb_do_pr,    "× DO",   "#a78bfa", small=True) +
-             badge(total_do_pr, "min DO", "#a78bfa", small=True) if nb_do_pr > 0 else "")
+            badge(nb_pr,       "101",    "239","108","0",  small=True) +
+            badge(total_pr,    "Durée totale des 101 (min)",  "239","108","0",  small=True) +
+            badge(moy_pr,      "Durée moyenne des 101 (min)",    "239","108","0",  small=True) +
+            badge(nb_do_pr,    "DO",     "167","139","250", small=True) +
+            badge(total_do_pr, "Durée totale des DO (min)",   "167","139","250", small=True)
         )
 
         st.markdown(
