@@ -260,19 +260,19 @@ for col, (ride_name, emoji) in zip(cols, FRONTIERLAND_RIDES.items()):
         # Badges mois en cours
         badges_mois = (
             badge(nb,       "101",    "239","108","0") +
-            badge(total,    "Durée totale des 101 (min)",  "239","108","0") +
-            badge(moy,      "Durée moyenne des 101 (min)","239","108","0") +
+            badge(total,    "Durée totale (min)",  "239","108","0") +
+            badge(moy,      "Durée moyenne (min)","239","108","0") +
             badge(nb_do,    "DO",     "167","139","250") +
-            badge(total_do, "Durée totale des DO (min)",   "167","139","250")
+            badge(total_do, "Durée totale (min)",   "167","139","250")
         )
 
         # Badges mois précédent
         badges_pr = (
             badge(nb_pr,       "101",    "239","108","0",  small=True) +
-            badge(total_pr,    "Durée totale des 101 (min)",  "239","108","0",  small=True) +
-            badge(moy_pr,      "Durée moyenne des 101 (min)",    "239","108","0",  small=True) +
+            badge(total_pr,    "Durée totale (min)",  "239","108","0",  small=True) +
+            badge(moy_pr,      "Durée moyenne (min)",    "239","108","0",  small=True) +
             badge(nb_do_pr,    "DO",     "167","139","250", small=True) +
-            badge(total_do_pr, "Durée totale des DO (min)",   "167","139","250", small=True)
+            badge(total_do_pr, "Durée totale (min)",   "167","139","250", small=True)
         )
 
         st.markdown(
