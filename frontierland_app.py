@@ -64,7 +64,7 @@ st.markdown(f"""
         letter-spacing: 4px;
         color: {COLOR};
         text-align: center;
-        margin-top: 0.8rem;
+        margin-top: 0.5rem;
         margin-bottom: 0.2rem;
         text-shadow: 0 0 40px {COLOR}44;
     }}
@@ -144,7 +144,7 @@ live, status_map, logs_mois, logs_mois_pr, logs_do_mois, logs_do_mois_pr = load_
 # ============================================================
 # HEADER
 # ============================================================
-st.markdown('<div class="page-title">🌵 Frontierland Live</div>', unsafe_allow_html=True)
+st.markdown('<div class="page-title">Frontierland Live Data</div>', unsafe_allow_html=True)
 st.markdown(f'<div class="page-sub">Temps réel · {last_refresh} · {mois_label}</div>', unsafe_allow_html=True)
 
 # ============================================================
