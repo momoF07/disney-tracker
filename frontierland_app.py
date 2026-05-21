@@ -63,7 +63,6 @@ st.markdown(f"""
         letter-spacing: 4px;
         color: {COLOR};
         text-align: center;
-        margin-top: 0.1rem;
         margin-bottom: 0.2rem;
         text-shadow: 0 0 40px {COLOR}44;
     }}
