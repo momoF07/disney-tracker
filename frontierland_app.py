@@ -323,7 +323,7 @@ st.markdown(f"""
         Disney Wait Time Tool
     </div>
     <div class="footer-item" style="text-align:center; flex-grow:1;">
-        API Attente : ThemePark Wiki <span class="footer-sep">•</span> API Météo : Open Meteo
+        API Attente : ThemePark Wiki
     </div>
     <div class="footer-item" style="text-align:right;">
         Actualisé à : <b>{last_refresh}</b>
