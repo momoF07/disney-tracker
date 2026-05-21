@@ -10,7 +10,7 @@ from config import PARK_OPENING, DLP_CLOSING, DAW_CLOSING, EMT_OPENING
 from modules.special_hours import ANTICIPATED_CLOSINGS, EMT_EARLY_OPEN
 from modules.emojis import RIDES_DAW
 
-st.set_page_config(page_title="Frontierland Live", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Frontierland Live", page_icon="assets/fondfrontier.png", layout="wide", initial_sidebar_state="collapsed")
 
 webversion = "v1"
 
