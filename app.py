@@ -472,6 +472,38 @@ with col_stats:
             st.error(f"Erreur stats : {e}")
             return pd.DataFrame()
 
+    def load_df_do(date_from, date_to=None):
+        try:
+            q = supabase.table("logs_do").select("*").gte("start_time", date_from.isoformat())
+            if date_to:
+                q = q.lt("start_time", date_to.isoformat())
+            resp = q.execute()
+            df = pd.DataFrame(resp.data)
+            if df.empty: return df
+            df = df.copy()
+            df['start_dt'] = pd.to_datetime(df['start_time'], format='mixed').dt.tz_convert('Europe/Paris')
+            df['end_dt']   = df['end_time'].apply(
+                lambda x: pd.to_datetime(x, format='mixed').tz_convert('Europe/Paris') if pd.notna(x) else pd.Timestamp.now(tz='Europe/Paris')
+            )
+            df['duree_min'] = (df['end_dt'] - df['start_dt']).dt.total_seconds() / 60
+            df = df[df['duree_min'] >= 5]
+            df = df[~df['ride_name'].isin(STATS_EXCLUDED)]
+            r2p, r2l = {}, {}
+            for park, lands in PARKS_DATA.items():
+                for land, attractions in lands.items():
+                    for attr in attractions:
+                        r2p[attr] = park
+                        r2l[attr] = land
+            df['parc'] = df['ride_name'].map(r2p).fillna("Inconnu")
+            df['land'] = df['ride_name'].map(r2l).fillna("Inconnu")
+            return df
+        except Exception as e:
+            st.error(f"Erreur stats DO : {e}")
+            return pd.DataFrame()
+
+    df_do_mois    = load_df_do(debut_mois)
+    df_do_mois_pr = load_df_do(debut_mois_pr, fin_mois_pr)
+
     df_mois    = load_df(debut_mois)
     df_mois_pr = load_df(debut_mois_pr, fin_mois_pr)
 
@@ -560,6 +592,7 @@ with col_stats:
             + badge(nb_g, "Interruptions", "#c4b5fd")
             + badge(total_g, "Min Total", "#7dd3fc")
             + badge(moy_g, "Min Moyenne", "#6ee7b7")
+            + (badge(len(df_do_mois), "DO", "#a78bfa") if not df_do_mois.empty else "")
             + '</div>',
             unsafe_allow_html=True
         )
@@ -609,6 +642,9 @@ with col_stats:
                         df_a = df_l[df_l['ride_name'] == attr_name]
                         if df_a.empty: continue
                         nb_a, total_a, moy_a = stats_block(df_a)
+                        df_do_a    = df_do_mois[df_do_mois['ride_name'] == attr_name] if not df_do_mois.empty else pd.DataFrame()
+                        nb_do_a    = len(df_do_a)
+                        do_badge   = badge_sm(nb_do_a, "DO", "#a78bfa") if nb_do_a > 0 else ""
                         rides_html += (
                             '<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;'
                             'padding:5px 8px; background:' + color + '06;'
@@ -620,6 +656,7 @@ with col_stats:
                             + badge_sm(nb_a, "Interruptions", color)
                             + badge_sm(total_a, "Min Total", color_l)
                             + badge_sm(moy_a, "Min Moyenne", color_l)
+                            + do_badge
                             + '</div>'
                             + prev_block(df_r_pr, color, color_l, color_l)
                             + '</div>'
@@ -673,6 +710,9 @@ with col_stats:
                 df_l_pr = df_mois_pr[df_mois_pr['land'] == land] if not df_mois_pr.empty else pd.DataFrame()
                 nb, total, moy = stats_block(df_l)
 
+                df_do_l = df_do_mois[df_do_mois['land'] == land] if not df_do_mois.empty else pd.DataFrame()
+                nb_do_l = len(df_do_l)
+
                 attractions_du_land = [
                     a for p_lands in PARKS_DATA.values()
                     for l, attrs in p_lands.items()
@@ -682,9 +722,12 @@ with col_stats:
                 for attr_name in attractions_du_land:
                     df_r    = df_mois[df_mois['ride_name'] == attr_name]
                     df_r_pr = df_mois_pr[df_mois_pr['ride_name'] == attr_name] if not df_mois_pr.empty else pd.DataFrame()
-                    df_a = df_l[df_l['ride_name'] == attr_name]
-                    if df_a.empty: continue
-                    nb_a, total_a, moy_a = stats_block(df_a)
+                    df_a    = df_l[df_l['ride_name'] == attr_name]
+                    df_do_a = df_do_mois[df_do_mois['ride_name'] == attr_name] if not df_do_mois.empty else pd.DataFrame()
+                    if df_a.empty and df_do_a.empty: continue
+                    nb_a, total_a, moy_a = stats_block(df_a) if not df_a.empty else (0, 0, 0)
+                    nb_do_a = len(df_do_a)
+
                     rows_html += (
                         '<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;'
                         'padding:5px 8px; background:' + color + '06;'
@@ -693,9 +736,10 @@ with col_stats:
                         '<span style="font-family:Mulish,sans-serif; color:rgba(255,255,255,0.65);'
                         'font-size:10px; font-weight:600; flex:1; min-width:0; word-break:break-word;">' + attr_name + '</span>'
                         '<div style="display:flex; gap:3px; flex-shrink:0;">'
-                        + badge_sm(nb_a, "Interruptions", color)
-                        + badge_sm(total_a, "Min Total", color_l)
-                        + badge_sm(moy_a, "Min Moyenne", color_l)
+                        + (badge_sm(nb_a, "Interruptions", color) if nb_a > 0 else "")
+                        + (badge_sm(total_a, "Min Total", color_l) if nb_a > 0 else "")
+                        + (badge_sm(moy_a, "Min Moyenne", color_l) if nb_a > 0 else "")
+                        + (badge_sm(nb_do_a, "DO", "#a78bfa") if nb_do_a > 0 else "")
                         + '</div>'
                         + prev_block(df_r_pr, color, color_l, color_l)
                         + '</div>'
@@ -712,6 +756,7 @@ with col_stats:
                     + badge(nb, "Interruptions", color)
                     + badge(total, "Min Total", color_l)
                     + badge(moy, "Min Moyenne", color_l)
+                    + (badge(nb_do_l, "DO", "#a78bfa") if nb_do_l > 0 else "")
                     + prev_block(df_l_pr, color, color_l, color_l)
                     + '</div>'
                     + (('<div style="margin-top:8px;">' + rows_html + '</div>') if rows_html else '')
@@ -728,12 +773,33 @@ with col_stats:
                 default=available_rides[:1] if available_rides else [],
                 format_func=lambda x: f"{get_emoji(x)} {x}", key="stats_rides")
             for ride in selected_rides:
-                land    = ride_to_land.get(ride, "Inconnu")
-                color   = LAND_COLORS.get(land, "#64748b")
-                color_l = LAND_COLORS_LIGHT.get(land, "#94a3b8")
-                df_r    = df_mois[df_mois['ride_name'] == ride]
-                df_r_pr = df_mois_pr[df_mois_pr['ride_name'] == ride] if not df_mois_pr.empty else pd.DataFrame()
+                land       = ride_to_land.get(ride, "Inconnu")
+                color      = LAND_COLORS.get(land, "#64748b")
+                color_l    = LAND_COLORS_LIGHT.get(land, "#94a3b8")
+                df_r       = df_mois[df_mois['ride_name'] == ride]
+                df_r_pr    = df_mois_pr[df_mois_pr['ride_name'] == ride] if not df_mois_pr.empty else pd.DataFrame()
+                df_do_r    = df_do_mois[df_do_mois['ride_name'] == ride] if not df_do_mois.empty else pd.DataFrame()
+                df_do_r_pr = df_do_mois_pr[df_do_mois_pr['ride_name'] == ride] if not df_do_mois_pr.empty else pd.DataFrame()
                 nb, total, moy = stats_block(df_r)
+                nb_do_r = len(df_do_r)
+
+                prev_do_html = ""
+                if not df_do_r_pr.empty:
+                    nb_p  = len(df_do_r_pr)
+                    tot_p = int(df_do_r_pr['duree_min'].sum())
+                    moy_p = int(df_do_r_pr['duree_min'].mean())
+                    prev_do_html = (
+                        '<div style="margin-top:6px; padding:5px 8px;'
+                        'background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.05);'
+                        'border-radius:8px; opacity:0.6;">'
+                        '<span style="font-size:7px; color:#475569; font-weight:700;'
+                        'text-transform:uppercase; letter-spacing:1px;">📅 ' + mois_pr_label + ' — </span>'
+                        + badge_sm(nb_p, "DO", "#a78bfa")
+                        + badge_sm(tot_p, "Min Total", "#c084fc")
+                        + badge_sm(moy_p, "Min Moyenne", "#c084fc")
+                        + '</div>'
+                    )
+
                 st.markdown(
                     '<div style="padding:10px 14px; background:' + color + '06;'
                     'border:1px solid ' + color + '20; border-left:3px solid ' + color_l + ';'
@@ -753,13 +819,117 @@ with col_stats:
                     + badge(nb, "Interruptions", color)
                     + badge(total, "Min Total", color_l)
                     + badge(moy, "Min Moyenne", color_l)
-                    + prev_block(df_r_pr, color, color_l, color_l)
+                    + (badge(nb_do_r, "DO", "#a78bfa") if nb_do_r > 0 else "")
                     + '</div>'
+                    + prev_block(df_r_pr, color, color_l, color_l)
+                    + prev_do_html
                     + '</div>',
                     unsafe_allow_html=True
                 )
-                detail_expander(df_r, f"Détail — {ride}", color_l)
+                detail_expander(df_r, f"Détail interruptions — {ride}", color_l)
 
+                if not df_do_r.empty:
+                    with st.expander(f"🟣 Détail DO — {ride}"):
+                        for _, row in df_do_r.sort_values('start_dt', ascending=False).iterrows():
+                            debut     = row['start_dt'].strftime('%d/%m %H:%M')
+                            fin       = row['end_dt'].strftime('%H:%M') if pd.notna(row['end_time']) else "En cours"
+                            duree     = int(row['duree_min'])
+                            fin_color = "#f87171" if fin == "En cours" else "#94a3b8"
+                            st.markdown(
+                                '<div style="display:flex; justify-content:space-between; align-items:center;'
+                                'padding:5px 8px; background:rgba(255,255,255,0.02); border-radius:7px; margin-bottom:3px;">'
+                                '<span style="color:#475569; font-size:10px;">'
+                                + debut + ' → <span style="color:' + fin_color + ';">' + fin + '</span></span>'
+                                '<span style="font-family:Outfit,sans-serif; font-size:10px; font-weight:700;'
+                                'color:#c084fc; background:rgba(192,132,252,0.15); border:1px solid rgba(192,132,252,0.3);'
+                                'padding:1px 7px; border-radius:6px;">' + str(duree) + ' min</span>'
+                                '</div>',
+                                unsafe_allow_html=True
+                            )
+
+        # === DO (DELAYED OPENING) ===
+        with st.expander("🟣 Ouvertures retardées"):
+            if df_do_mois.empty:
+                st.caption("Aucun DO ce mois-ci.")
+            else:
+                nb_do_g    = len(df_do_mois)
+                total_do_g = int(df_do_mois['duree_min'].sum())
+                moy_do_g   = int(df_do_mois['duree_min'].mean())
+
+                st.markdown(
+                    '<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;">'
+                    + badge(nb_do_g, "DO", "#a78bfa")
+                    + badge(total_do_g, "Min Total", "#c084fc")
+                    + badge(moy_do_g, "Min Moyenne", "#c084fc")
+                    + '</div>',
+                    unsafe_allow_html=True
+                )
+
+                available_do = (df_do_mois.groupby('ride_name')['duree_min'].count()
+                                .sort_values(ascending=False).index.tolist())
+                for ride in available_do:
+                    df_do_r    = df_do_mois[df_do_mois['ride_name'] == ride]
+                    df_do_r_pr = df_do_mois_pr[df_do_mois_pr['ride_name'] == ride] if not df_do_mois_pr.empty else pd.DataFrame()
+                    land       = ride_to_land.get(ride, "Inconnu")
+                    color      = LAND_COLORS.get(land, "#64748b")
+                    color_l    = LAND_COLORS_LIGHT.get(land, "#94a3b8")
+                    nb_do_r    = len(df_do_r)
+                    total_do_r = int(df_do_r['duree_min'].sum())
+                    moy_do_r   = int(df_do_r['duree_min'].mean())
+
+                    prev_do_html = ""
+                    if not df_do_r_pr.empty:
+                        nb_p  = len(df_do_r_pr)
+                        tot_p = int(df_do_r_pr['duree_min'].sum())
+                        moy_p = int(df_do_r_pr['duree_min'].mean())
+                        prev_do_html = (
+                            '<div style="margin-top:6px; padding:5px 8px;'
+                            'background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.05);'
+                            'border-radius:8px; opacity:0.6;">'
+                            '<span style="font-size:7px; color:#475569; font-weight:700;'
+                            'text-transform:uppercase; letter-spacing:1px;">📅 ' + mois_pr_label + ' — </span>'
+                            + badge_sm(nb_p, "DO", "#a78bfa")
+                            + badge_sm(tot_p, "Min Total", "#c084fc")
+                            + badge_sm(moy_p, "Min Moyenne", "#c084fc")
+                            + '</div>'
+                        )
+
+                    st.markdown(
+                        '<div style="padding:8px 10px; background:rgba(167,139,250,0.06);'
+                        'border:1px solid rgba(167,139,250,0.2); border-left:3px solid #a78bfa;'
+                        'border-radius:10px; margin-bottom:5px;">'
+                        '<div style="display:flex; align-items:center; gap:6px; margin-bottom:5px;">'
+                        '<span style="font-size:14px;">' + get_emoji(ride) + '</span>'
+                        '<span style="font-family:Mulish,sans-serif; color:rgba(255,255,255,0.75);'
+                        'font-size:11px; font-weight:600;">' + ride + '</span>'
+                        '</div>'
+                        '<div style="display:flex; gap:4px; flex-wrap:wrap;">'
+                        + badge_sm(nb_do_r, "DO", "#a78bfa")
+                        + badge_sm(total_do_r, "Min Total", "#c084fc")
+                        + badge_sm(moy_do_r, "Min Moyenne", "#c084fc")
+                        + '</div>'
+                        + prev_do_html
+                        + '</div>',
+                        unsafe_allow_html=True
+                    )
+
+                    with st.expander(f"📋 Détail DO — {ride}"):
+                        for _, row in df_do_r.sort_values('start_dt', ascending=False).iterrows():
+                            debut     = row['start_dt'].strftime('%d/%m %H:%M')
+                            fin       = row['end_dt'].strftime('%H:%M') if pd.notna(row['end_time']) else "En cours"
+                            duree     = int(row['duree_min'])
+                            fin_color = "#f87171" if fin == "En cours" else "#94a3b8"
+                            st.markdown(
+                                '<div style="display:flex; justify-content:space-between; align-items:center;'
+                                'padding:5px 8px; background:rgba(255,255,255,0.02); border-radius:7px; margin-bottom:3px;">'
+                                '<span style="color:#475569; font-size:10px;">'
+                                + debut + ' → <span style="color:' + fin_color + ';">' + fin + '</span></span>'
+                                '<span style="font-family:Outfit,sans-serif; font-size:10px; font-weight:700;'
+                                'color:#c084fc; background:rgba(192,132,252,0.15); border:1px solid rgba(192,132,252,0.3);'
+                                'padding:1px 7px; border-radius:6px;">' + str(duree) + ' min</span>'
+                                '</div>',
+                                unsafe_allow_html=True
+                            )
 st.divider()
 footer_html = f"""
 <style>
