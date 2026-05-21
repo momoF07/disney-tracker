@@ -8,6 +8,9 @@ import pytz
 
 st.set_page_config(page_title="Frontierland Live", layout="wide", initial_sidebar_state="collapsed")
 
+# --- VERSION ---
+webversion = "v1"
+
 url = os.environ.get("SUPABASE_URL") or st.secrets.get("SUPABASE_URL")
 key = os.environ.get("SUPABASE_KEY") or st.secrets.get("SUPABASE_KEY")
 supabase = create_client(url, key)
