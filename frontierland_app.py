@@ -363,3 +363,48 @@ for col, (ride_name, emoji) in zip(cols, FRONTIERLAND_RIDES.items()):
             </div>
         </div>
         """, unsafe_allow_html=True)
+
+footer_html = f"""
+<style>
+    .main-footer {{
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 5px;
+        color: #64748b;
+        font-family: 'Inter', sans-serif;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        margin-top: 20px;
+    }}
+    .footer-item {{
+        font-size: 11px;
+        letter-spacing: 0.5px;
+    }}
+    .footer-separator {{
+        margin: 0 8px;
+        opacity: 0.3;
+    }}
+    .version-tag {{
+        background: rgba(255, 255, 255, 0.05);
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-weight: 700;
+        color: #94a3b8;
+    }}
+</style>
+
+<div class="main-footer">
+    <div class="footer-item">
+        <span class="version-tag">{webversion}</span>
+        <span class="footer-separator">|</span>
+        Disney Wait Time Tool
+    </div>
+    <div class="footer-item" style="text-align: center; flex-grow: 1;">
+        API Attente : ThemePark Wiki <span class="footer-separator">•</span> API Météo : Open Meteo
+    </div>
+    <div class="footer-item" style="text-align: right;">
+        Actualisé à : <b>{st.session_state.last_refresh}</b>
+    </div>
+</div>
+"""
+st.markdown(footer_html, unsafe_allow_html=True)

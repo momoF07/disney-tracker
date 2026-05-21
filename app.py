@@ -930,7 +930,6 @@ with col_stats:
                                 '</div>',
                                 unsafe_allow_html=True
                             )
-st.divider()
 footer_html = f"""
 <style>
     .main-footer {{
