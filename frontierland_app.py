@@ -260,7 +260,7 @@ for col, (ride_name, emoji) in zip(cols, FRONTIERLAND_RIDES.items()):
         # Badges mois en cours
         badges_mois = (
             badge(nb,       "101",    "239","108","0") +
-            badge(total,    "Durée totale (min)",  "239","108","0") +
+            badge(f"{total}min",    "Durée totale (min)",  "239","108","0") +
             badge(moy,      "Durée moyenne (min)","239","108","0") +
             badge(nb_do,    "DO",     "167","139","250") +
             badge(total_do, "Durée totale (min)",   "167","139","250")
