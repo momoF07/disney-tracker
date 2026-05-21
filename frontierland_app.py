@@ -342,7 +342,7 @@ for col, (ride_name, emoji) in zip(cols, FRONTIERLAND_RIDES.items()):
         )
 
         # Historique interruptions
-        label_exp = f"📋 Historique 101 — {ride_name}"
+        label_exp = f"📋 Historique 101"
         if not df_r.empty:
             with st.expander(label_exp):
                 for _, row in df_r.sort_values('start_dt', ascending=False).iterrows():
@@ -366,7 +366,7 @@ for col, (ride_name, emoji) in zip(cols, FRONTIERLAND_RIDES.items()):
                 st.caption("Aucune interruption ce mois-ci.")
 
         # Historique DO
-        label_do = f"🟣 Historique DO — {ride_name}"
+        label_do = f"🟣 Historique DO"
         if not df_do.empty:
             with st.expander(label_do):
                 for _, row in df_do.sort_values('start_dt', ascending=False).iterrows():
