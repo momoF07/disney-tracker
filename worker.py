@@ -132,13 +132,14 @@ def send_notif(ride_name, old_status, new_status, detail=""):
         embed["thumbnail"] = {"url": image}
 
     try:
-        req.post(WEBHOOK_NOTIFS, json={"embeds": [embed]})
-        if ride_name in RIDES_TAG:
-            req.post(WEBHOOK_NOTIFS, json={"content": "<@317266676515078145>"})
-        print(f"  📣 Notif → {ride_name} : {old_status} → {new_status}")
+       payload = {"embeds": [embed]}
+       if ride_name in RIDES_TAG:
+           payload["content"] = "<@317266676515078145>"
+       req.post(WEBHOOK_NOTIFS, json=payload)
+       print(f"  📣 Notif → {ride_name} : {old_status} → {new_status}")
     except Exception as e:
-        print(f"⚠️ Notif Discord : {e}")
-
+       print(f"⚠️ Notif Discord : {e}")
+    
 
 def send_recap_journee(all_pannes):
     if not WEBHOOK_NOTIFS: return
