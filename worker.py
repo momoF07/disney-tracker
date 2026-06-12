@@ -29,6 +29,16 @@ RIDES_EXCLUDED = {
     "Pirates' Beach",
 }
 
+RIDES_TAG = {
+    "Big Thunder Mountain",
+    "Phantom Manor",
+    "Thunder Mesa Riverboat Landing",
+    "Rustler Roundup Shootin' Gallery",
+    "Disneyland Railroad Frontierland Depot",
+    "Frontierland Playground",
+    "Disneyland Railroad Main Street Station",
+}
+
 # --- DISCORD WEBHOOKS ---
 WEBHOOK_NOTIFS = os.environ.get("DISCORD_WEBHOOK_NOTIFS")
 WEBHOOK_DLP    = os.environ.get("DISCORD_WEBHOOK_DLP")
@@ -123,6 +133,10 @@ def send_notif(ride_name, old_status, new_status, detail=""):
 
     try:
         req.post(WEBHOOK_NOTIFS, json={"embeds": [embed]})
+        if ride_name in RIDES_TAG:
+            req.post("<@317266676515078145>")
+        else:
+            return
         print(f"  📣 Notif → {ride_name} : {old_status} → {new_status}")
     except Exception as e:
         print(f"⚠️ Notif Discord : {e}")
